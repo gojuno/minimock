@@ -196,7 +196,7 @@ const (
 		if m.{{method}}Func != nil && m.{{method}}Counter == 0 {
 			m.t.Error("Expected call to {{struct}}.{{method}}")
 		}
-		
+
 	`
 	templateValidateFooter = `
 		}
@@ -392,6 +392,15 @@ func (g *generator) typeToString(t ast.Expr) string {
 		return g.getSelector(e) + "." + e.Sel.Name
 	case *ast.InterfaceType:
 		return "interface{}"
+	case *ast.ChanType:
+		switch e.Dir {
+		case ast.SEND:
+			return "chan <- " + g.typeToString(e.Value)
+		case ast.RECV:
+			return "<- chan " + g.typeToString(e.Value)
+		default:
+			return "chan " + g.typeToString(e.Value)
+		}
 	case *ast.Ellipsis:
 		return "..." + g.typeToString(e.Elt)
 	case *ast.Ident:
