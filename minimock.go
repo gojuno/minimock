@@ -388,6 +388,8 @@ func (g *generator) typeToString(t ast.Expr) string {
 		return "*" + g.typeToString(e.X)
 	case *ast.ArrayType:
 		return "[]" + g.typeToString(e.Elt)
+	case *ast.MapType:
+		return "map[" + g.typeToString(e.Key) + "]" + g.typeToString(e.Value)
 	case *ast.SelectorExpr:
 		return g.getSelector(e) + "." + e.Sel.Name
 	case *ast.InterfaceType:
