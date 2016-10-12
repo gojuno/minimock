@@ -157,9 +157,12 @@ const (
 	templateForHeader = `
 		package {{package}}
 
-		import "testing"
-		import "sync"
-		{{imports}}
+		import (
+			"testing"
+			"sync"
+
+			{{imports}}
+	    )
 
 		type {{struct}} struct {
 			t *testing.T
@@ -294,9 +297,9 @@ func (g *generator) getImports() string {
 		path := g.importsPaths[selector]
 		importSpec := ""
 		if path == selector || strings.HasSuffix(path, "/"+selector) {
-			importSpec = fmt.Sprintf("import %q", path)
+			importSpec = fmt.Sprintf("%q", path)
 		} else {
-			importSpec = fmt.Sprintf("import %s %q", selector, path)
+			importSpec = fmt.Sprintf("%s %q", selector, path)
 		}
 
 		imports = append(imports, importSpec)
