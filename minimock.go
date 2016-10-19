@@ -397,6 +397,21 @@ func (g *generator) typeToString(t ast.Expr) string {
 		return g.getSelector(e) + "." + e.Sel.Name
 	case *ast.InterfaceType:
 		return "interface{}"
+	case *ast.StructType:
+		var fields []string
+		if e.Fields != nil {
+			for _, f := range e.Fields.List {
+				var field string
+				if len(f.Names) > 0 {
+					field = f.Names[0].Name
+				}
+				field += " " + g.typeToString(f.Type)
+				fields = append(fields, field)
+			}
+		}
+		return "struct{" + strings.Join(fields, "\n") + "}"
+	case *ast.FuncType:
+		return g.getMethodSignature(e)
 	case *ast.ChanType:
 		switch e.Dir {
 		case ast.SEND:
