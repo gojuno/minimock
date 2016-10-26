@@ -127,7 +127,7 @@ const template = `
 			}
 
 			{{if gt (len (results $method)) 0 }}
-			return {{ end }} m.{{$methodName}}Func({{(params $method).Names}})
+			return {{ end }} m.{{$methodName}}Func({{(params $method).Pass}})
 		}
 	{{ end }}
 
