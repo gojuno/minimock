@@ -113,7 +113,7 @@ const template = `
 	}
 
 	func New{{$structName}}(t *testing.T) *{{$structName}} {
-		return &{{$structName}}{t: t, m: &sync.Mutex{} }
+		return &{{$structName}}{t: t, m: &sync.RWMutex{} }
 	}
 
 	{{ range $methodName, $method := . }}
@@ -127,8 +127,7 @@ const template = `
 			}
 
 			{{if gt (len (results $method)) 0 }}
-				return
-			{{ end }} m.{{$methodName}}Func({{(params $method).Names}})
+			return {{ end }} m.{{$methodName}}Func({{(params $method).Names}})
 		}
 	{{ end }}
 
