@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/types"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/tools/go/loader"
@@ -32,7 +33,18 @@ type (
 func main() {
 	opts := processFlags()
 
+	packagePath, err := generator.PackageOf(opts.InputFile)
+	if err != nil {
+		die(err)
+	}
+
+	destPackagePath, err := generator.PackageOf(filepath.Dir(opts.OutputFile))
+	if err != nil {
+		die(err)
+	}
+
 	gen := generator.New()
+	gen.ImportWithAlias(destPackagePath, "")
 	gen.SetPackageName(opts.Package)
 	gen.SetVar("structName", opts.StructName)
 	gen.SetVar("interfaceName", opts.InterfaceName)
@@ -40,11 +52,6 @@ func main() {
 		This is automatically generated code. Please DO NOT review/modify/comment.
 		Original interface can be found in %s
 	`, opts.InputFile))
-
-	packagePath, err := generator.PackageOf(opts.InputFile)
-	if err != nil {
-		die(err)
-	}
 
 	cfg := loader.Config{}
 	cfg.Import(packagePath)
@@ -155,13 +162,11 @@ const template = `
 		{{ end }}
 
 		return true
-	}
-
-	`
+	}`
 
 func processFlags() *options {
 	var (
-		input  = flag.String("f", "", "input file or the name of the package containing interface declaration")
+		input  = flag.String("f", "", "input file or import path of the package containing interface declaration")
 		name   = flag.String("i", "", "interface name")
 		output = flag.String("o", "", "destination file for interface implementation")
 		pkg    = flag.String("p", "", "destination package name")
