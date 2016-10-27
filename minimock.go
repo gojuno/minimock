@@ -148,10 +148,17 @@ const template = `
 		{{ end }}
 	}
 
+	func (m *{{$structName}}) CheckMocksCalled() {
+		{{ range $methodName, $method := . }}
+			if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
+				m.t.Error("Expected call to {{$structName}}.{{$methodName}}")
+			}
+		{{ end }}
+	}
+
 	//AllMocksCalled returns true if all mocked methods were called before the call to AllMocksCalled,
 	//it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
 	func (m *{{$structName}}) AllMocksCalled() bool {
-		m.t.Log("ValidateCallCounters is deprecated please use CheckMocksCalled")
 		m.m.RLock()
 		defer m.m.RUnlock()
 
