@@ -43,7 +43,16 @@ func main() {
 		die(err)
 	}
 
-	gen := generator.New()
+	cfg := loader.Config{}
+	cfg.Import(packagePath)
+	cfg.Import(destPackagePath)
+
+	prog, err := cfg.Load()
+	if err != nil {
+		die(fmt.Errorf("failed to load API package %q: %v", packagePath, err))
+	}
+
+	gen := generator.New(prog)
 	gen.ImportWithAlias(destPackagePath, "")
 	gen.SetPackageName(opts.Package)
 	gen.SetVar("structName", opts.StructName)
@@ -53,24 +62,13 @@ func main() {
 		Original interface can be found in %s
 	`, opts.InputFile))
 
-	cfg := loader.Config{}
-	cfg.Import(packagePath)
-
-	prog, err := cfg.Load()
-	if err != nil {
-		die(fmt.Errorf("failed to load API package %q: %v", packagePath, err))
-	}
-
-	pkg := prog.Package(packagePath)
-	gen.Info = &pkg.Info
-
 	v := &visitor{
 		gen:             gen,
 		methods:         map[string]*types.Signature{},
 		sourceInterface: opts.InterfaceName,
 	}
 
-	for _, file := range pkg.Files {
+	for _, file := range prog.Package(packagePath).Files {
 		ast.Walk(v, file)
 	}
 
@@ -89,7 +87,12 @@ func main() {
 
 func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	if ts, ok := node.(*ast.TypeSpec); ok {
-		switch t := v.gen.Info.Types[ts.Type].Type.(type) {
+		exprType, err := v.gen.ExpressionType(ts.Type)
+		if err != nil {
+			die(err)
+		}
+
+		switch t := exprType.(type) {
 		case *types.Interface:
 			if ts.Name.Name != v.sourceInterface {
 				return v
