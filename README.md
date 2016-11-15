@@ -8,63 +8,70 @@ test cases by attaching interface method implementations on the fly.
 Let's say we have following interface declaration:
 
 ```go
-package sample
+package fmt
 
-type Interface interface {
-  GetString() string
+type Stringer interface {
+  String() string
 }
 ``` 
 
 For such interface generated implementation will look like:
 ```go
-type InterfaceMock struct {
-  t *testing.T
-  m *sync.Mutex
+type StringerMock struct {
+	t *testing.T
+	m *sync.RWMutex
 
-  GetStringFunc         func() string
-  GetStringCounter      int
+	StringFunc func() (r0 string)
+
+	StringCounter int
 }
 
-func (m *InterfaceMock) GetString() string {
-  m.m.Lock()
-  m.GetStringCounter += 1
-  m.m.Unlock()
-
-  if m.GetStringFunc == nil {
-    m.t.Fatalf("Unexpected call to InterfaceMock.GetString")
-  }
-
-  return m.GetStringFunc()
+func NewStringerMock(t *testing.T) *StringerMock {
+	return &StringerMock{t: t, m: &sync.RWMutex{}}
 }
 
-func (m *InterfaceMock) ValidateCallCounters() {
-  if m.GetStringFunc != nil && m.GetStringCounter == 0 {
-    m.t.Error("Expected call to InterfaceMock.GetString")
-  }
+func (m *StringerMock) String() (r0 string) {
+	m.m.Lock()
+	m.StringCounter += 1
+	m.m.Unlock()
+
+	if m.StringFunc == nil {
+		m.t.Fatalf("Unexpected call to StringerMock.String")
+	}
+
+	return m.StringFunc()
+}
+
+func (m *StringerMock) CheckMocksCalled() {
+
+	if m.StringFunc != nil && m.StringCounter == 0 {
+		m.t.Error("Expected call to StringerMock.String")
+	}
+
 }
 ```
 
 If caller performs a call to method that is not mocked the test case will fail.
 If caller does not perform a call to method that is mocked the test case will fail if you call to mock.ValidateCallCounters().
-You can also perform more precise checks by using concrete call counters, i.e. mock.GetStringCounter 
+You can also perform more precise checks by using concrete call counters, i.e. StringerMock.StringCounter 
 
 Please see more detailed example in examples subpackage.
 
 ###Usage of minimock:
 ```
   -f string
-      input file containing interface declaration
+    input file or import path of the package containing interface declaration
   -i string
-      interface name
+    interface name
   -o string
-      destination file for interface implementation
+    destination file for interface implementation
   -p string
-      destination package name
+    destination package name
   -t string
-      target struct name, default: <interface name>Mock
+    target struct name, default: <interface name>Mock
 ```
 
 ###Usage of minimock in go:generate instruction:
 ```go
-//go:generate minimock -f ./sample/interface.go -i Interface -o ./sample_interface_mock.go -p examples
+//go:generate minimock -f fmt -i Stringer -o ./stringer_mock_test.go -p examples
 ```

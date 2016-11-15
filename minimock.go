@@ -33,9 +33,15 @@ type (
 func main() {
 	opts := processFlags()
 
-	packagePath, err := generator.PackageOf(opts.InputFile)
-	if err != nil {
-		die(err)
+	var (
+		packagePath = opts.InputFile
+		err         error
+	)
+
+	if strings.HasSuffix(opts.InputFile, ".go") {
+		if packagePath, err = generator.PackageOf(opts.InputFile); err != nil {
+			die(err)
+		}
 	}
 
 	destPackagePath, err := generator.PackageOf(filepath.Dir(opts.OutputFile))
@@ -49,7 +55,7 @@ func main() {
 
 	prog, err := cfg.Load()
 	if err != nil {
-		die(fmt.Errorf("failed to load API package %q: %v", packagePath, err))
+		die(err)
 	}
 
 	gen := generator.New(prog)
