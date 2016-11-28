@@ -32,7 +32,6 @@ type (
 
 func main() {
 	opts := processFlags()
-
 	var (
 		packagePath = opts.InputFile
 		err         error
@@ -126,20 +125,36 @@ const template = `
 		{{ end }}
 		{{ range $methodName, $method := . }} {{$methodName}}Counter int
 		{{ end }}
+		{{ range $methodName, $method := . }} {{$methodName}}Mock {{$structName}}{{$methodName}}
+		{{ end }}
 	}
 
 	func New{{$structName}}(t *testing.T) *{{$structName}} {
-		return &{{$structName}}{t: t, m: &sync.RWMutex{} }
+		m := &{{$structName}}{t: t, m: &sync.RWMutex{} }
+		{{ range $methodName, $method := . }}m.{{$methodName}}Mock = {{$structName}}{{$methodName}}{mock: m}
+		{{ end }}
+
+		return m
 	}
 
 	{{ range $methodName, $method := . }}
+		type {{$structName}}{{$methodName}} struct {
+			mock *{{$structName}}
+		}
+
+		func (m {{$structName}}{{$methodName}}) Return({{results $method}}) {
+			m.mock.{{$methodName}}Func = func({{params $method}}) ({{(results $method).Types}}) {
+				return {{ (results $method).Names }}
+			}
+		}
+
 		func (m *{{$structName}}) {{$methodName}}{{signature $method}} {
 			m.m.Lock()
 			m.{{$methodName}}Counter += 1
 			m.m.Unlock()
 
 			if m.{{$methodName}}Func == nil {
-				m.t.Fatalf("Unexpected call to {{$structName}}.{{$methodName}}")
+				m.t.Errorf("Unexpected call to {{$structName}}.{{$methodName}}")
 			}
 
 			{{if gt (len (results $method)) 0 }}

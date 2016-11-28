@@ -24,10 +24,25 @@ type StringerMock struct {
 	StringFunc func() (r0 string)
 
 	StringCounter int
+
+	StringMock StringerMockString
 }
 
 func NewStringerMock(t *testing.T) *StringerMock {
-	return &StringerMock{t: t, m: &sync.RWMutex{}}
+	m := &StringerMock{t: t, m: &sync.RWMutex{}}
+	m.StringMock = StringerMockString{mock: m}
+
+	return m
+}
+
+type StringerMockString struct {
+	mock *StringerMock
+}
+
+func (m StringerMockString) Return(r0 string) {
+	m.mock.StringFunc = func() string {
+		return r0
+	}
 }
 
 func (m *StringerMock) String() (r0 string) {
@@ -36,10 +51,19 @@ func (m *StringerMock) String() (r0 string) {
 	m.m.Unlock()
 
 	if m.StringFunc == nil {
-		m.t.Fatalf("Unexpected call to StringerMock.String")
+		m.t.Errorf("Unexpected call to StringerMock.String")
 	}
 
 	return m.StringFunc()
+}
+
+func (m *StringerMock) ValidateCallCounters() {
+	m.t.Log("ValidateCallCounters is deprecated please use CheckMocksCalled")
+
+	if m.StringFunc != nil && m.StringCounter == 0 {
+		m.t.Error("Expected call to StringerMock.String")
+	}
+
 }
 
 func (m *StringerMock) CheckMocksCalled() {
@@ -48,6 +72,37 @@ func (m *StringerMock) CheckMocksCalled() {
 		m.t.Error("Expected call to StringerMock.String")
 	}
 
+}
+```
+
+In the test you can use Return helper or you can define StringerFunc for more complex behaviour:
+```go
+
+func TestStringerUser(t *testing.T) {
+  stringerMock := NewStringerMock(t)
+  defer stringerMock.CheckMocksCalled()
+
+  stringerMock.StringMock.Return("Hello, world!")
+
+  //... code that uses stringerMock
+}
+
+func TestStringerUserComplex(t *testing.T) {
+  stringerMock := NewStringerMock(t)
+  defer stringerMock.CheckMocksCalled()
+
+  stringerMock.StringFunc = func() string {
+    switch stringerMock.StringCounter {
+    case 1:
+      return "Hello,"
+    case 2:
+      return "world"
+    default:
+      return "!"
+    }
+  }
+
+  //... code that uses stringerMock
 }
 ```
 
