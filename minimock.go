@@ -37,8 +37,8 @@ func main() {
 		err         error
 	)
 
-	if strings.HasSuffix(opts.InputFile, ".go") {
-		if packagePath, err = generator.PackageOf(opts.InputFile); err != nil {
+	if _, err := os.Stat(packagePath); err == nil {
+		if packagePath, err = generator.PackageOf(packagePath); err != nil {
 			die(err)
 		}
 	}
