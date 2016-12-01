@@ -50,7 +50,10 @@ func main() {
 
 	cfg := loader.Config{}
 	cfg.Import(packagePath)
-	cfg.Import(destPackagePath)
+
+	if destPackagePath != packagePath {
+		cfg.Import(destPackagePath)
+	}
 
 	prog, err := cfg.Load()
 	if err != nil {
