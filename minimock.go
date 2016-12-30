@@ -65,10 +65,9 @@ func main() {
 	gen.SetPackageName(opts.Package)
 	gen.SetVar("structName", opts.StructName)
 	gen.SetVar("interfaceName", opts.InterfaceName)
-	gen.SetHeader(fmt.Sprintf(`
-		This is automatically generated code. Please DO NOT review/modify/comment.
-		Original interface can be found in %s
-	`, opts.InputFile))
+	gen.SetHeader(fmt.Sprintf(`DO NOT EDIT!
+This is automatically generated code.
+Original interface can be found in %s`, packagePath))
 
 	v := &visitor{
 		gen:             gen,
