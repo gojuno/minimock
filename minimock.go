@@ -68,6 +68,8 @@ func main() {
 	gen.SetHeader(fmt.Sprintf(`DO NOT EDIT!
 This is automatically generated code.
 Original interface can be found in %s`, packagePath))
+	gen.SetDefaultParamsPrefix("p")
+	gen.SetDefaultResultsPrefix("r")
 
 	v := &visitor{
 		gen:             gen,
