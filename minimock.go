@@ -102,19 +102,22 @@ Original interface can be found in %s`, packagePath))
 }
 
 func (v *visitor) Visit(node ast.Node) ast.Visitor {
-	if ts, ok := node.(*ast.TypeSpec); ok {
+	switch ts := node.(type) {
+	case *ast.FuncDecl:
+		return nil
+	case *ast.TypeSpec:
 		exprType, err := v.gen.ExpressionType(ts.Type)
 		if err != nil {
-			die(err)
+			die(fmt.Errorf("failed to get expression for %T %s", ts.Type, ts.Name.Name, err))
 		}
 
 		switch t := exprType.(type) {
 		case *types.Interface:
-			if ts.Name.Name != v.sourceInterface {
-				return v
+			if ts.Name.Name == v.sourceInterface {
+				v.processInterface(t)
 			}
 
-			v.processInterface(t)
+			return nil
 		}
 	}
 
