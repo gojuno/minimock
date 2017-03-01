@@ -48,7 +48,14 @@ func main() {
 		die(err)
 	}
 
-	cfg := loader.Config{}
+	cfg := loader.Config{
+		TypeCheckFuncBodies: func(string) bool { return false },
+		TypeChecker: types.Config{
+			IgnoreFuncBodies:         true,
+			FakeImportC:              true,
+			DisableUnusedImportCheck: true,
+		},
+	}
 	cfg.Import(packagePath)
 
 	if destPackagePath != packagePath {
