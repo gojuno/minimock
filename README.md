@@ -39,10 +39,16 @@ type StringerMockString struct {
 	mock *StringerMock
 }
 
-func (m StringerMockString) Return(r0 string) {
+func (m StringerMockString) Return(r0 string) *StringerMock {
 	m.mock.StringFunc = func() string {
 		return r0
 	}
+	return m.mock
+}
+
+func (m StringerMockString) Set(f func()) *StringerMock {
+	m.mock.StringFunc = f
+	return m.mock
 }
 
 func (m *StringerMock) String() (r0 string) {
@@ -104,6 +110,20 @@ func TestStringerUserComplex(t *testing.T) {
 
   //... code that uses stringerMock
 }
+```
+
+Alternatively, you can use builder-style mock configuration:
+```go
+stringerMock := NewStringerMock(t).
+  StringMock.Return("Hello, world!").
+  IntMock.Return(1).
+  MultiplierMock.Set(func(a,b int) int { //example of the mock that checks input params
+    assert.Equal(t, 2, a)
+    assert.Equal(t, 3, b)
+    return a * b
+  })
+
+defer stringerMock.CheckMocksCalled()
 ```
 
 If caller performs a call to method that is not mocked the test case will fail.

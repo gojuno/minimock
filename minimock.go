@@ -156,10 +156,16 @@ const template = `
 			mock *{{$structName}}
 		}
 
-		func (m {{$structName}}{{$methodName}}) Return({{results $method}}) {
+		func (m {{$structName}}{{$methodName}}) Return({{results $method}}) *{{$structName}} {
 			m.mock.{{$methodName}}Func = func({{params $method}}) ({{(results $method).Types}}) {
 				return {{ (results $method).Names }}
 			}
+			return m.mock
+		}
+
+		func (m {{$structName}}{{$methodName}}) Set(f func({{params $method}}) ({{results $method}})) *{{$structName}}{
+			m.mock.{{$methodName}}Func = f
+			return m.mock
 		}
 
 		func (m *{{$structName}}) {{$methodName}}{{signature $method}} {
