@@ -58,6 +58,10 @@ func main() {
 	}
 	cfg.Import(packagePath)
 
+	if err := os.Remove(opts.OutputFile); err != nil && !os.IsNotExist(err) {
+		die(err)
+	}
+
 	if destPackagePath != packagePath {
 		cfg.Import(destPackagePath)
 	}
