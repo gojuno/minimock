@@ -49,6 +49,7 @@ func main() {
 	}
 
 	cfg := loader.Config{
+		AllowErrors:         true,
 		TypeCheckFuncBodies: func(string) bool { return false },
 		TypeChecker: types.Config{
 			IgnoreFuncBodies:         true,
