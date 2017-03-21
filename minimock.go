@@ -55,6 +55,7 @@ func main() {
 			IgnoreFuncBodies:         true,
 			FakeImportC:              true,
 			DisableUnusedImportCheck: true,
+			Error: func(err error) {},
 		},
 	}
 	cfg.Import(packagePath)
