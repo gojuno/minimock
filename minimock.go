@@ -180,7 +180,8 @@ const template = `
 			m.m.Unlock()
 
 			if m.{{$methodName}}Func == nil {
-				m.t.Errorf("Unexpected call to {{$structName}}.{{$methodName}}")
+				m.t.Error("Unexpected call to {{$structName}}.{{$methodName}}")
+				m.t.FailNow()
 			}
 
 			{{if gt (len (results $method)) 0 }}
@@ -194,6 +195,7 @@ const template = `
 		{{ range $methodName, $method := . }}
 			if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
 				m.t.Error("Expected call to {{$structName}}.{{$methodName}}")
+				m.t.FailNow()
 			}
 		{{ end }}
 	}
@@ -202,6 +204,7 @@ const template = `
 		{{ range $methodName, $method := . }}
 			if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
 				m.t.Error("Expected call to {{$structName}}.{{$methodName}}")
+				m.t.FailNow()
 			}
 		{{ end }}
 	}
