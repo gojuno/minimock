@@ -180,8 +180,7 @@ const template = `
 			m.m.Unlock()
 
 			if m.{{$methodName}}Func == nil {
-				m.t.Error("Unexpected call to {{$structName}}.{{$methodName}}")
-				m.t.FailNow()
+				m.t.Fatal("Unexpected call to {{$structName}}.{{$methodName}}")
 			}
 
 			{{if gt (len (results $method)) 0 }}
@@ -194,8 +193,7 @@ const template = `
 
 		{{ range $methodName, $method := . }}
 			if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
-				m.t.Error("Expected call to {{$structName}}.{{$methodName}}")
-				m.t.FailNow()
+				m.t.Fatal("Expected call to {{$structName}}.{{$methodName}}")
 			}
 		{{ end }}
 	}
@@ -203,8 +201,7 @@ const template = `
 	func (m *{{$structName}}) CheckMocksCalled() {
 		{{ range $methodName, $method := . }}
 			if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
-				m.t.Error("Expected call to {{$structName}}.{{$methodName}}")
-				m.t.FailNow()
+				m.t.Fatal("Expected call to {{$structName}}.{{$methodName}}")
 			}
 		{{ end }}
 	}
