@@ -1,4 +1,4 @@
-###Summary
+## Summary
 Minimock parses input Go source file containing interface declaration and generates
 implementation of this interface that can be used as a mock.
 
@@ -132,7 +132,7 @@ You can also perform more precise checks by using concrete call counters, i.e. S
 
 Please see more detailed example in examples subpackage.
 
-###Usage of minimock:
+## Usage of minimock:
 ```
   -f string
     input file or import path of the package containing interface declaration
@@ -146,7 +146,7 @@ Please see more detailed example in examples subpackage.
     target struct name, default: <interface name>Mock
 ```
 
-###Usage of minimock in go:generate instruction:
+## Usage of minimock in go:generate instruction:
 ```go
 //go:generate minimock -f fmt -i Stringer -o ./stringer_mock_test.go -p examples
 ```
