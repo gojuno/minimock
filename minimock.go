@@ -79,8 +79,8 @@ func main() {
 	gen.SetVar("structName", opts.StructName)
 	gen.SetVar("interfaceName", opts.InterfaceName)
 	gen.SetHeader(fmt.Sprintf(`DO NOT EDIT!
-This is automatically generated code.
-Original interface can be found in %s`, packagePath))
+This code was generated automatically using github.com/gojuno/minimock v1.0
+Original interface %q can be found in %s`, opts.InterfaceName, packagePath))
 	gen.SetDefaultParamsPrefix("p")
 	gen.SetDefaultResultsPrefix("r")
 
@@ -117,14 +117,24 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 			die(fmt.Errorf("failed to get expression for %T %s", ts.Type, ts.Name.Name, err))
 		}
 
-		switch t := exprType.(type) {
-		case *types.Interface:
-			if ts.Name.Name == v.sourceInterface {
-				v.processInterface(t)
-			}
+		var i *types.Interface
 
-			return nil
+		switch t := exprType.(type) {
+		case *types.Named:
+			underlying, ok := t.Underlying().(*types.Interface)
+			if !ok {
+				return nil
+			}
+			i = underlying
+		case *types.Interface:
+			i = t
 		}
+
+		if ts.Name.Name == v.sourceInterface {
+			v.processInterface(i)
+		}
+
+		return nil
 	}
 
 	return v
