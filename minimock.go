@@ -79,7 +79,7 @@ func main() {
 	gen.SetVar("structName", opts.StructName)
 	gen.SetVar("interfaceName", opts.InterfaceName)
 	gen.SetHeader(fmt.Sprintf(`DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.0
+This code was generated automatically using github.com/gojuno/minimock v1.1
 Original interface %q can be found in %s`, opts.InterfaceName, packagePath))
 	gen.SetDefaultParamsPrefix("p")
 	gen.SetDefaultResultsPrefix("r")
@@ -214,6 +214,32 @@ const template = `
 				m.t.Fatal("Expected call to {{$structName}}.{{$methodName}}")
 			}
 		{{ end }}
+	}
+
+	//Wait waits for all mocked functions to be executed at least once
+	func (m *{{$structName}}) Wait(timeout time.Duration) {
+		timeoutCh := time.After(timeout)
+		for {
+			ok := true
+			{{ range $methodName, $method := . }}ok = ok && (m.{{$methodName}}Func == nil || m.{{$methodName}}Counter > 0)
+			{{ end }}
+
+			if ok {
+				return
+			}
+
+			select {
+			case <-time.Tick(time.Microsecond):
+			case <-timeoutCh:
+				{{ range $methodName, $method := . }}
+					if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
+						m.t.Error("Expected call to {{$structName}}.{{$methodName}}")
+					}
+				{{ end }}
+				m.t.Fatalf("Some mocks were not called on time: %s", timeout)
+				return
+			}
+		}
 	}
 
 	//AllMocksCalled returns true if all mocked methods were called before the call to AllMocksCalled,
