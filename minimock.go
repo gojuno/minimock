@@ -79,7 +79,7 @@ func main() {
 	gen.SetVar("structName", opts.StructName)
 	gen.SetVar("interfaceName", opts.InterfaceName)
 	gen.SetHeader(fmt.Sprintf(`DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.1
+This code was generated automatically using github.com/gojuno/minimock v1.2
 Original interface %q can be found in %s`, opts.InterfaceName, packagePath))
 	gen.SetDefaultParamsPrefix("p")
 	gen.SetDefaultResultsPrefix("r")
@@ -149,18 +149,17 @@ func (v *visitor) processInterface(t *types.Interface) {
 const template = `
 	type {{$structName}} struct {
 		t *testing.T
-		m *sync.RWMutex
 
 		{{ range $methodName, $method := . }} {{$methodName}}Func func{{ signature $method }}
 		{{ end }}
-		{{ range $methodName, $method := . }} {{$methodName}}Counter int
+		{{ range $methodName, $method := . }} {{$methodName}}Counter uint64
 		{{ end }}
 		{{ range $methodName, $method := . }} {{$methodName}}Mock {{$structName}}{{$methodName}}
 		{{ end }}
 	}
 
 	func New{{$structName}}(t *testing.T) *{{$structName}} {
-		m := &{{$structName}}{t: t, m: &sync.RWMutex{} }
+		m := &{{$structName}}{t: t}
 		{{ range $methodName, $method := . }}m.{{$methodName}}Mock = {{$structName}}{{$methodName}}{mock: m}
 		{{ end }}
 
@@ -185,9 +184,7 @@ const template = `
 		}
 
 		func (m *{{$structName}}) {{$methodName}}{{signature $method}} {
-			m.m.Lock()
-			m.{{$methodName}}Counter += 1
-			m.m.Unlock()
+			defer atomic.AddUint64(&m.{{$methodName}}Counter, 1)
 
 			if m.{{$methodName}}Func == nil {
 				m.t.Fatal("Unexpected call to {{$structName}}.{{$methodName}}")
@@ -229,7 +226,6 @@ const template = `
 			}
 
 			select {
-			case <-time.Tick(time.Microsecond):
 			case <-timeoutCh:
 				{{ range $methodName, $method := . }}
 					if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
@@ -238,6 +234,8 @@ const template = `
 				{{ end }}
 				m.t.Fatalf("Some mocks were not called on time: %s", timeout)
 				return
+			default:
+				time.Sleep(time.Millisecond)
 			}
 		}
 	}
@@ -245,9 +243,6 @@ const template = `
 	//AllMocksCalled returns true if all mocked methods were called before the call to AllMocksCalled,
 	//it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
 	func (m *{{$structName}}) AllMocksCalled() bool {
-		m.m.RLock()
-		defer m.m.RUnlock()
-
 		{{ range $methodName, $method := . }}
 			if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
 				return false
