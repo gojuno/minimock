@@ -1,4 +1,4 @@
-## Summary
+## Summary [![GoDoc](https://godoc.org/github.com/gojuno/minimock?status.svg)](http://godoc.org/github.com/gojuno/minimock) [![Build Status](https://travis-ci.org/gojuno/minimock.svg?branch=master)](https://travis-ci.org/gojuno/minimock)
 Minimock parses input Go source file containing interface declaration and generates
 implementation of this interface that can be used as a mock.
 
