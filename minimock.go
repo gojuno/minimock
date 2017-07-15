@@ -16,11 +16,13 @@ import (
 
 type (
 	options struct {
-		InputFile     string
-		OutputFile    string
-		InterfaceName string
-		StructName    string
-		Package       string
+		InputFile       string
+		OutputFile      string
+		InterfaceName   string
+		StructName      string
+		Package         string
+		TestingType     string
+		ImportWithTests bool
 	}
 
 	visitor struct {
@@ -58,7 +60,12 @@ func main() {
 			Error: func(err error) {},
 		},
 	}
-	cfg.Import(packagePath)
+
+	if opts.ImportWithTests {
+		cfg.ImportWithTests(packagePath)
+	} else {
+		cfg.Import(packagePath)
+	}
 
 	if err := os.Remove(opts.OutputFile); err != nil && !os.IsNotExist(err) {
 		die(err)
@@ -78,6 +85,8 @@ func main() {
 	gen.SetPackageName(opts.Package)
 	gen.SetVar("structName", opts.StructName)
 	gen.SetVar("interfaceName", opts.InterfaceName)
+	gen.SetVar("testingType", opts.TestingType)
+	gen.SetVar("packagePath", packagePath)
 	gen.SetHeader(fmt.Sprintf(`DO NOT EDIT!
 This code was generated automatically using github.com/gojuno/minimock v1.2
 Original interface %q can be found in %s`, opts.InterfaceName, packagePath))
@@ -114,7 +123,7 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	case *ast.TypeSpec:
 		exprType, err := v.gen.ExpressionType(ts.Type)
 		if err != nil {
-			die(fmt.Errorf("failed to get expression for %T %s", ts.Type, ts.Name.Name, err))
+			die(fmt.Errorf("failed to get expression for %T %s: %v", ts.Type, ts.Name.Name, err))
 		}
 
 		var i *types.Interface
@@ -147,47 +156,55 @@ func (v *visitor) processInterface(t *types.Interface) {
 }
 
 const template = `
+	import minimock "github.com/gojuno/minimock"
+
+	//{{$structName}} implements {{$packagePath}}.{{$interfaceName}}
 	type {{$structName}} struct {
-		t *testing.T
+		t {{$testingType}}
 
 		{{ range $methodName, $method := . }} {{$methodName}}Func func{{ signature $method }}
 		{{ end }}
 		{{ range $methodName, $method := . }} {{$methodName}}Counter uint64
 		{{ end }}
-		{{ range $methodName, $method := . }} {{$methodName}}Mock {{$structName}}{{$methodName}}
+		{{ range $methodName, $method := . }} {{$methodName}}Mock m{{$structName}}{{$methodName}}
 		{{ end }}
 	}
 
-	func New{{$structName}}(t *testing.T) *{{$structName}} {
+	//New{{$structName}} returns a mock for {{$packagePath}}.{{$interfaceName}}
+	func New{{$structName}}(t {{$testingType}}) *{{$structName}} {
 		m := &{{$structName}}{t: t}
-		{{ range $methodName, $method := . }}m.{{$methodName}}Mock = {{$structName}}{{$methodName}}{mock: m}
+		{{ range $methodName, $method := . }}m.{{$methodName}}Mock = m{{$structName}}{{$methodName}}{mock: m}
 		{{ end }}
 
 		return m
 	}
 
 	{{ range $methodName, $method := . }}
-		type {{$structName}}{{$methodName}} struct {
+		type m{{$structName}}{{$methodName}} struct {
 			mock *{{$structName}}
 		}
 
-		func (m {{$structName}}{{$methodName}}) Return({{results $method}}) *{{$structName}} {
+		//Return set up a mock for {{$interfaceName}}.{{$method}} to return Return's arguments
+		func (m m{{$structName}}{{$methodName}}) Return({{results $method}}) *{{$structName}} {
 			m.mock.{{$methodName}}Func = func({{params $method}}) ({{(results $method).Types}}) {
 				return {{ (results $method).Names }}
 			}
 			return m.mock
 		}
 
-		func (m {{$structName}}{{$methodName}}) Set(f func({{params $method}}) ({{results $method}})) *{{$structName}}{
+		//Set uses given function f as a mock of {{$interfaceName}}.{{$method}} method
+		func (m m{{$structName}}{{$methodName}}) Set(f func({{params $method}}) ({{results $method}})) *{{$structName}}{
 			m.mock.{{$methodName}}Func = f
 			return m.mock
 		}
 
+		//{{$methodName}} implements {{$packagePath}}.{{$interfaceName}} interface
 		func (m *{{$structName}}) {{$methodName}}{{signature $method}} {
 			defer atomic.AddUint64(&m.{{$methodName}}Counter, 1)
 
 			if m.{{$methodName}}Func == nil {
 				m.t.Fatal("Unexpected call to {{$structName}}.{{$methodName}}")
+				return
 			}
 
 			{{if gt (len (results $method)) 0 }}
@@ -195,9 +212,8 @@ const template = `
 		}
 	{{ end }}
 
+	//DEPRECATED: please use CheckMocksCalled
 	func (m *{{$structName}}) ValidateCallCounters() {
-		m.t.Log("ValidateCallCounters is deprecated please use CheckMocksCalled")
-
 		{{ range $methodName, $method := . }}
 			if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
 				m.t.Fatal("Expected call to {{$structName}}.{{$methodName}}")
@@ -205,6 +221,7 @@ const template = `
 		{{ end }}
 	}
 
+	//CheckMocksCalled checks that all mocked functions of an iterface have been called at least once
 	func (m *{{$structName}}) CheckMocksCalled() {
 		{{ range $methodName, $method := . }}
 			if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
@@ -213,7 +230,7 @@ const template = `
 		{{ end }}
 	}
 
-	//Wait waits for all mocked functions to be executed at least once
+	//Wait waits for all mocked functions to be called at least once
 	func (m *{{$structName}}) Wait(timeout time.Duration) {
 		timeoutCh := time.After(timeout)
 		for {
@@ -254,16 +271,18 @@ const template = `
 
 func processFlags() *options {
 	var (
-		input  = flag.String("f", "", "input file or import path of the package containing interface declaration")
-		name   = flag.String("i", "", "interface name")
-		output = flag.String("o", "", "destination file for interface implementation")
-		pkg    = flag.String("p", "", "destination package name")
-		sname  = flag.String("t", "", "target struct name, default: <interface name>Mock")
+		input       = flag.String("f", "", "input file or import path of the package containing interface declaration")
+		name        = flag.String("i", "", "interface name")
+		output      = flag.String("o", "", "destination file for interface implementation")
+		pkg         = flag.String("p", "", "destination package name")
+		sname       = flag.String("t", "", "target struct name, default: <interface name>Mock")
+		withTests   = flag.Bool("withTests", false, "parse test files in a source package")
+		testingType = flag.String("testingType", "*testing.T", "type of the argument that is passed to mock constructor")
 	)
 
 	flag.Parse()
 
-	if *pkg == "" || *input == "" || *output == "" || *name == "" || !strings.HasSuffix(*output, ".go") {
+	if *pkg == "" || *input == "" || *output == "" || *name == "" || *testingType == "" || !strings.HasSuffix(*output, ".go") {
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -273,11 +292,13 @@ func processFlags() *options {
 	}
 
 	return &options{
-		InputFile:     *input,
-		OutputFile:    *output,
-		InterfaceName: *name,
-		Package:       *pkg,
-		StructName:    *sname,
+		InputFile:       *input,
+		OutputFile:      *output,
+		InterfaceName:   *name,
+		Package:         *pkg,
+		StructName:      *sname,
+		ImportWithTests: *withTests,
+		TestingType:     *testingType,
 	}
 }
 

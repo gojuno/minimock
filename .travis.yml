@@ -1,0 +1,11 @@
+language: go
+
+go:
+  - tip
+
+install:
+  - go get golang.org/x/tools/go/loader
+  - go get github.com/gojuno/generator
+
+script:
+  - cd $TRAVIS_BUILD_DIR && make all ./...
