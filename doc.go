@@ -2,18 +2,22 @@
 Minimock is a command line tool that parses the input Go source file that contains an interface declaration and generates
 implementation of this interface that can be used as a mock.
 
-Main features of minimock:
+Main features of minimock
 
-* It's integrated with the standard Go "testing" package
-* It's very convenient to use generated mocks in table tests because it implements builder pattern to set up several mocks
-* It provides a useful Wait(time.Duration) helper to test concurrent code
-* It generates helpers to check if the mocked methods have been called and keeps your tests clean and up to date
-* It generates concurrent-safe mock execution counters that you can use in your mocks to implement sophisticated mocks behaviour
+1. It's integrated with the standard Go "testing" package
+
+2. It's very convenient to use generated mocks in table tests because it implements builder pattern to set up several mocks
+
+3. It provides a useful Wait(time.Duration) helper to test concurrent code
+
+4. It generates helpers to check if the mocked methods have been called and keeps your tests clean and up to date
+
+5. It generates concurrent-safe mock execution counters that you can use in your mocks to implement sophisticated mocks behaviour
 
 Let's say we have the following interface declaration in github.com/gojuno/minimock/tests package:
 
 	type Stringer interface {
-  	fmt.Stringer
+		fmt.Stringer
 	}
 
 Here is how to generate the mock for this interface:
