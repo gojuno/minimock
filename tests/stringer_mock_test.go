@@ -1,7 +1,7 @@
 /*
 DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.2
-Original interface "Stringer" can be found in github.com/gojuno/minimock/tests
+This code was generated automatically using github.com/gojuno/minimock v1.3
+The original interface "Stringer" can be found in github.com/gojuno/minimock/tests
 */
 package tests
 
@@ -33,7 +33,7 @@ type mStringerMockString struct {
 	mock *StringerMock
 }
 
-//Return set up a mock for Stringer.func() string to return Return's arguments
+//Return sets up a mock for Stringer.String to return Return's arguments
 func (m mStringerMockString) Return(r string) *StringerMock {
 	m.mock.StringFunc = func() string {
 		return r
@@ -41,7 +41,7 @@ func (m mStringerMockString) Return(r string) *StringerMock {
 	return m.mock
 }
 
-//Set uses given function f as a mock of Stringer.func() string method
+//Set uses given function f as a mock of Stringer.String method
 func (m mStringerMockString) Set(f func() (r string)) *StringerMock {
 	m.mock.StringFunc = f
 	return m.mock
@@ -68,7 +68,7 @@ func (m *StringerMock) ValidateCallCounters() {
 
 }
 
-//CheckMocksCalled checks that all mocked functions of an iterface have been called at least once
+//CheckMocksCalled checks that all mocked methods of the iterface have been called at least once
 func (m *StringerMock) CheckMocksCalled() {
 
 	if m.StringFunc != nil && m.StringCounter == 0 {
@@ -77,7 +77,7 @@ func (m *StringerMock) CheckMocksCalled() {
 
 }
 
-//Wait waits for all mocked functions to be called at least once
+//Wait waits for all mocked methods to be called at least once
 func (m *StringerMock) Wait(timeout time.Duration) {
 	timeoutCh := time.After(timeout)
 	for {
@@ -103,7 +103,7 @@ func (m *StringerMock) Wait(timeout time.Duration) {
 	}
 }
 
-//AllMocksCalled returns true if all mocked methods were called before the call to AllMocksCalled,
+//AllMocksCalled returns true if all mocked methods were called before the execution of AllMocksCalled,
 //it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
 func (m *StringerMock) AllMocksCalled() bool {
 

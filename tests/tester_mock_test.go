@@ -1,7 +1,7 @@
 /*
 DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.2
-Original interface "Tester" can be found in github.com/gojuno/minimock/tests
+This code was generated automatically using github.com/gojuno/minimock v1.3
+The original interface "Tester" can be found in github.com/gojuno/minimock/tests
 */
 package tests
 
@@ -42,7 +42,7 @@ type mTesterMockError struct {
 	mock *TesterMock
 }
 
-//Return set up a mock for Tester.func(...interface{}) to return Return's arguments
+//Return sets up a mock for Tester.Error to return Return's arguments
 func (m mTesterMockError) Return() *TesterMock {
 	m.mock.ErrorFunc = func(p ...interface{}) {
 		return
@@ -50,7 +50,7 @@ func (m mTesterMockError) Return() *TesterMock {
 	return m.mock
 }
 
-//Set uses given function f as a mock of Tester.func(...interface{}) method
+//Set uses given function f as a mock of Tester.Error method
 func (m mTesterMockError) Set(f func(p ...interface{})) *TesterMock {
 	m.mock.ErrorFunc = f
 	return m.mock
@@ -72,7 +72,7 @@ type mTesterMockFatal struct {
 	mock *TesterMock
 }
 
-//Return set up a mock for Tester.func(args ...interface{}) to return Return's arguments
+//Return sets up a mock for Tester.Fatal to return Return's arguments
 func (m mTesterMockFatal) Return() *TesterMock {
 	m.mock.FatalFunc = func(p ...interface{}) {
 		return
@@ -80,7 +80,7 @@ func (m mTesterMockFatal) Return() *TesterMock {
 	return m.mock
 }
 
-//Set uses given function f as a mock of Tester.func(args ...interface{}) method
+//Set uses given function f as a mock of Tester.Fatal method
 func (m mTesterMockFatal) Set(f func(p ...interface{})) *TesterMock {
 	m.mock.FatalFunc = f
 	return m.mock
@@ -102,7 +102,7 @@ type mTesterMockFatalf struct {
 	mock *TesterMock
 }
 
-//Return set up a mock for Tester.func(format string, args ...interface{}) to return Return's arguments
+//Return sets up a mock for Tester.Fatalf to return Return's arguments
 func (m mTesterMockFatalf) Return() *TesterMock {
 	m.mock.FatalfFunc = func(p string, p1 ...interface{}) {
 		return
@@ -110,7 +110,7 @@ func (m mTesterMockFatalf) Return() *TesterMock {
 	return m.mock
 }
 
-//Set uses given function f as a mock of Tester.func(format string, args ...interface{}) method
+//Set uses given function f as a mock of Tester.Fatalf method
 func (m mTesterMockFatalf) Set(f func(p string, p1 ...interface{})) *TesterMock {
 	m.mock.FatalfFunc = f
 	return m.mock
@@ -145,7 +145,7 @@ func (m *TesterMock) ValidateCallCounters() {
 
 }
 
-//CheckMocksCalled checks that all mocked functions of an iterface have been called at least once
+//CheckMocksCalled checks that all mocked methods of the iterface have been called at least once
 func (m *TesterMock) CheckMocksCalled() {
 
 	if m.ErrorFunc != nil && m.ErrorCounter == 0 {
@@ -162,7 +162,7 @@ func (m *TesterMock) CheckMocksCalled() {
 
 }
 
-//Wait waits for all mocked functions to be called at least once
+//Wait waits for all mocked methods to be called at least once
 func (m *TesterMock) Wait(timeout time.Duration) {
 	timeoutCh := time.After(timeout)
 	for {
@@ -198,7 +198,7 @@ func (m *TesterMock) Wait(timeout time.Duration) {
 	}
 }
 
-//AllMocksCalled returns true if all mocked methods were called before the call to AllMocksCalled,
+//AllMocksCalled returns true if all mocked methods were called before the execution of AllMocksCalled,
 //it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
 func (m *TesterMock) AllMocksCalled() bool {
 

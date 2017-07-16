@@ -34,10 +34,7 @@ type (
 
 func main() {
 	opts := processFlags()
-	var (
-		packagePath = opts.InputFile
-		err         error
-	)
+	packagePath := opts.InputFile
 
 	if _, err := os.Stat(packagePath); err == nil {
 		if packagePath, err = generator.PackageOf(packagePath); err != nil {
@@ -88,8 +85,8 @@ func main() {
 	gen.SetVar("testingType", opts.TestingType)
 	gen.SetVar("packagePath", packagePath)
 	gen.SetHeader(fmt.Sprintf(`DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.2
-Original interface %q can be found in %s`, opts.InterfaceName, packagePath))
+This code was generated automatically using github.com/gojuno/minimock v1.3
+The original interface %q can be found in %s`, opts.InterfaceName, packagePath))
 	gen.SetDefaultParamsPrefix("p")
 	gen.SetDefaultResultsPrefix("r")
 
@@ -184,7 +181,7 @@ const template = `
 			mock *{{$structName}}
 		}
 
-		//Return set up a mock for {{$interfaceName}}.{{$method}} to return Return's arguments
+		//Return sets up a mock for {{$interfaceName}}.{{$methodName}} to return Return's arguments
 		func (m m{{$structName}}{{$methodName}}) Return({{results $method}}) *{{$structName}} {
 			m.mock.{{$methodName}}Func = func({{params $method}}) ({{(results $method).Types}}) {
 				return {{ (results $method).Names }}
@@ -192,7 +189,7 @@ const template = `
 			return m.mock
 		}
 
-		//Set uses given function f as a mock of {{$interfaceName}}.{{$method}} method
+		//Set uses given function f as a mock of {{$interfaceName}}.{{$methodName}} method
 		func (m m{{$structName}}{{$methodName}}) Set(f func({{params $method}}) ({{results $method}})) *{{$structName}}{
 			m.mock.{{$methodName}}Func = f
 			return m.mock
@@ -221,7 +218,7 @@ const template = `
 		{{ end }}
 	}
 
-	//CheckMocksCalled checks that all mocked functions of an iterface have been called at least once
+	//CheckMocksCalled checks that all mocked methods of the iterface have been called at least once
 	func (m *{{$structName}}) CheckMocksCalled() {
 		{{ range $methodName, $method := . }}
 			if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
@@ -230,7 +227,7 @@ const template = `
 		{{ end }}
 	}
 
-	//Wait waits for all mocked functions to be called at least once
+	//Wait waits for all mocked methods to be called at least once
 	func (m *{{$structName}}) Wait(timeout time.Duration) {
 		timeoutCh := time.After(timeout)
 		for {
@@ -257,7 +254,7 @@ const template = `
 		}
 	}
 
-	//AllMocksCalled returns true if all mocked methods were called before the call to AllMocksCalled,
+	//AllMocksCalled returns true if all mocked methods were called before the execution of AllMocksCalled,
 	//it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
 	func (m *{{$structName}}) AllMocksCalled() bool {
 		{{ range $methodName, $method := . }}
@@ -271,12 +268,12 @@ const template = `
 
 func processFlags() *options {
 	var (
-		input       = flag.String("f", "", "input file or import path of the package containing interface declaration")
-		name        = flag.String("i", "", "interface name")
-		output      = flag.String("o", "", "destination file for interface implementation")
+		input       = flag.String("f", "", "input file or import path of the package that contains interface declaration")
+		name        = flag.String("i", "", "name of the interface to mock")
+		output      = flag.String("o", "", "destination file name to place the generated mock")
 		pkg         = flag.String("p", "", "destination package name")
-		sname       = flag.String("t", "", "target struct name, default: <interface name>Mock")
-		withTests   = flag.Bool("withTests", false, "parse test files in a source package")
+		sname       = flag.String("t", "", "mock struct name, default is: <interface name>Mock")
+		withTests   = flag.Bool("withTests", false, "parse *_test.go files in the source package")
 		testingType = flag.String("testingType", "*testing.T", "type of the argument that is passed to mock constructor")
 	)
 

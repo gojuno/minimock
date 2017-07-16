@@ -2,154 +2,218 @@
 [![GoDoc](https://godoc.org/github.com/gojuno/minimock?status.svg)](http://godoc.org/github.com/gojuno/minimock) [![Build Status](https://travis-ci.org/gojuno/minimock.svg?branch=master)](https://travis-ci.org/gojuno/minimock) [![Go Report Card](https://goreportcard.com/badge/github.com/gojuno/minimock)](https://goreportcard.com/report/github.com/gojuno/minimock)
 
 ## Summary 
-Minimock parses input Go source file containing interface declaration and generates
+Minimock parses the input Go source file that contains an interface declaration and generates
 implementation of this interface that can be used as a mock.
 
-The main feature of Minimock is that you can reuse generated implementation in different
-test cases by attaching interface method implementations on the fly.
+Main features of minimock:
 
-Let's say we have following interface declaration:
+* It's integrated with the standard Go "testing" package
+* It's very convenient to use generated mocks in table tests because it implements builder pattern to set up several mocks
+* It provides a useful Wait(time.Duration) helper to test concurrent code
+* It generates helpers to check if the mocked methods have been called and keeps your tests clean and up to date
+* It generates concurrent-safe mock execution counters that you can use in your mocks to implement sophisticated mocks behaviour
 
+## Usage
+Let's say we have the following interface declaration in github.com/gojuno/minimock/tests package:
 ```go
-package fmt
-
-type Stringer interface {
-  String() string
-}
-``` 
-
-For such interface generated implementation will look like:
-```go
-type StringerMock struct {
-	t *testing.T
-	m *sync.RWMutex
-
-	StringFunc func() (r0 string)
-
-	StringCounter int
-
-	StringMock StringerMockString
-}
-
-func NewStringerMock(t *testing.T) *StringerMock {
-	m := &StringerMock{t: t, m: &sync.RWMutex{}}
-	m.StringMock = StringerMockString{mock: m}
-
-	return m
-}
-
-type StringerMockString struct {
-	mock *StringerMock
-}
-
-func (m StringerMockString) Return(r0 string) *StringerMock {
-	m.mock.StringFunc = func() string {
-		return r0
+	type Stringer interface {
+  	fmt.Stringer
 	}
-	return m.mock
-}
-
-func (m StringerMockString) Set(f func()) *StringerMock {
-	m.mock.StringFunc = f
-	return m.mock
-}
-
-func (m *StringerMock) String() (r0 string) {
-	m.m.Lock()
-	m.StringCounter += 1
-	m.m.Unlock()
-
-	if m.StringFunc == nil {
-		m.t.Errorf("Unexpected call to StringerMock.String")
-	}
-
-	return m.StringFunc()
-}
-
-func (m *StringerMock) ValidateCallCounters() {
-	m.t.Log("ValidateCallCounters is deprecated please use CheckMocksCalled")
-
-	if m.StringFunc != nil && m.StringCounter == 0 {
-		m.t.Error("Expected call to StringerMock.String")
-	}
-
-}
-
-func (m *StringerMock) CheckMocksCalled() {
-
-	if m.StringFunc != nil && m.StringCounter == 0 {
-		m.t.Error("Expected call to StringerMock.String")
-	}
-
-}
 ```
 
-In the test you can use Return helper or you can define StringerFunc for more complex behaviour:
+Here is how to generate the mock for this interface:
+```
+	minimock.go -f github.com/gojuno/minimock/tests -i Stringer -o ./tests/stringer_mock_test.go -p tests
+```
+
+The result file ./tests/stringer_mock_test.go will be:
 ```go
+	//StringerMock implements github.com/gojuno/minimock/tests.Stringer
+	type StringerMock struct {
+		t *testing.T
 
-func TestStringerUser(t *testing.T) {
+		StringFunc func() (r string)
+		StringCounter uint64
+		StringMock mStringerMockString
+	}
+
+	//NewStringerMock returns a mock for github.com/gojuno/minimock/tests.Stringer
+	func NewStringerMock(t *testing.T) *StringerMock {
+		m := &StringerMock{t: t}
+		m.StringMock = mStringerMockString{mock: m}
+
+		return m
+	}
+
+	type mStringerMockString struct {
+		mock *StringerMock
+	}
+
+	//Return sets up a mock for Stringer.String to return Return's arguments
+	func (m mStringerMockString) Return(r string) *StringerMock {
+		m.mock.StringFunc = func() string {
+			return r
+		}
+		return m.mock
+	}
+
+	//Set uses a given function f as a mock of Stringer.String string method
+	func (m mStringerMockString) Set(f func() (r string)) *StringerMock {
+		m.mock.StringFunc = f
+		return m.mock
+	}
+
+	//String implements github.com/gojuno/minimock/tests.Stringer interface
+	func (m *StringerMock) String() (r string) {
+		defer atomic.AddUint64(&m.StringCounter, 1)
+
+		if m.StringFunc == nil {
+			m.t.Fatal("Unexpected call to StringerMock.String")
+			return
+		}
+
+		return m.StringFunc()
+	}
+
+	//CheckMocksCalled checks that all mocked functions of an iterface have been called at least once
+	func (m *StringerMock) CheckMocksCalled() {
+		if m.StringFunc != nil && m.StringCounter == 0 {
+			m.t.Fatal("Expected call to StringerMock.String")
+		}
+	}
+
+	//Wait waits for all mocked functions to be called at least once
+	func (m *StringerMock) Wait(timeout time.Duration) {
+		timeoutCh := time.After(timeout)
+		for {
+			ok := true
+			ok = ok && (m.StringFunc == nil || m.StringCounter > 0)
+
+			if ok {
+				return
+			}
+
+			select {
+			case <-timeoutCh:
+
+				if m.StringFunc != nil && m.StringCounter == 0 {
+					m.t.Error("Expected call to StringerMock.String")
+				}
+
+				m.t.Fatalf("Some mocks were not called on time: %s", timeout)
+				return
+			default:
+				time.Sleep(time.Millisecond)
+			}
+		}
+	}
+
+	//AllMocksCalled returns true if all mocked methods were called before the execution of AllMocksCalled,
+	//it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
+	func (m *StringerMock) AllMocksCalled() bool {
+
+		if m.StringFunc != nil && m.StringCounter == 0 {
+			return false
+		}
+
+		return true
+	}
+```
+
+
+There are several ways to set up a mock
+
+Setting up a mock using direct assignment:
+```go
   stringerMock := NewStringerMock(t)
-  defer stringerMock.CheckMocksCalled()
-
-  stringerMock.StringMock.Return("Hello, world!")
-
-  //... code that uses stringerMock
-}
-
-func TestStringerUserComplex(t *testing.T) {
-  stringerMock := NewStringerMock(t)
-  defer stringerMock.CheckMocksCalled()
-
   stringerMock.StringFunc = func() string {
-    switch stringerMock.StringCounter {
-    case 1:
-      return "Hello,"
-    case 2:
-      return "world"
-    default:
-      return "!"
-    }
+    return "minimock"
+  }
+```
+
+Setting up a mock using builder pattern and Return method:
+```go
+  stringerMock := NewStringerMock(t).StringMock.Return("minimock")
+```
+
+Setting up a mock using builder and Set method:
+```go
+  stringerMock := NewStringerMock(t).StringMock.Set(func() string {
+    return "minimock"
+  })
+```
+
+Builder pattern is convenient when you have to mock more than one method of an interface.
+Imagine we have StringerInter interface with two methods:
+```go
+  type StringerInter interface {
+    String() string
+    Int() int
+  }
+```
+
+Then you can set up a mock using just one assignment:
+```go
+  stringerMock := NewStringerMock(t).StringMock.Return("minimock").IntMock.Return(5)
+```
+
+You can also use invocation counters in your mocks and tests:
+```go
+  stringerMock := NewStringerMock(t)
+  stringerMock.StringFunc = func() string {
+    return fmt.Sprintf("minimock: %d", stringerMock.StrigCounter)
+  }
+```
+
+## Keep your tests clean
+Sometimes we write tons of mocks for our tests but over time the tested code stops using mocked dependencies,
+however mocks are still present and being initialized in the test files. So while tested code can shrink, tests are only growing.
+To prevent this minimock provides CheckMocksCalled() method that verifies that all your mocks have been called at least once during the test run.
+
+```go
+  func TestSomething(t *testing.T) {
+    stringerMock := NewStringerMock(t)
+    stringerMock.StringMock.Return("minimock")
+
+    //this will mark your test as failed because there's no stringerMock.String() invocation
+    defer stringerMock.CheckMocksCalled()
+  }
+```
+
+## Testing concurrent code
+Testing concurrent code is tough. Fortunately minimock provides you with the helper method that makes testing concurrent code easy.
+Here is how it works:
+
+```go
+  func TestSomething(t *testing.T) {
+    stringerMock := NewStringerMock(t)
+    stringerMock.StringMock.Return("minimock")
+
+    //tested code can run mocked method in a goroutine
+    go stirngerMock.String()
+
+    //Wait ensures that all mocked methods have been called within given interval
+    //if any of the mocked methods have not been called Wait marks test as failed
+    defer stringerMock.Wait(time.Second)
   }
 
-  //... code that uses stringerMock
-}
 ```
 
-Alternatively, you can use builder-style mock configuration:
-```go
-stringerMock := NewStringerMock(t).
-  StringMock.Return("Hello, world!").
-  IntMock.Return(1).
-  MultiplierMock.Set(func(a,b int) int { //example of the mock that checks input params
-    assert.Equal(t, 2, a)
-    assert.Equal(t, 3, b)
-    return a * b
-  })
-
-defer stringerMock.CheckMocksCalled()
+## Minimock command line flags:
 ```
-
-If caller performs a call to method that is not mocked the test case will fail.
-If caller does not perform a call to method that is mocked the test case will fail if you call to mock.ValidateCallCounters().
-You can also perform more precise checks by using concrete call counters, i.e. StringerMock.StringCounter 
-
-Please see more detailed example in examples subpackage.
-
-## Usage of minimock:
-```
+$ minimock 
+Usage of minimock:
   -f string
-    input file or import path of the package containing interface declaration
+    	input file or import path of the package that contains interface declaration
   -i string
-    interface name
+    	name of the interface to mock
   -o string
-    destination file for interface implementation
+    	destination file name to place the generated mock
   -p string
-    destination package name
+    	destination package name
   -t string
-    target struct name, default: <interface name>Mock
-```
-
-## Usage of minimock in go:generate instruction:
-```go
-//go:generate minimock -f fmt -i Stringer -o ./stringer_mock_test.go -p examples
+    	mock struct name, default is: <interface name>Mock
+  -testingType string
+    	type of the argument that is passed to mock constructor (default "*testing.T")
+  -withTests
 ```
