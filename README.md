@@ -17,7 +17,7 @@ Main features of minimock:
 Let's say we have the following interface declaration in github.com/gojuno/minimock/tests package:
 ```go
 	type Stringer interface {
-  	fmt.Stringer
+    fmt.Stringer
 	}
 ```
 
