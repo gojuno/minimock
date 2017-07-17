@@ -75,8 +75,8 @@ The result file ./tests/stringer_mock_test.go will be:
 		return m.StringFunc()
 	}
 
-	//CheckMocksCalled checks that all mocked functions of an iterface have been called at least once
-	func (m *StringerMock) CheckMocksCalled() {
+	//Finish checks that all mocked functions of an iterface have been called at least once
+	func (m *StringerMock) Finish() {
 		if m.StringFunc != nil && m.StringCounter == 0 {
 			m.t.Fatal("Expected call to StringerMock.String")
 		}
@@ -168,7 +168,7 @@ You can also use invocation counters in your mocks and tests:
 ## Keep your tests clean
 Sometimes we write tons of mocks for our tests but over time the tested code stops using mocked dependencies,
 however mocks are still present and being initialized in the test files. So while tested code can shrink, tests are only growing.
-To prevent this minimock provides CheckMocksCalled() method that verifies that all your mocks have been called at least once during the test run.
+To prevent this minimock provides Finish() method that verifies that all your mocks have been called at least once during the test run.
 
 ```go
   func TestSomething(t *testing.T) {
@@ -176,7 +176,7 @@ To prevent this minimock provides CheckMocksCalled() method that verifies that a
     stringerMock.StringMock.Return("minimock")
 
     //this will mark your test as failed because there's no stringerMock.String() invocation
-    defer stringerMock.CheckMocksCalled()
+    defer stringerMock.Finish()
   }
 ```
 

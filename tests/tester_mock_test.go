@@ -15,17 +15,17 @@ import (
 type TesterMock struct {
 	t *testing.T
 
-	ErrorFunc  func(p ...interface{})
-	FatalFunc  func(p ...interface{})
-	FatalfFunc func(p string, p1 ...interface{})
+	ErrorFunc    func(p ...interface{})
+	ErrorCounter uint64
+	ErrorMock    mTesterMockError
 
-	ErrorCounter  uint64
-	FatalCounter  uint64
+	FatalFunc    func(p ...interface{})
+	FatalCounter uint64
+	FatalMock    mTesterMockFatal
+
+	FatalfFunc    func(p string, p1 ...interface{})
 	FatalfCounter uint64
-
-	ErrorMock  mTesterMockError
-	FatalMock  mTesterMockFatal
-	FatalfMock mTesterMockFatalf
+	FatalfMock    mTesterMockFatalf
 }
 
 //NewTesterMock returns a mock for github.com/gojuno/minimock/tests.Tester
@@ -128,7 +128,7 @@ func (m *TesterMock) Fatalf(p string, p1 ...interface{}) {
 	m.FatalfFunc(p, p1...)
 }
 
-//DEPRECATED: please use CheckMocksCalled
+//Deprecated: please use Finish method
 func (m *TesterMock) ValidateCallCounters() {
 
 	if m.ErrorFunc != nil && m.ErrorCounter == 0 {
@@ -145,8 +145,13 @@ func (m *TesterMock) ValidateCallCounters() {
 
 }
 
-//CheckMocksCalled checks that all mocked methods of the iterface have been called at least once
+//Deprecated: please use Finish method
 func (m *TesterMock) CheckMocksCalled() {
+	m.Finish()
+}
+
+//Finish checks that all mocked methods of the iterface have been called at least once
+func (m *TesterMock) Finish() {
 
 	if m.ErrorFunc != nil && m.ErrorCounter == 0 {
 		m.t.Fatal("Expected call to TesterMock.Error")

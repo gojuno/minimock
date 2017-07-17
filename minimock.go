@@ -159,11 +159,10 @@ const template = `
 	type {{$structName}} struct {
 		t {{$testingType}}
 
-		{{ range $methodName, $method := . }} {{$methodName}}Func func{{ signature $method }}
-		{{ end }}
-		{{ range $methodName, $method := . }} {{$methodName}}Counter uint64
-		{{ end }}
-		{{ range $methodName, $method := . }} {{$methodName}}Mock m{{$structName}}{{$methodName}}
+		{{ range $methodName, $method := . }}
+			{{$methodName}}Func func{{ signature $method }}
+			{{$methodName}}Counter uint64
+			{{$methodName}}Mock m{{$structName}}{{$methodName}}
 		{{ end }}
 	}
 
@@ -209,7 +208,7 @@ const template = `
 		}
 	{{ end }}
 
-	//DEPRECATED: please use CheckMocksCalled
+	//Deprecated: please use Finish method
 	func (m *{{$structName}}) ValidateCallCounters() {
 		{{ range $methodName, $method := . }}
 			if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
@@ -218,8 +217,13 @@ const template = `
 		{{ end }}
 	}
 
-	//CheckMocksCalled checks that all mocked methods of the iterface have been called at least once
+	//Deprecated: please use Finish method
 	func (m *{{$structName}}) CheckMocksCalled() {
+		m.Finish()
+	}
+
+	//Finish checks that all mocked methods of the iterface have been called at least once
+	func (m *{{$structName}}) Finish() {
 		{{ range $methodName, $method := . }}
 			if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
 				m.t.Fatal("Expected call to {{$structName}}.{{$methodName}}")
