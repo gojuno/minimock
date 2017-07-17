@@ -1,10 +1,10 @@
+package tests
+
 /*
 DO NOT EDIT!
 This code was generated automatically using github.com/gojuno/minimock v1.3
 The original interface "Stringer" can be found in github.com/gojuno/minimock/tests
 */
-package tests
-
 import (
 	"sync/atomic"
 	"time"
@@ -57,6 +57,7 @@ func (m *StringerMock) String() (r string) {
 	return m.StringFunc()
 }
 
+//ValidateCallCounters checks that all mocked methods of the iterface have been called at least once
 //Deprecated: please use Finish method
 func (m *StringerMock) ValidateCallCounters() {
 
@@ -66,6 +67,7 @@ func (m *StringerMock) ValidateCallCounters() {
 
 }
 
+//CheckMocksCalled checks that all mocked methods of the iterface have been called at least once
 //Deprecated: please use Finish method
 func (m *StringerMock) CheckMocksCalled() {
 	m.Finish()

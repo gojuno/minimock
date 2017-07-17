@@ -208,6 +208,7 @@ const template = `
 		}
 	{{ end }}
 
+	//ValidateCallCounters checks that all mocked methods of the iterface have been called at least once
 	//Deprecated: please use Finish method
 	func (m *{{$structName}}) ValidateCallCounters() {
 		{{ range $methodName, $method := . }}
@@ -217,6 +218,7 @@ const template = `
 		{{ end }}
 	}
 
+	//CheckMocksCalled checks that all mocked methods of the iterface have been called at least once
 	//Deprecated: please use Finish method
 	func (m *{{$structName}}) CheckMocksCalled() {
 		m.Finish()

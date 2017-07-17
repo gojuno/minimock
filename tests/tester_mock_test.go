@@ -1,10 +1,10 @@
+package tests
+
 /*
 DO NOT EDIT!
 This code was generated automatically using github.com/gojuno/minimock v1.3
 The original interface "Tester" can be found in github.com/gojuno/minimock/tests
 */
-package tests
-
 import (
 	"sync/atomic"
 	"testing"
@@ -128,6 +128,7 @@ func (m *TesterMock) Fatalf(p string, p1 ...interface{}) {
 	m.FatalfFunc(p, p1...)
 }
 
+//ValidateCallCounters checks that all mocked methods of the iterface have been called at least once
 //Deprecated: please use Finish method
 func (m *TesterMock) ValidateCallCounters() {
 
@@ -145,6 +146,7 @@ func (m *TesterMock) ValidateCallCounters() {
 
 }
 
+//CheckMocksCalled checks that all mocked methods of the iterface have been called at least once
 //Deprecated: please use Finish method
 func (m *TesterMock) CheckMocksCalled() {
 	m.Finish()
