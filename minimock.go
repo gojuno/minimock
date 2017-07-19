@@ -153,8 +153,6 @@ func (v *visitor) processInterface(t *types.Interface) {
 }
 
 const template = `
-	import minimock "github.com/gojuno/minimock"
-
 	//{{$structName}} implements {{$packagePath}}.{{$interfaceName}}
 	type {{$structName}} struct {
 		t {{$testingType}}
