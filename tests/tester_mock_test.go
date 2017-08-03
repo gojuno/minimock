@@ -2,18 +2,19 @@ package tests
 
 /*
 DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.3
-The original interface "Tester" can be found in github.com/gojuno/minimock/tests
+This code was generated automatically using github.com/gojuno/minimock v1.4
+The original interface "Tester" can be found in github.com/gojuno/minimock
 */
 import (
 	"sync/atomic"
-	"testing"
 	"time"
+
+	"github.com/gojuno/minimock"
 )
 
-//TesterMock implements github.com/gojuno/minimock/tests.Tester
+//TesterMock implements github.com/gojuno/minimock.Tester
 type TesterMock struct {
-	t *testing.T
+	t minimock.Tester
 
 	ErrorFunc    func(p ...interface{})
 	ErrorCounter uint64
@@ -28,9 +29,14 @@ type TesterMock struct {
 	FatalfMock    mTesterMockFatalf
 }
 
-//NewTesterMock returns a mock for github.com/gojuno/minimock/tests.Tester
-func NewTesterMock(t *testing.T) *TesterMock {
+//NewTesterMock returns a mock for github.com/gojuno/minimock.Tester
+func NewTesterMock(t minimock.Tester) *TesterMock {
 	m := &TesterMock{t: t}
+
+	if controller, ok := t.(minimock.MockController); ok {
+		controller.RegisterMocker(m)
+	}
+
 	m.ErrorMock = mTesterMockError{mock: m}
 	m.FatalMock = mTesterMockFatal{mock: m}
 	m.FatalfMock = mTesterMockFatalf{mock: m}
@@ -56,7 +62,7 @@ func (m mTesterMockError) Set(f func(p ...interface{})) *TesterMock {
 	return m.mock
 }
 
-//Error implements github.com/gojuno/minimock/tests.Tester interface
+//Error implements github.com/gojuno/minimock.Tester interface
 func (m *TesterMock) Error(p ...interface{}) {
 	defer atomic.AddUint64(&m.ErrorCounter, 1)
 
@@ -86,7 +92,7 @@ func (m mTesterMockFatal) Set(f func(p ...interface{})) *TesterMock {
 	return m.mock
 }
 
-//Fatal implements github.com/gojuno/minimock/tests.Tester interface
+//Fatal implements github.com/gojuno/minimock.Tester interface
 func (m *TesterMock) Fatal(p ...interface{}) {
 	defer atomic.AddUint64(&m.FatalCounter, 1)
 
@@ -116,7 +122,7 @@ func (m mTesterMockFatalf) Set(f func(p string, p1 ...interface{})) *TesterMock 
 	return m.mock
 }
 
-//Fatalf implements github.com/gojuno/minimock/tests.Tester interface
+//Fatalf implements github.com/gojuno/minimock.Tester interface
 func (m *TesterMock) Fatalf(p string, p1 ...interface{}) {
 	defer atomic.AddUint64(&m.FatalfCounter, 1)
 
@@ -129,7 +135,7 @@ func (m *TesterMock) Fatalf(p string, p1 ...interface{}) {
 }
 
 //ValidateCallCounters checks that all mocked methods of the iterface have been called at least once
-//Deprecated: please use Finish method
+//Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 func (m *TesterMock) ValidateCallCounters() {
 
 	if m.ErrorFunc != nil && m.ErrorCounter == 0 {
@@ -147,13 +153,19 @@ func (m *TesterMock) ValidateCallCounters() {
 }
 
 //CheckMocksCalled checks that all mocked methods of the iterface have been called at least once
-//Deprecated: please use Finish method
+//Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 func (m *TesterMock) CheckMocksCalled() {
 	m.Finish()
 }
 
 //Finish checks that all mocked methods of the iterface have been called at least once
+//Deprecated: please use MinimockFinish or use Finish method of minimock.Controller
 func (m *TesterMock) Finish() {
+	m.MinimockFinish()
+}
+
+//MinimockFinish checks that all mocked methods of the iterface have been called at least once
+func (m *TesterMock) MinimockFinish() {
 
 	if m.ErrorFunc != nil && m.ErrorCounter == 0 {
 		m.t.Fatal("Expected call to TesterMock.Error")
@@ -170,7 +182,14 @@ func (m *TesterMock) Finish() {
 }
 
 //Wait waits for all mocked methods to be called at least once
+//Deprecated: please use MinimockWait or use Wait method of minimock.Controller
 func (m *TesterMock) Wait(timeout time.Duration) {
+	m.MinimockWait(timeout)
+}
+
+//MinimockWait waits for all mocked methods to be called at least once
+//this method is called by minimock.Controller
+func (m *TesterMock) MinimockWait(timeout time.Duration) {
 	timeoutCh := time.After(timeout)
 	for {
 		ok := true

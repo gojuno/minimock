@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gojuno/minimock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -106,4 +107,20 @@ func TestStringerMock_Finish(t *testing.T) {
 	m := NewStringerMock(tester).StringMock.Return("")
 	m.Finish()
 	assert.True(t, mockCalled)
+}
+
+type dummyMockController struct {
+	minimock.MockController
+	registerCounter int
+}
+
+func (dmc *dummyMockController) RegisterMocker(m minimock.Mocker) {
+	dmc.registerCounter++
+}
+
+func TestStringerMock_RegistersMocker(t *testing.T) {
+	mockController := &dummyMockController{}
+
+	NewStringerMock(mockController)
+	assert.Equal(t, 1, mockController.registerCounter)
 }

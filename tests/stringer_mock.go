@@ -2,17 +2,19 @@ package tests
 
 /*
 DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.3
+This code was generated automatically using github.com/gojuno/minimock v1.4
 The original interface "Stringer" can be found in github.com/gojuno/minimock/tests
 */
 import (
 	"sync/atomic"
 	"time"
+
+	"github.com/gojuno/minimock"
 )
 
 //StringerMock implements github.com/gojuno/minimock/tests.Stringer
 type StringerMock struct {
-	t *TesterMock
+	t minimock.Tester
 
 	StringFunc    func() (r string)
 	StringCounter uint64
@@ -20,8 +22,13 @@ type StringerMock struct {
 }
 
 //NewStringerMock returns a mock for github.com/gojuno/minimock/tests.Stringer
-func NewStringerMock(t *TesterMock) *StringerMock {
+func NewStringerMock(t minimock.Tester) *StringerMock {
 	m := &StringerMock{t: t}
+
+	if controller, ok := t.(minimock.MockController); ok {
+		controller.RegisterMocker(m)
+	}
+
 	m.StringMock = mStringerMockString{mock: m}
 
 	return m
@@ -58,7 +65,7 @@ func (m *StringerMock) String() (r string) {
 }
 
 //ValidateCallCounters checks that all mocked methods of the iterface have been called at least once
-//Deprecated: please use Finish method
+//Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 func (m *StringerMock) ValidateCallCounters() {
 
 	if m.StringFunc != nil && m.StringCounter == 0 {
@@ -68,13 +75,19 @@ func (m *StringerMock) ValidateCallCounters() {
 }
 
 //CheckMocksCalled checks that all mocked methods of the iterface have been called at least once
-//Deprecated: please use Finish method
+//Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 func (m *StringerMock) CheckMocksCalled() {
 	m.Finish()
 }
 
 //Finish checks that all mocked methods of the iterface have been called at least once
+//Deprecated: please use MinimockFinish or use Finish method of minimock.Controller
 func (m *StringerMock) Finish() {
+	m.MinimockFinish()
+}
+
+//MinimockFinish checks that all mocked methods of the iterface have been called at least once
+func (m *StringerMock) MinimockFinish() {
 
 	if m.StringFunc != nil && m.StringCounter == 0 {
 		m.t.Fatal("Expected call to StringerMock.String")
@@ -83,7 +96,14 @@ func (m *StringerMock) Finish() {
 }
 
 //Wait waits for all mocked methods to be called at least once
+//Deprecated: please use MinimockWait or use Wait method of minimock.Controller
 func (m *StringerMock) Wait(timeout time.Duration) {
+	m.MinimockWait(timeout)
+}
+
+//MinimockWait waits for all mocked methods to be called at least once
+//this method is called by minimock.Controller
+func (m *StringerMock) MinimockWait(timeout time.Duration) {
 	timeoutCh := time.After(timeout)
 	for {
 		ok := true

@@ -9,7 +9,7 @@ Main features of minimock:
 
 * It's integrated with the standard Go "testing" package
 * It's very convenient to use generated mocks in table tests because it implements builder pattern to set up several mocks
-* It provides a useful Wait(time.Duration) helper to test concurrent code
+* It provides a useful MinimockWait(time.Duration) helper to test concurrent code
 * It generates helpers to check if the mocked methods have been called and keeps your tests clean and up to date
 * It generates concurrent-safe mock execution counters that you can use in your mocks to implement sophisticated mocks behaviour
 
@@ -30,7 +30,7 @@ The result file ./tests/stringer_mock_test.go will be:
 ```go
 //StringerMock implements github.com/gojuno/minimock/tests.Stringer
 type StringerMock struct {
-  t *testing.T
+  t minimock.Tester
 
   StringFunc func() (r string)
   StringCounter uint64
@@ -38,8 +38,13 @@ type StringerMock struct {
 }
 
 //NewStringerMock returns a mock for github.com/gojuno/minimock/tests.Stringer
-func NewStringerMock(t *testing.T) *StringerMock {
+func NewStringerMock(t minimock.Tester) *StringerMock {
   m := &StringerMock{t: t}
+
+  if controller, ok := t.(minimock.MockController); ok {
+		controller.RegisterMocker(m)
+	}
+
   m.StringMock = mStringerMockString{mock: m}
 
   return m
@@ -75,15 +80,15 @@ func (m *StringerMock) String() (r string) {
   return m.StringFunc()
 }
 
-//Finish checks that all mocked functions of an iterface have been called at least once
-func (m *StringerMock) Finish() {
+//MinimockFinish checks that all mocked functions of an iterface have been called at least once
+func (m *StringerMock) MinimockFinish() {
   if m.StringFunc != nil && m.StringCounter == 0 {
     m.t.Fatal("Expected call to StringerMock.String")
   }
 }
 
-//Wait waits for all mocked functions to be called at least once
-func (m *StringerMock) Wait(timeout time.Duration) {
+//MinimockWait waits for all mocked functions to be called at least once
+func (m *StringerMock) MinimockWait(timeout time.Duration) {
   timeoutCh := time.After(timeout)
   for {
     ok := true
@@ -125,7 +130,7 @@ There are several ways to set up a mock
 
 Setting up a mock using direct assignment:
 ```go
-stringerMock := NewStringerMock(t)
+stringerMock := NewStringerMock(mc)
 stringerMock.StringFunc = func() string {
   return "minimock"
 }
@@ -133,12 +138,12 @@ stringerMock.StringFunc = func() string {
 
 Setting up a mock using builder pattern and Return method:
 ```go
-stringerMock := NewStringerMock(t).StringMock.Return("minimock")
+stringerMock := NewStringerMock(mc).StringMock.Return("minimock")
 ```
 
 Setting up a mock using builder and Set method:
 ```go
-stringerMock := NewStringerMock(t).StringMock.Set(func() string {
+stringerMock := NewStringerMock(mc).StringMock.Set(func() string {
   return "minimock"
 })
 ```
@@ -154,12 +159,12 @@ type StringerInter interface {
 
 Then you can set up a mock using just one assignment:
 ```go
-stringerMock := NewStringerMock(t).StringMock.Return("minimock").IntMock.Return(5)
+stringerMock := NewStringerMock(mc).StringMock.Return("minimock").IntMock.Return(5)
 ```
 
 You can also use invocation counters in your mocks and tests:
 ```go
-stringerMock := NewStringerMock(t)
+stringerMock := NewStringerMock(mc)
 stringerMock.StringFunc = func() string {
   return fmt.Sprintf("minimock: %d", stringerMock.StrigCounter)
 }
@@ -168,15 +173,16 @@ stringerMock.StringFunc = func() string {
 ## Keep your tests clean
 Sometimes we write tons of mocks for our tests but over time the tested code stops using mocked dependencies,
 however mocks are still present and being initialized in the test files. So while tested code can shrink, tests are only growing.
-To prevent this minimock provides Finish() method that verifies that all your mocks have been called at least once during the test run.
+To prevent this minimock provides MinimockFinish() method that verifies that all your mocks have been called at least once during the test run.
 
 ```go
 func TestSomething(t *testing.T) {
-  stringerMock := NewStringerMock(t)
-  stringerMock.StringMock.Return("minimock")
+  mc := minimock.NewController(t)
+  //this will mark your test as failed because there's no stringerMock.String() invocation below
+  defer mc.Finish()
 
-  //this will mark your test as failed because there's no stringerMock.String() invocation
-  defer stringerMock.Finish()
+  stringerMock := NewStringerMock(mc)
+  stringerMock.StringMock.Return("minimock")
 }
 ```
 
@@ -186,15 +192,17 @@ Here is how it works:
 
 ```go
 func TestSomething(t *testing.T) {
-  stringerMock := NewStringerMock(t)
+  mc := minimock.NewController(t)
+
+  //Wait ensures that all mocked methods have been called within given interval
+  //if any of the mocked methods have not been called Wait marks test as failed
+  defer mc.Wait(time.Second)
+
+  stringerMock := NewStringerMock(mc)
   stringerMock.StringMock.Return("minimock")
 
   //tested code can run mocked method in a goroutine
   go stirngerMock.String()
-
-  //Wait ensures that all mocked methods have been called within given interval
-  //if any of the mocked methods have not been called Wait marks test as failed
-  defer stringerMock.Wait(time.Second)
 }
 ```
 
@@ -212,7 +220,5 @@ Usage of minimock:
     	destination package name
   -t string
     	mock struct name, default is: <interface name>Mock
-  -testingType string
-    	type of the argument that is passed to mock constructor (default "*testing.T")
   -withTests
 ```
