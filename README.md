@@ -13,6 +13,12 @@ Main features of minimock:
 * It generates helpers to check if the mocked methods have been called and keeps your tests clean and up to date
 * It generates concurrent-safe mock execution counters that you can use in your mocks to implement sophisticated mocks behaviour
 
+## Installation
+
+```
+go get github.com/gojuno/minimock/cmd/minimock
+```
+
 ## Usage
 Let's say we have the following interface declaration in github.com/gojuno/minimock/tests package:
 ```go
