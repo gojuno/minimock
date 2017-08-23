@@ -83,7 +83,7 @@ func main() {
 	gen.SetVar("interfaceName", opts.InterfaceName)
 	gen.SetVar("packagePath", packagePath)
 	gen.SetHeader(fmt.Sprintf(`DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.4
+This code was generated automatically using github.com/gojuno/minimock v1.5
 The original interface %q can be found in %s`, opts.InterfaceName, packagePath))
 	gen.SetDefaultParamsPrefix("p")
 	gen.SetDefaultResultsPrefix("r")
@@ -220,7 +220,7 @@ const template = `
 	//Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 	func (m *{{$structName}}) ValidateCallCounters() {
 		{{ range $methodName, $method := . }}
-			if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
+			if m.{{$methodName}}Func != nil && atomic.LoadUint64(&m.{{$methodName}}Counter) == 0 {
 				m.t.Fatal("Expected call to {{$structName}}.{{$methodName}}")
 			}
 		{{ end }}
@@ -241,7 +241,7 @@ const template = `
 	//MinimockFinish checks that all mocked methods of the iterface have been called at least once
 	func (m *{{$structName}}) MinimockFinish() {
 		{{ range $methodName, $method := . }}
-			if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
+			if m.{{$methodName}}Func != nil && atomic.LoadUint64(&m.{{$methodName}}Counter) == 0 {
 				m.t.Fatal("Expected call to {{$structName}}.{{$methodName}}")
 			}
 		{{ end }}
@@ -259,7 +259,7 @@ const template = `
 		timeoutCh := time.After(timeout)
 		for {
 			ok := true
-			{{ range $methodName, $method := . }}ok = ok && (m.{{$methodName}}Func == nil || m.{{$methodName}}Counter > 0)
+			{{ range $methodName, $method := . }}ok = ok && (m.{{$methodName}}Func == nil || atomic.LoadUint64(&m.{{$methodName}}Counter) > 0)
 			{{ end }}
 
 			if ok {
@@ -269,7 +269,7 @@ const template = `
 			select {
 			case <-timeoutCh:
 				{{ range $methodName, $method := . }}
-					if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
+					if m.{{$methodName}}Func != nil && atomic.LoadUint64(&m.{{$methodName}}Counter) == 0 {
 						m.t.Error("Expected call to {{$structName}}.{{$methodName}}")
 					}
 				{{ end }}
@@ -285,7 +285,7 @@ const template = `
 	//it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
 	func (m *{{$structName}}) AllMocksCalled() bool {
 		{{ range $methodName, $method := . }}
-			if m.{{$methodName}}Func != nil && m.{{$methodName}}Counter == 0 {
+			if m.{{$methodName}}Func != nil && atomic.LoadUint64(&m.{{$methodName}}Counter) == 0 {
 				return false
 			}
 		{{ end }}

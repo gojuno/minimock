@@ -1,10 +1,10 @@
-package tests
-
 /*
 DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.4
+This code was generated automatically using github.com/gojuno/minimock v1.5
 The original interface "Stringer" can be found in github.com/gojuno/minimock/tests
 */
+package tests
+
 import (
 	"sync/atomic"
 	"time"
@@ -68,7 +68,7 @@ func (m *StringerMock) String() (r string) {
 //Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 func (m *StringerMock) ValidateCallCounters() {
 
-	if m.StringFunc != nil && m.StringCounter == 0 {
+	if m.StringFunc != nil && atomic.LoadUint64(&m.StringCounter) == 0 {
 		m.t.Fatal("Expected call to StringerMock.String")
 	}
 
@@ -89,7 +89,7 @@ func (m *StringerMock) Finish() {
 //MinimockFinish checks that all mocked methods of the iterface have been called at least once
 func (m *StringerMock) MinimockFinish() {
 
-	if m.StringFunc != nil && m.StringCounter == 0 {
+	if m.StringFunc != nil && atomic.LoadUint64(&m.StringCounter) == 0 {
 		m.t.Fatal("Expected call to StringerMock.String")
 	}
 
@@ -107,7 +107,7 @@ func (m *StringerMock) MinimockWait(timeout time.Duration) {
 	timeoutCh := time.After(timeout)
 	for {
 		ok := true
-		ok = ok && (m.StringFunc == nil || m.StringCounter > 0)
+		ok = ok && (m.StringFunc == nil || atomic.LoadUint64(&m.StringCounter) > 0)
 
 		if ok {
 			return
@@ -116,7 +116,7 @@ func (m *StringerMock) MinimockWait(timeout time.Duration) {
 		select {
 		case <-timeoutCh:
 
-			if m.StringFunc != nil && m.StringCounter == 0 {
+			if m.StringFunc != nil && atomic.LoadUint64(&m.StringCounter) == 0 {
 				m.t.Error("Expected call to StringerMock.String")
 			}
 
@@ -132,7 +132,7 @@ func (m *StringerMock) MinimockWait(timeout time.Duration) {
 //it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
 func (m *StringerMock) AllMocksCalled() bool {
 
-	if m.StringFunc != nil && m.StringCounter == 0 {
+	if m.StringFunc != nil && atomic.LoadUint64(&m.StringCounter) == 0 {
 		return false
 	}
 
