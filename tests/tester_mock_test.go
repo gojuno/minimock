@@ -1,10 +1,10 @@
-package tests
-
 /*
 DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.4
+This code was generated automatically using github.com/gojuno/minimock v1.5
 The original interface "Tester" can be found in github.com/gojuno/minimock
 */
+package tests
+
 import (
 	"sync/atomic"
 	"time"
@@ -138,15 +138,15 @@ func (m *TesterMock) Fatalf(p string, p1 ...interface{}) {
 //Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 func (m *TesterMock) ValidateCallCounters() {
 
-	if m.ErrorFunc != nil && m.ErrorCounter == 0 {
+	if m.ErrorFunc != nil && atomic.LoadUint64(&m.ErrorCounter) == 0 {
 		m.t.Fatal("Expected call to TesterMock.Error")
 	}
 
-	if m.FatalFunc != nil && m.FatalCounter == 0 {
+	if m.FatalFunc != nil && atomic.LoadUint64(&m.FatalCounter) == 0 {
 		m.t.Fatal("Expected call to TesterMock.Fatal")
 	}
 
-	if m.FatalfFunc != nil && m.FatalfCounter == 0 {
+	if m.FatalfFunc != nil && atomic.LoadUint64(&m.FatalfCounter) == 0 {
 		m.t.Fatal("Expected call to TesterMock.Fatalf")
 	}
 
@@ -167,15 +167,15 @@ func (m *TesterMock) Finish() {
 //MinimockFinish checks that all mocked methods of the iterface have been called at least once
 func (m *TesterMock) MinimockFinish() {
 
-	if m.ErrorFunc != nil && m.ErrorCounter == 0 {
+	if m.ErrorFunc != nil && atomic.LoadUint64(&m.ErrorCounter) == 0 {
 		m.t.Fatal("Expected call to TesterMock.Error")
 	}
 
-	if m.FatalFunc != nil && m.FatalCounter == 0 {
+	if m.FatalFunc != nil && atomic.LoadUint64(&m.FatalCounter) == 0 {
 		m.t.Fatal("Expected call to TesterMock.Fatal")
 	}
 
-	if m.FatalfFunc != nil && m.FatalfCounter == 0 {
+	if m.FatalfFunc != nil && atomic.LoadUint64(&m.FatalfCounter) == 0 {
 		m.t.Fatal("Expected call to TesterMock.Fatalf")
 	}
 
@@ -193,9 +193,9 @@ func (m *TesterMock) MinimockWait(timeout time.Duration) {
 	timeoutCh := time.After(timeout)
 	for {
 		ok := true
-		ok = ok && (m.ErrorFunc == nil || m.ErrorCounter > 0)
-		ok = ok && (m.FatalFunc == nil || m.FatalCounter > 0)
-		ok = ok && (m.FatalfFunc == nil || m.FatalfCounter > 0)
+		ok = ok && (m.ErrorFunc == nil || atomic.LoadUint64(&m.ErrorCounter) > 0)
+		ok = ok && (m.FatalFunc == nil || atomic.LoadUint64(&m.FatalCounter) > 0)
+		ok = ok && (m.FatalfFunc == nil || atomic.LoadUint64(&m.FatalfCounter) > 0)
 
 		if ok {
 			return
@@ -204,15 +204,15 @@ func (m *TesterMock) MinimockWait(timeout time.Duration) {
 		select {
 		case <-timeoutCh:
 
-			if m.ErrorFunc != nil && m.ErrorCounter == 0 {
+			if m.ErrorFunc != nil && atomic.LoadUint64(&m.ErrorCounter) == 0 {
 				m.t.Error("Expected call to TesterMock.Error")
 			}
 
-			if m.FatalFunc != nil && m.FatalCounter == 0 {
+			if m.FatalFunc != nil && atomic.LoadUint64(&m.FatalCounter) == 0 {
 				m.t.Error("Expected call to TesterMock.Fatal")
 			}
 
-			if m.FatalfFunc != nil && m.FatalfCounter == 0 {
+			if m.FatalfFunc != nil && atomic.LoadUint64(&m.FatalfCounter) == 0 {
 				m.t.Error("Expected call to TesterMock.Fatalf")
 			}
 
@@ -228,15 +228,15 @@ func (m *TesterMock) MinimockWait(timeout time.Duration) {
 //it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
 func (m *TesterMock) AllMocksCalled() bool {
 
-	if m.ErrorFunc != nil && m.ErrorCounter == 0 {
+	if m.ErrorFunc != nil && atomic.LoadUint64(&m.ErrorCounter) == 0 {
 		return false
 	}
 
-	if m.FatalFunc != nil && m.FatalCounter == 0 {
+	if m.FatalFunc != nil && atomic.LoadUint64(&m.FatalCounter) == 0 {
 		return false
 	}
 
-	if m.FatalfFunc != nil && m.FatalfCounter == 0 {
+	if m.FatalfFunc != nil && atomic.LoadUint64(&m.FatalfCounter) == 0 {
 		return false
 	}
 

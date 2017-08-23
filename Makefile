@@ -7,4 +7,4 @@ generate:
 	go run ./cmd/minimock/minimock.go -f ${PKG}/tests -i Stringer -o ./tests/stringer_mock.go -p tests
 
 test: generate
-	go test ${PKG}/tests
+	go test -race ${PKG}/tests
