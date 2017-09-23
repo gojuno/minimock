@@ -214,6 +214,11 @@ const template = `
 			{{if gt (len (results $method)) 0 }}
 			return {{ end }} m.{{$methodName}}Func({{(params $method).Pass}})
 		}
+
+		//Get{{$methodName}}Counter returns a count of {{$interfaceName}}.{{$methodName}} invocations
+		func (m *{{$structName}}) Get{{$methodName}}Counter() uint64 {
+			return atomic.LoadUint64(&m.{{$methodName}}Counter)
+		}
 	{{ end }}
 
 	//ValidateCallCounters checks that all mocked methods of the iterface have been called at least once
