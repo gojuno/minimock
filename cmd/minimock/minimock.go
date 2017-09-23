@@ -83,7 +83,7 @@ func main() {
 	gen.SetVar("interfaceName", opts.InterfaceName)
 	gen.SetVar("packagePath", packagePath)
 	gen.SetHeader(fmt.Sprintf(`DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.5
+This code was generated automatically using github.com/gojuno/minimock v1.6
 The original interface %q can be found in %s`, opts.InterfaceName, packagePath))
 	gen.SetDefaultParamsPrefix("p")
 	gen.SetDefaultResultsPrefix("r")
