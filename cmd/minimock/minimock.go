@@ -22,6 +22,8 @@ type (
 		StructName      string
 		Package         string
 		ImportWithTests bool
+		All             bool
+		AllSuffix       string
 	}
 
 	visitor struct {
@@ -29,21 +31,34 @@ type (
 		methods         map[string]*types.Signature
 		sourceInterface string
 	}
+
+	allFinder struct {
+		pkg             *loader.PackageInfo
+		foundInterfaces []string
+	}
 )
 
 func main() {
 	opts := processFlags()
-	packagePath := opts.InputFile
+	sourcePackagePath := opts.InputFile
 
-	if _, err := os.Stat(packagePath); err == nil {
-		if packagePath, err = generator.PackageOf(packagePath); err != nil {
-			die(err)
+	_, err := os.Stat(sourcePackagePath)
+	if err == nil {
+		if sourcePackagePath, err = generator.PackageOf(sourcePackagePath); err != nil {
+			die("failed to detect import path of the %s: %v", sourcePackagePath, err)
 		}
 	}
 
-	destPackagePath, err := generator.PackageOf(filepath.Dir(opts.OutputFile))
-	if err != nil {
-		die(err)
+	var destPackagePath string
+	if opts.All {
+		if opts.OutputFile == "" {
+			destPackagePath = sourcePackagePath
+		}
+	} else {
+		outPackage := filepath.Dir(opts.OutputFile)
+		if destPackagePath, err = generator.PackageOf(outPackage); err != nil {
+			die("failed to detect import path of the %s: %v", outPackage, err)
+		}
 	}
 
 	cfg := loader.Config{
@@ -58,22 +73,74 @@ func main() {
 	}
 
 	if opts.ImportWithTests {
-		cfg.ImportWithTests(packagePath)
+		cfg.ImportWithTests(sourcePackagePath)
 	} else {
-		cfg.Import(packagePath)
+		cfg.Import(sourcePackagePath)
 	}
 
-	if err := os.Remove(opts.OutputFile); err != nil && !os.IsNotExist(err) {
-		die(err)
-	}
-
-	if destPackagePath != packagePath {
+	if destPackagePath != sourcePackagePath {
 		cfg.Import(destPackagePath)
 	}
 
 	prog, err := cfg.Load()
 	if err != nil {
-		die(err)
+		die("failed to load source code: %v", err)
+	}
+
+	pkg := prog.Package(sourcePackagePath)
+	if opts.Package == "" {
+		opts.Package = pkg.Pkg.Name()
+	}
+
+	if opts.All {
+		finder := &allFinder{pkg: pkg}
+		for _, file := range pkg.Files {
+			ast.Walk(finder, file)
+		}
+
+		if len(finder.foundInterfaces) == 0 {
+			die("no interfaces found in %s", sourcePackagePath)
+		}
+
+		destPath, err := generator.PackageAbsPath(destPackagePath)
+		if err != nil {
+			die("failed to get absolute path for the %s", destPackagePath)
+		}
+
+		currentDir, err := os.Getwd()
+		if err != nil {
+			die("failed to get current directory: %v", err)
+		}
+
+		for _, interfaceName := range finder.foundInterfaces {
+			outputFileName := interfaceName + opts.AllSuffix
+			o := options{
+				Package:       opts.Package,
+				InterfaceName: interfaceName,
+				StructName:    interfaceName + "Mock",
+				OutputFile:    filepath.Join(destPath, outputFileName),
+			}
+			if err := generate(sourcePackagePath, destPackagePath, o, prog); err != nil {
+				die("failed to generate %s: %v", o.OutputFile, err)
+			}
+
+			printName, err := filepath.Rel(currentDir, o.OutputFile)
+			if err != nil && !strings.HasPrefix(o.OutputFile, currentDir) {
+				printName = o.OutputFile
+			}
+
+			fmt.Printf("Generated file: %s\n", printName)
+		}
+	} else {
+		if err := generate(sourcePackagePath, destPackagePath, *opts, prog); err != nil {
+			die("failed to generate %s: %v", opts.OutputFile, err)
+		}
+	}
+}
+
+func generate(sourcePackagePath, destPackagePath string, opts options, prog *loader.Program) error {
+	if err := os.Remove(opts.OutputFile); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove output file: %v", err)
 	}
 
 	gen := generator.New(prog)
@@ -81,39 +148,44 @@ func main() {
 	gen.SetPackageName(opts.Package)
 	gen.SetVar("structName", opts.StructName)
 	gen.SetVar("interfaceName", opts.InterfaceName)
-	gen.SetVar("packagePath", packagePath)
+	gen.SetVar("packagePath", sourcePackagePath)
 	gen.SetHeader(fmt.Sprintf(`DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.6
-The original interface %q can be found in %s`, opts.InterfaceName, packagePath))
+This code was generated automatically using github.com/gojuno/minimock v1.7
+The original interface %q can be found in %s`, opts.InterfaceName, sourcePackagePath))
 	gen.SetDefaultParamsPrefix("p")
 	gen.SetDefaultResultsPrefix("r")
 
 	v := &visitor{
 		gen:             gen,
-		methods:         map[string]*types.Signature{},
 		sourceInterface: opts.InterfaceName,
 	}
 
-	pkg := prog.Package(packagePath)
+	pkg := prog.Package(sourcePackagePath)
 	if pkg == nil {
-		die(fmt.Errorf("unable to load package: %s", packagePath))
+		return fmt.Errorf("unable to load package: %s", sourcePackagePath)
 	}
 
 	for _, file := range pkg.Files {
 		ast.Walk(v, file)
 	}
 
+	if v.methods == nil {
+		return fmt.Errorf("interface %s was not found in %s", opts.InterfaceName, sourcePackagePath)
+	}
+
 	if len(v.methods) == 0 {
-		die(fmt.Errorf("interface %s was not found in %s or it's an empty interface", opts.InterfaceName, packagePath))
+		return fmt.Errorf("empty interface: %s", opts.InterfaceName)
 	}
 
 	if err := gen.ProcessTemplate("interface", template, v.methods); err != nil {
-		die(err)
+		return err
 	}
 
 	if err := gen.WriteToFilename(opts.OutputFile); err != nil {
-		die(err)
+		return err
 	}
+
+	return nil
 }
 
 func (v *visitor) Visit(node ast.Node) ast.Visitor {
@@ -123,7 +195,7 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	case *ast.TypeSpec:
 		exprType, err := v.gen.ExpressionType(ts.Type)
 		if err != nil {
-			die(fmt.Errorf("failed to get expression for %T %s: %v", ts.Type, ts.Name.Name, err))
+			die("failed to get expression for %T %s: %v", ts.Type, ts.Name.Name, err)
 		}
 
 		var i *types.Interface
@@ -150,9 +222,46 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 }
 
 func (v *visitor) processInterface(t *types.Interface) {
+	v.methods = make(map[string]*types.Signature)
+
 	for i := 0; i < t.NumMethods(); i++ {
 		v.methods[t.Method(i).Name()] = t.Method(i).Type().(*types.Signature)
 	}
+}
+
+func (af *allFinder) Visit(node ast.Node) ast.Visitor {
+	switch ts := node.(type) {
+	case *ast.FuncDecl:
+		return nil
+	case *ast.TypeSpec:
+		exprType := af.pkg.TypeOf(ts.Type)
+		if exprType == nil {
+			die("failed to get expression type for %T %s", ts.Type, ts.Name.Name)
+		}
+
+		var i *types.Interface
+
+		switch t := exprType.(type) {
+		case *types.Named:
+			underlying, ok := t.Underlying().(*types.Interface)
+			if !ok {
+				return nil
+			}
+			i = underlying
+		case *types.Interface:
+			i = t
+		default:
+			return nil
+		}
+
+		if !i.Empty() {
+			af.foundInterfaces = append(af.foundInterfaces, ts.Name.Name)
+		}
+
+		return nil
+	}
+
+	return af
 }
 
 const template = `
@@ -300,17 +409,25 @@ const template = `
 
 func processFlags() *options {
 	var (
+		all       = flag.Bool("a", false, "generate mocks for all interfaces found in the file/package")
+		allSuffix = flag.String("allSuffix", "_mock_test.go", "output file name suffix, ignored when -a flag is not set")
 		input     = flag.String("f", "", "input file or import path of the package that contains interface declaration")
-		name      = flag.String("i", "", "name of the interface to mock")
-		output    = flag.String("o", "", "destination file name to place the generated mock")
-		pkg       = flag.String("p", "", "destination package name")
-		sname     = flag.String("t", "", "mock struct name, default is: <interface name>Mock")
+		name      = flag.String("i", "", "name of the interface to mock (ignored when -a flag is set)")
+		output    = flag.String("o", "", "destination file name to place the generated mock or path to destination package when -a flag is set (source package is used by default)")
+		pkg       = flag.String("p", "", "destination package name (source package name is used by default)")
+		sname     = flag.String("t", "", "mock struct name (default <interface name>Mock)")
 		withTests = flag.Bool("withTests", false, "parse *_test.go files in the source package")
 	)
 
 	flag.Parse()
 
-	if *pkg == "" || *input == "" || *output == "" || *name == "" || !strings.HasSuffix(*output, ".go") {
+	if *input == "" {
+		fmt.Printf("missing required parameter -f")
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	if !*all && (*name == "" || *output == "" || !strings.HasSuffix(*output, ".go")) {
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -326,10 +443,12 @@ func processFlags() *options {
 		Package:         *pkg,
 		StructName:      *sname,
 		ImportWithTests: *withTests,
+		All:             *all,
+		AllSuffix:       *allSuffix,
 	}
 }
 
-func die(err error) {
-	fmt.Fprintf(os.Stderr, "%v\n", err)
+func die(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, format+"\n", args...)
 	os.Exit(1)
 }

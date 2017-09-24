@@ -1,10 +1,10 @@
-/*
-DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.5
-The original interface "Tester" can be found in github.com/gojuno/minimock
-*/
 package tests
 
+/*
+DO NOT EDIT!
+This code was generated automatically using github.com/gojuno/minimock v1.7
+The original interface "Tester" can be found in github.com/gojuno/minimock
+*/
 import (
 	"sync/atomic"
 	"time"
@@ -74,6 +74,11 @@ func (m *TesterMock) Error(p ...interface{}) {
 	m.ErrorFunc(p...)
 }
 
+//GetErrorCounter returns a count of Tester.Error invocations
+func (m *TesterMock) GetErrorCounter() uint64 {
+	return atomic.LoadUint64(&m.ErrorCounter)
+}
+
 type mTesterMockFatal struct {
 	mock *TesterMock
 }
@@ -104,6 +109,11 @@ func (m *TesterMock) Fatal(p ...interface{}) {
 	m.FatalFunc(p...)
 }
 
+//GetFatalCounter returns a count of Tester.Fatal invocations
+func (m *TesterMock) GetFatalCounter() uint64 {
+	return atomic.LoadUint64(&m.FatalCounter)
+}
+
 type mTesterMockFatalf struct {
 	mock *TesterMock
 }
@@ -132,6 +142,11 @@ func (m *TesterMock) Fatalf(p string, p1 ...interface{}) {
 	}
 
 	m.FatalfFunc(p, p1...)
+}
+
+//GetFatalfCounter returns a count of Tester.Fatalf invocations
+func (m *TesterMock) GetFatalfCounter() uint64 {
+	return atomic.LoadUint64(&m.FatalfCounter)
 }
 
 //ValidateCallCounters checks that all mocked methods of the iterface have been called at least once

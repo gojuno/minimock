@@ -1,10 +1,10 @@
-/*
-DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.5
-The original interface "Stringer" can be found in github.com/gojuno/minimock/tests
-*/
 package tests
 
+/*
+DO NOT EDIT!
+This code was generated automatically using github.com/gojuno/minimock v1.7
+The original interface "Stringer" can be found in github.com/gojuno/minimock/tests
+*/
 import (
 	"sync/atomic"
 	"time"
@@ -62,6 +62,11 @@ func (m *StringerMock) String() (r string) {
 	}
 
 	return m.StringFunc()
+}
+
+//GetStringCounter returns a count of Stringer.String invocations
+func (m *StringerMock) GetStringCounter() uint64 {
+	return atomic.LoadUint64(&m.StringCounter)
 }
 
 //ValidateCallCounters checks that all mocked methods of the iterface have been called at least once
