@@ -4,6 +4,7 @@ go:
   - tip
 
 install:
+  - go get github.com/golang/lint
   - go get golang.org/x/tools/go/loader
   - go get github.com/gojuno/generator
   - go get github.com/stretchr/testify/assert
