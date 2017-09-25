@@ -74,8 +74,8 @@ func (m *TesterMock) Error(p ...interface{}) {
 	m.ErrorFunc(p...)
 }
 
-//GetErrorCounter returns a count of Tester.Error invocations
-func (m *TesterMock) GetErrorCounter() uint64 {
+//ErrorMinimockCounter returns a count of Tester.Error invocations
+func (m *TesterMock) ErrorMinimockCounter() uint64 {
 	return atomic.LoadUint64(&m.ErrorCounter)
 }
 
@@ -109,8 +109,8 @@ func (m *TesterMock) Fatal(p ...interface{}) {
 	m.FatalFunc(p...)
 }
 
-//GetFatalCounter returns a count of Tester.Fatal invocations
-func (m *TesterMock) GetFatalCounter() uint64 {
+//FatalMinimockCounter returns a count of Tester.Fatal invocations
+func (m *TesterMock) FatalMinimockCounter() uint64 {
 	return atomic.LoadUint64(&m.FatalCounter)
 }
 
@@ -144,12 +144,12 @@ func (m *TesterMock) Fatalf(p string, p1 ...interface{}) {
 	m.FatalfFunc(p, p1...)
 }
 
-//GetFatalfCounter returns a count of Tester.Fatalf invocations
-func (m *TesterMock) GetFatalfCounter() uint64 {
+//FatalfMinimockCounter returns a count of Tester.Fatalf invocations
+func (m *TesterMock) FatalfMinimockCounter() uint64 {
 	return atomic.LoadUint64(&m.FatalfCounter)
 }
 
-//ValidateCallCounters checks that all mocked methods of the iterface have been called at least once
+//ValidateCallCounters checks that all mocked methods of the interface have been called at least once
 //Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 func (m *TesterMock) ValidateCallCounters() {
 
@@ -167,19 +167,19 @@ func (m *TesterMock) ValidateCallCounters() {
 
 }
 
-//CheckMocksCalled checks that all mocked methods of the iterface have been called at least once
+//CheckMocksCalled checks that all mocked methods of the interface have been called at least once
 //Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 func (m *TesterMock) CheckMocksCalled() {
 	m.Finish()
 }
 
-//Finish checks that all mocked methods of the iterface have been called at least once
+//Finish checks that all mocked methods of the interface have been called at least once
 //Deprecated: please use MinimockFinish or use Finish method of minimock.Controller
 func (m *TesterMock) Finish() {
 	m.MinimockFinish()
 }
 
-//MinimockFinish checks that all mocked methods of the iterface have been called at least once
+//MinimockFinish checks that all mocked methods of the interface have been called at least once
 func (m *TesterMock) MinimockFinish() {
 
 	if m.ErrorFunc != nil && atomic.LoadUint64(&m.ErrorCounter) == 0 {

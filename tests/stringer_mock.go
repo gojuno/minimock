@@ -64,12 +64,12 @@ func (m *StringerMock) String() (r string) {
 	return m.StringFunc()
 }
 
-//GetStringCounter returns a count of Stringer.String invocations
-func (m *StringerMock) GetStringCounter() uint64 {
+//StringMinimockCounter returns a count of Stringer.String invocations
+func (m *StringerMock) StringMinimockCounter() uint64 {
 	return atomic.LoadUint64(&m.StringCounter)
 }
 
-//ValidateCallCounters checks that all mocked methods of the iterface have been called at least once
+//ValidateCallCounters checks that all mocked methods of the interface have been called at least once
 //Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 func (m *StringerMock) ValidateCallCounters() {
 
@@ -79,19 +79,19 @@ func (m *StringerMock) ValidateCallCounters() {
 
 }
 
-//CheckMocksCalled checks that all mocked methods of the iterface have been called at least once
+//CheckMocksCalled checks that all mocked methods of the interface have been called at least once
 //Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 func (m *StringerMock) CheckMocksCalled() {
 	m.Finish()
 }
 
-//Finish checks that all mocked methods of the iterface have been called at least once
+//Finish checks that all mocked methods of the interface have been called at least once
 //Deprecated: please use MinimockFinish or use Finish method of minimock.Controller
 func (m *StringerMock) Finish() {
 	m.MinimockFinish()
 }
 
-//MinimockFinish checks that all mocked methods of the iterface have been called at least once
+//MinimockFinish checks that all mocked methods of the interface have been called at least once
 func (m *StringerMock) MinimockFinish() {
 
 	if m.StringFunc != nil && atomic.LoadUint64(&m.StringCounter) == 0 {

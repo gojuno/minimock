@@ -324,13 +324,13 @@ const template = `
 			return {{ end }} m.{{$methodName}}Func({{(params $method).Pass}})
 		}
 
-		//Get{{$methodName}}Counter returns a count of {{$interfaceName}}.{{$methodName}} invocations
-		func (m *{{$structName}}) Get{{$methodName}}Counter() uint64 {
+		//{{$methodName}}MinimockCounter returns a count of {{$interfaceName}}.{{$methodName}} invocations
+		func (m *{{$structName}}) {{$methodName}}MinimockCounter() uint64 {
 			return atomic.LoadUint64(&m.{{$methodName}}Counter)
 		}
 	{{ end }}
 
-	//ValidateCallCounters checks that all mocked methods of the iterface have been called at least once
+	//ValidateCallCounters checks that all mocked methods of the interface have been called at least once
 	//Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 	func (m *{{$structName}}) ValidateCallCounters() {
 		{{ range $methodName, $method := . }}
@@ -340,19 +340,19 @@ const template = `
 		{{ end }}
 	}
 
-	//CheckMocksCalled checks that all mocked methods of the iterface have been called at least once
+	//CheckMocksCalled checks that all mocked methods of the interface have been called at least once
 	//Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 	func (m *{{$structName}}) CheckMocksCalled() {
 		m.Finish()
 	}
 
-	//Finish checks that all mocked methods of the iterface have been called at least once
+	//Finish checks that all mocked methods of the interface have been called at least once
 	//Deprecated: please use MinimockFinish or use Finish method of minimock.Controller
 	func (m *{{$structName}}) Finish() {
 		m.MinimockFinish()
 	}
 
-	//MinimockFinish checks that all mocked methods of the iterface have been called at least once
+	//MinimockFinish checks that all mocked methods of the interface have been called at least once
 	func (m *{{$structName}}) MinimockFinish() {
 		{{ range $methodName, $method := . }}
 			if m.{{$methodName}}Func != nil && atomic.LoadUint64(&m.{{$methodName}}Counter) == 0 {
