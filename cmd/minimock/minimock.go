@@ -400,16 +400,11 @@ func processFlags() *programOptions {
 	}
 
 	if *input != "" && *interfaces != "" {
-		importPath, err := generator.PackageOf(filepath.Dir(*input))
-		if err != nil {
-			die("failed to find an import path for %s: %v", *input, err)
-		}
-
 		if *sname == "" {
 			*sname = *interfaces + "Mock"
 		}
 
-		*interfaces = importPath + "." + *interfaces
+		*interfaces = getImportPath(*input) + "." + *interfaces
 	}
 
 	if *interfaces == "" {
