@@ -5,8 +5,7 @@ generate:
 	go run ./cmd/minimock/minimock.go -i tests.Stringer -o ./tests -s _mock.go
 
 lint:
-	golint ./...
-	go vet ./...
+	golint ./... && go vet ./...
 
 test: generate
 	go test -race ./tests
