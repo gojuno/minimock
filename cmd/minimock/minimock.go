@@ -15,15 +15,26 @@ import (
 )
 
 type (
-	options struct {
-		InputFile       string
+	programOptions struct {
+		Interfaces      []interfaceInfo
+		Suffix          string
 		OutputFile      string
-		InterfaceName   string
 		StructName      string
-		Package         string
 		ImportWithTests bool
-		All             bool
-		AllSuffix       string
+	}
+
+	generateOptions struct {
+		InterfaceName      string
+		PackageName        string
+		OutputFileName     string
+		StructName         string
+		SourcePackage      string
+		DestinationPackage string
+	}
+
+	interfaceInfo struct {
+		Package string
+		Name    string
 	}
 
 	visitor struct {
@@ -31,35 +42,10 @@ type (
 		methods         map[string]*types.Signature
 		sourceInterface string
 	}
-
-	allFinder struct {
-		pkg             *loader.PackageInfo
-		foundInterfaces []string
-	}
 )
 
 func main() {
 	opts := processFlags()
-	sourcePackagePath := opts.InputFile
-
-	_, err := os.Stat(sourcePackagePath)
-	if err == nil {
-		if sourcePackagePath, err = generator.PackageOf(sourcePackagePath); err != nil {
-			die("failed to detect import path of the %s: %v", sourcePackagePath, err)
-		}
-	}
-
-	var destPackagePath string
-	if opts.All {
-		if opts.OutputFile == "" {
-			destPackagePath = sourcePackagePath
-		}
-	} else {
-		outPackage := filepath.Dir(opts.OutputFile)
-		if destPackagePath, err = generator.PackageOf(outPackage); err != nil {
-			die("failed to detect import path of the %s: %v", outPackage, err)
-		}
-	}
 
 	cfg := loader.Config{
 		AllowErrors:         true,
@@ -72,14 +58,42 @@ func main() {
 		},
 	}
 
-	if opts.ImportWithTests {
-		cfg.ImportWithTests(sourcePackagePath)
-	} else {
-		cfg.Import(sourcePackagePath)
+	for _, i := range opts.Interfaces {
+		if opts.ImportWithTests {
+			cfg.ImportWithTests(i.Package)
+		} else {
+			cfg.Import(i.Package)
+		}
 	}
 
-	if destPackagePath != sourcePackagePath {
-		cfg.Import(destPackagePath)
+	var outPackageRealPath string
+
+	stat, err := os.Stat(opts.OutputFile)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			die("failed to get file info for %s: %v", opts.OutputFile, err)
+		}
+
+		if outPackageRealPath, err = generator.PackageAbsPath(opts.OutputFile); err != nil {
+			die("failed to get real path for the %s: %v", opts.OutputFile, err)
+		}
+	} else {
+		if stat.IsDir() {
+			outPackageRealPath = opts.OutputFile
+		} else {
+			outPackageRealPath = filepath.Dir(opts.OutputFile)
+		}
+	}
+
+	destImportPath, err := generator.PackageOf(outPackageRealPath)
+	if err != nil {
+		die("failed to detect import path of the %s: %v", outPackageRealPath, err)
+	}
+
+	if opts.ImportWithTests {
+		cfg.ImportWithTests(destImportPath)
+	} else {
+		cfg.Import(destImportPath)
 	}
 
 	prog, err := cfg.Load()
@@ -87,71 +101,53 @@ func main() {
 		die("failed to load source code: %v", err)
 	}
 
-	pkg := prog.Package(sourcePackagePath)
-	if opts.Package == "" {
-		opts.Package = pkg.Pkg.Name()
-	}
-
-	if opts.All {
-		finder := &allFinder{pkg: pkg}
-		for _, file := range pkg.Files {
-			ast.Walk(finder, file)
+	if len(opts.Interfaces) == 1 && strings.HasSuffix(opts.OutputFile, ".go") { //legacy mode
+		genOpts := generateOptions{
+			SourcePackage:      opts.Interfaces[0].Package,
+			DestinationPackage: destImportPath,
+			InterfaceName:      opts.Interfaces[0].Name,
+			StructName:         opts.StructName,
+			OutputFileName:     opts.OutputFile,
+			PackageName:        prog.Package(destImportPath).Pkg.Name(),
 		}
 
-		if len(finder.foundInterfaces) == 0 {
-			die("no interfaces found in %s", sourcePackagePath)
-		}
-
-		destPath, err := generator.PackageAbsPath(destPackagePath)
-		if err != nil {
-			die("failed to get absolute path for the %s", destPackagePath)
-		}
-
-		currentDir, err := os.Getwd()
-		if err != nil {
-			die("failed to get current directory: %v", err)
-		}
-
-		for _, interfaceName := range finder.foundInterfaces {
-			outputFileName := interfaceName + opts.AllSuffix
-			o := options{
-				Package:       opts.Package,
-				InterfaceName: interfaceName,
-				StructName:    interfaceName + "Mock",
-				OutputFile:    filepath.Join(destPath, outputFileName),
-			}
-			if err := generate(sourcePackagePath, destPackagePath, o, prog); err != nil {
-				die("failed to generate %s: %v", o.OutputFile, err)
-			}
-
-			printName, err := filepath.Rel(currentDir, o.OutputFile)
-			if err != nil && !strings.HasPrefix(o.OutputFile, currentDir) {
-				printName = o.OutputFile
-			}
-
-			fmt.Printf("Generated file: %s\n", printName)
+		if err := generate(prog, genOpts); err != nil {
+			die("failed to generate %s: %v", opts.OutputFile, err)
 		}
 	} else {
-		if err := generate(sourcePackagePath, destPackagePath, *opts, prog); err != nil {
-			die("failed to generate %s: %v", opts.OutputFile, err)
+		for _, i := range opts.Interfaces {
+			genOpts := generateOptions{
+				PackageName:        prog.Package(destImportPath).Pkg.Name(),
+				InterfaceName:      i.Name,
+				StructName:         i.Name + "Mock",
+				SourcePackage:      i.Package,
+				DestinationPackage: destImportPath,
+				OutputFileName:     filepath.Join(outPackageRealPath, i.Name+opts.Suffix),
+			}
+
+			if err := generate(prog, genOpts); err != nil {
+				die("failed to generate %s: %v", genOpts.OutputFileName, err)
+			}
+
+			fmt.Printf("Generated file: %s\n", genOpts.OutputFileName)
 		}
 	}
 }
 
-func generate(sourcePackagePath, destPackagePath string, opts options, prog *loader.Program) error {
-	if err := os.Remove(opts.OutputFile); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove output file: %v", err)
+func generate(prog *loader.Program, opts generateOptions) error {
+	if err := os.Remove(opts.OutputFileName); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove output file %s: %v", opts.OutputFileName, err)
 	}
 
 	gen := generator.New(prog)
-	gen.ImportWithAlias(destPackagePath, "")
-	gen.SetPackageName(opts.Package)
+	gen.ImportWithAlias(opts.DestinationPackage, "")
+	gen.SetPackageName(opts.PackageName)
 	gen.SetVar("structName", opts.StructName)
 	gen.SetVar("interfaceName", opts.InterfaceName)
-	gen.SetVar("packagePath", sourcePackagePath)
+	gen.SetVar("packagePath", opts.SourcePackage)
 	gen.SetHeader(fmt.Sprintf(`DO NOT EDIT!
 This code was generated automatically using github.com/gojuno/minimock v1.7
-The original interface %q can be found in %s`, opts.InterfaceName, sourcePackagePath))
+The original interface %q can be found in %s`, opts.InterfaceName, opts.SourcePackage))
 	gen.SetDefaultParamsPrefix("p")
 	gen.SetDefaultResultsPrefix("r")
 
@@ -160,9 +156,9 @@ The original interface %q can be found in %s`, opts.InterfaceName, sourcePackage
 		sourceInterface: opts.InterfaceName,
 	}
 
-	pkg := prog.Package(sourcePackagePath)
+	pkg := prog.Package(opts.SourcePackage)
 	if pkg == nil {
-		return fmt.Errorf("unable to load package: %s", sourcePackagePath)
+		return fmt.Errorf("unable to load package: %s", opts.SourcePackage)
 	}
 
 	for _, file := range pkg.Files {
@@ -170,7 +166,7 @@ The original interface %q can be found in %s`, opts.InterfaceName, sourcePackage
 	}
 
 	if v.methods == nil {
-		return fmt.Errorf("interface %s was not found in %s", opts.InterfaceName, sourcePackagePath)
+		return fmt.Errorf("interface %s was not found in %s", opts.InterfaceName, opts.SourcePackage)
 	}
 
 	if len(v.methods) == 0 {
@@ -181,7 +177,7 @@ The original interface %q can be found in %s`, opts.InterfaceName, sourcePackage
 		return err
 	}
 
-	if err := gen.WriteToFilename(opts.OutputFile); err != nil {
+	if err := gen.WriteToFilename(opts.OutputFileName); err != nil {
 		return err
 	}
 
@@ -227,41 +223,6 @@ func (v *visitor) processInterface(t *types.Interface) {
 	for i := 0; i < t.NumMethods(); i++ {
 		v.methods[t.Method(i).Name()] = t.Method(i).Type().(*types.Signature)
 	}
-}
-
-func (af *allFinder) Visit(node ast.Node) ast.Visitor {
-	switch ts := node.(type) {
-	case *ast.FuncDecl:
-		return nil
-	case *ast.TypeSpec:
-		exprType := af.pkg.TypeOf(ts.Type)
-		if exprType == nil {
-			die("failed to get expression type for %T %s", ts.Type, ts.Name.Name)
-		}
-
-		var i *types.Interface
-
-		switch t := exprType.(type) {
-		case *types.Named:
-			underlying, ok := t.Underlying().(*types.Interface)
-			if !ok {
-				return nil
-			}
-			i = underlying
-		case *types.Interface:
-			i = t
-		default:
-			return nil
-		}
-
-		if !i.Empty() {
-			af.foundInterfaces = append(af.foundInterfaces, ts.Name.Name)
-		}
-
-		return nil
-	}
-
-	return af
 }
 
 const template = `
@@ -407,45 +368,91 @@ const template = `
 		return true
 	}`
 
-func processFlags() *options {
+func processFlags() *programOptions {
 	var (
-		all       = flag.Bool("a", false, "generate mocks for all interfaces found in the file/package")
-		allSuffix = flag.String("allSuffix", "_mock_test.go", "output file name suffix, ignored when -a flag is not set")
-		input     = flag.String("f", "", "input file or import path of the package that contains interface declaration")
-		name      = flag.String("i", "", "name of the interface to mock (ignored when -a flag is set)")
-		output    = flag.String("o", "", "destination file name to place the generated mock or path to destination package when -a flag is set (source package is used by default)")
-		pkg       = flag.String("p", "", "destination package name (source package name is used by default)")
-		sname     = flag.String("t", "", "mock struct name (default <interface name>Mock)")
-		withTests = flag.Bool("withTests", false, "parse *_test.go files in the source package")
+		input       = flag.String("f", "", "DEPRECATED: input file or import path of the package that contains interface declaration")
+		help        = flag.Bool("h", false, "show this help message")
+		interfaces  = flag.String("i", "", "comma-separated names of the interfaces to mock, i.e fmt.Stringer,io.Reader")
+		output      = flag.String("o", "", "destination file name to place the generated mock or path to destination package when multiple interfaces are given")
+		packageName = flag.String("p", "", "DEPRECATED: destination package name")
+		suffix      = flag.String("s", "_mock_test.go", "output file name suffix which is added to file names when multiple interfaces are given")
+		sname       = flag.String("t", "", "DEPRECATED: mock struct name (default <interface name>Mock)")
+		withTests   = flag.Bool("withTests", false, "parse *_test.go files in the source package")
 	)
 
 	flag.Parse()
 
-	if *input == "" {
-		fmt.Printf("missing required parameter -f")
+	if *help {
 		flag.Usage()
-		os.Exit(1)
+		os.Exit(0)
 	}
 
-	if !*all && (*name == "" || *output == "" || !strings.HasSuffix(*output, ".go")) {
-		flag.Usage()
-		os.Exit(1)
+	if *input != "" {
+		fmt.Printf("DEPRECATED FLAG: -f\n")
 	}
 
-	if *sname == "" {
-		*sname = *name + "Mock"
+	if *packageName != "" {
+		fmt.Printf("DEPRECATED FLAG: -p\n")
 	}
 
-	return &options{
-		InputFile:       *input,
+	if *sname != "" {
+		fmt.Printf("DEPRECATED FLAG: -t\n")
+	}
+
+	if *input != "" && *interfaces != "" {
+		importPath, err := generator.PackageOf(filepath.Dir(*input))
+		if err != nil {
+			die("failed to find an import path for %s: %v", *input, err)
+		}
+
+		if *sname == "" {
+			*sname = *interfaces + "Mock"
+		}
+
+		*interfaces = importPath + "." + *interfaces
+	}
+
+	if *interfaces == "" {
+		die("missing required parameter: -i, use -h flag for help")
+	}
+
+	if *output == "" {
+		die("missing required parameter: -o, use -h flag for help")
+	}
+
+	interfacesList := []interfaceInfo{}
+	for _, i := range strings.Split(*interfaces, ",") {
+		chunks := strings.Split(i, ".")
+		if len(chunks) < 2 {
+			die("invalid interface name: %s\nname should be in the form <import path>.<interface type>, i.e. io.Reader\n", i)
+		}
+
+		importPath := getImportPath(strings.Join(chunks[0:len(chunks)-1], "."))
+
+		interfacesList = append(interfacesList, interfaceInfo{Package: importPath, Name: chunks[len(chunks)-1]})
+	}
+
+	return &programOptions{
+		Interfaces:      interfacesList,
 		OutputFile:      *output,
-		InterfaceName:   *name,
-		Package:         *pkg,
 		StructName:      *sname,
 		ImportWithTests: *withTests,
-		All:             *all,
-		AllSuffix:       *allSuffix,
+		Suffix:          *suffix,
 	}
+}
+
+func getImportPath(realPath string) string {
+	_, err := os.Stat(realPath)
+	if err == nil {
+		importPath, err := generator.PackageOf(realPath)
+		if err != nil {
+			die("failed to detect import path of the %s: %v", realPath, err)
+		}
+
+		return importPath
+	}
+
+	return realPath
 }
 
 func die(format string, args ...interface{}) {

@@ -1,10 +1,12 @@
-PKG=github.com/gojuno/minimock
-
-all: test
+all: test lint
 
 generate:
-	go run ./cmd/minimock/minimock.go -f ${PKG} -i Tester -o ./tests/tester_mock_test.go -p tests
-	go run ./cmd/minimock/minimock.go -f ${PKG}/tests -i Stringer -o ./tests/stringer_mock.go -p tests
+	go run ./cmd/minimock/minimock.go -i github.com/gojuno/minimock.Tester -o ./tests -s _mock_test.go
+	go run ./cmd/minimock/minimock.go -i tests.Stringer -o ./tests -s _mock.go
+
+lint:
+	golint ./...
+	go vet ./...
 
 test: generate
-	go test -race ${PKG}/tests
+	go test -race ./tests
