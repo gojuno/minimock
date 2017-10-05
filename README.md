@@ -29,11 +29,26 @@ type Stringer interface {
 
 Here is how to generate the mock for this interface:
 ```
-minimock.go -f github.com/gojuno/minimock/tests -i Stringer -o ./tests/stringer_mock_test.go -p tests
+minimock -i github.com/gojuno/minimock/tests.Stringer -o ./tests/
 ```
 
 The result file ./tests/stringer_mock_test.go will be:
 ```go
+
+package tests
+
+/*
+DO NOT EDIT!
+This code was generated automatically using github.com/gojuno/minimock v1.7
+The original interface "Stringer" can be found in github.com/gojuno/minimock/tests
+*/
+import (
+	"sync/atomic"
+	"time"
+
+	"github.com/gojuno/minimock"
+)
+
 //StringerMock implements github.com/gojuno/minimock/tests.Stringer
 type StringerMock struct {
   t minimock.Tester
@@ -214,17 +229,21 @@ func TestSomething(t *testing.T) {
 
 ## Minimock command line flags:
 ```
-$ minimock 
-Usage of minimock:
-  -f string
-    	input file or import path of the package that contains interface declaration
-  -i string
-    	name of the interface to mock
-  -o string
-    	destination file name to place the generated mock
-  -p string
-    	destination package name
-  -t string
-    	mock struct name, default is: <interface name>Mock
-  -withTests
+$ minimock -h
+  Usage of minimock:
+    -f string
+      	DEPRECATED: input file or import path of the package that contains interface declaration
+    -h	show this help message
+    -i string
+      	comma-separated names of the interfaces to mock, i.e fmt.Stringer,io.Reader
+    -o string
+      	destination file name to place the generated mock or path to destination package when multiple interfaces are given
+    -p string
+      	DEPRECATED: destination package name
+    -s string
+      	output file name suffix which is added to file names when multiple interfaces are given (default "_mock_test.go")
+    -t string
+      	DEPRECATED: mock struct name (default <interface name>Mock)
+    -withTests
+      	parse *_test.go files in the source package
 ```
