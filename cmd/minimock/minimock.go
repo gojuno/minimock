@@ -12,7 +12,6 @@ import (
 	"golang.org/x/tools/go/loader"
 
 	"github.com/gojuno/generator"
-	"github.com/serenize/snaker"
 )
 
 type (
@@ -123,7 +122,7 @@ func main() {
 				StructName:         i.Name + "Mock",
 				SourcePackage:      i.Package,
 				DestinationPackage: destImportPath,
-				OutputFileName:     filepath.Join(outPackageRealPath, snaker.CamelToSnake(i.Name)+opts.Suffix),
+				OutputFileName:     filepath.Join(outPackageRealPath, camelToSnake(i.Name)+opts.Suffix),
 			}
 
 			if err := generate(prog, genOpts); err != nil {
