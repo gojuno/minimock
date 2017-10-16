@@ -23,5 +23,5 @@ _testmain.go
 *.test
 *.prof
 
-/minimock
 /examples/sample_interface_mock.go
+/cmd/minimock/minimock

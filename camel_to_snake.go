@@ -1,4 +1,4 @@
-package main
+package minimock
 
 import (
 	"unicode"
@@ -25,7 +25,8 @@ func (b *buffer) indent() {
 	}
 }
 
-func camelToSnake(s string) string {
+// CamelToSnake transforms strings from CamelCase to snake_case
+func CamelToSnake(s string) string {
 	b := buffer{
 		r: make([]byte, 0, len(s)),
 	}
