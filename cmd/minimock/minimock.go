@@ -68,23 +68,14 @@ func main() {
 		}
 	}
 
-	var outPackageRealPath string
-
+	outPackageRealPath := filepath.Dir(opts.OutputFile)
 	stat, err := os.Stat(opts.OutputFile)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			die("failed to get file info for %s: %v", opts.OutputFile, err)
 		}
-
-		if outPackageRealPath, err = generator.PackageAbsPath(opts.OutputFile); err != nil {
-			die("failed to get real path for the %s: %v", opts.OutputFile, err)
-		}
-	} else {
-		if stat.IsDir() {
-			outPackageRealPath = opts.OutputFile
-		} else {
-			outPackageRealPath = filepath.Dir(opts.OutputFile)
-		}
+	} else if stat.IsDir() {
+		outPackageRealPath = opts.OutputFile
 	}
 
 	destImportPath, err := generator.PackageOf(outPackageRealPath)
@@ -395,15 +386,15 @@ func processFlags() *programOptions {
 	}
 
 	if *input != "" {
-		fmt.Printf("DEPRECATED FLAG: -f\n")
+		fmt.Printf("minimock: DEPRECATED FLAG: -f\n")
 	}
 
 	if *packageName != "" {
-		fmt.Printf("DEPRECATED FLAG: -p\n")
+		fmt.Printf("minimock: DEPRECATED FLAG: -p\n")
 	}
 
 	if *sname != "" {
-		fmt.Printf("DEPRECATED FLAG: -t\n")
+		fmt.Printf("minimock: DEPRECATED FLAG: -t\n")
 	}
 
 	if *input != "" && *interfaces != "" {
@@ -459,6 +450,6 @@ func getImportPath(realPath string) string {
 }
 
 func die(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, format+"\n", args...)
+	fmt.Fprintf(os.Stderr, "minimock: "+format+"\n", args...)
 	os.Exit(1)
 }
