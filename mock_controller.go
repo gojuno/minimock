@@ -2,7 +2,6 @@ package minimock
 
 import (
 	"sync"
-	"testing"
 	"time"
 )
 
@@ -31,15 +30,15 @@ type MockController interface {
 //defer mockController.Finish()
 //stringerMock := NewStringerMock(mockController)
 type Controller struct {
-	*testing.T
+	t Tester
 	sync.Mutex
 
 	mockers []Mocker
 }
 
 //NewController returns an instance of Controller
-func NewController(t *testing.T) *Controller {
-	return &Controller{T: t}
+func NewController(t Tester) *Controller {
+	return &Controller{t: t}
 }
 
 //RegisterMocker puts mocker to the list of controller mockers

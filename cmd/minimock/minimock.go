@@ -17,11 +17,12 @@ import (
 
 type (
 	programOptions struct {
-		Interfaces      []interfaceInfo
-		Suffix          string
-		OutputFile      string
-		StructName      string
-		ImportWithTests bool
+		Interfaces             []interfaceInfo
+		Suffix                 string
+		OutputFile             string
+		StructName             string
+		DestinationPackageName string
+		ImportWithTests        bool
 	}
 
 	generateOptions struct {
@@ -102,6 +103,11 @@ func main() {
 		die("failed to load source code: %v", err)
 	}
 
+	packageName := opts.DestinationPackageName
+	if packageName == "" {
+		packageName = prog.Package(destImportPath).Pkg.Name()
+	}
+
 	if len(opts.Interfaces) == 1 && strings.HasSuffix(opts.OutputFile, ".go") { //legacy mode
 		genOpts := generateOptions{
 			SourcePackage:      opts.Interfaces[0].Package,
@@ -109,7 +115,7 @@ func main() {
 			InterfaceName:      opts.Interfaces[0].Name,
 			StructName:         opts.StructName,
 			OutputFileName:     opts.OutputFile,
-			PackageName:        prog.Package(destImportPath).Pkg.Name(),
+			PackageName:        packageName,
 		}
 
 		if err := generate(prog, genOpts); err != nil {
@@ -118,12 +124,12 @@ func main() {
 	} else {
 		for _, i := range opts.Interfaces {
 			genOpts := generateOptions{
-				PackageName:        prog.Package(destImportPath).Pkg.Name(),
-				InterfaceName:      i.Name,
-				StructName:         i.Name + "Mock",
 				SourcePackage:      i.Package,
 				DestinationPackage: destImportPath,
+				InterfaceName:      i.Name,
+				StructName:         i.Name + "Mock",
 				OutputFileName:     filepath.Join(outPackageRealPath, minimock.CamelToSnake(i.Name)+opts.Suffix),
+				PackageName:        packageName,
 			}
 
 			if err := generate(prog, genOpts); err != nil {
@@ -429,11 +435,12 @@ func processFlags() *programOptions {
 	}
 
 	return &programOptions{
-		Interfaces:      interfacesList,
-		OutputFile:      *output,
-		StructName:      *sname,
-		ImportWithTests: *withTests,
-		Suffix:          *suffix,
+		Interfaces:             interfacesList,
+		OutputFile:             *output,
+		StructName:             *sname,
+		DestinationPackageName: *packageName,
+		ImportWithTests:        *withTests,
+		Suffix:                 *suffix,
 	}
 }
 
