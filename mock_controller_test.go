@@ -9,7 +9,7 @@ import (
 
 func TestNewController(t *testing.T) {
 	c := NewController(t)
-	assert.Equal(t, c, &Controller{T: t})
+	assert.Equal(t, t, c.Tester)
 }
 
 func TestController_RegisterMocker(t *testing.T) {

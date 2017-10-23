@@ -30,15 +30,15 @@ type MockController interface {
 //defer mockController.Finish()
 //stringerMock := NewStringerMock(mockController)
 type Controller struct {
-	t Tester
+	Tester
 	sync.Mutex
 
 	mockers []Mocker
 }
 
 //NewController returns an instance of Controller
-func NewController(t Tester) *Controller {
-	return &Controller{t: t}
+func NewController(t Tester) Controller {
+	return Controller{Tester: t}
 }
 
 //RegisterMocker puts mocker to the list of controller mockers
