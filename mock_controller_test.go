@@ -1,6 +1,7 @@
 package minimock
 
 import (
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -20,16 +21,16 @@ func TestController_RegisterMocker(t *testing.T) {
 
 type dummyMocker struct {
 	Mocker
-	finishCounter int
-	waitCounter   int
+	finishCounter int32
+	waitCounter   int32
 }
 
 func (dm *dummyMocker) MinimockFinish() {
-	dm.finishCounter++
+	atomic.AddInt32(&dm.finishCounter, 1)
 }
 
 func (dm *dummyMocker) MinimockWait(time.Duration) {
-	dm.waitCounter++
+	atomic.AddInt32(&dm.waitCounter, 1)
 }
 
 func TestController_Finish(t *testing.T) {
@@ -39,7 +40,7 @@ func TestController_Finish(t *testing.T) {
 	}
 
 	c.Finish()
-	assert.Equal(t, 2, dm.finishCounter)
+	assert.Equal(t, int32(2), atomic.LoadInt32(&dm.finishCounter))
 }
 
 func TestController_Wait(t *testing.T) {
@@ -49,5 +50,5 @@ func TestController_Wait(t *testing.T) {
 	}
 
 	c.Wait(0)
-	assert.Equal(t, 2, dm.waitCounter)
+	assert.Equal(t, int32(2), atomic.LoadInt32(&dm.waitCounter))
 }
