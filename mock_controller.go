@@ -36,9 +36,12 @@ type Controller struct {
 	mockers []Mocker
 }
 
+// Check if Controller supports MockController interface
+var _ MockController = &Controller{}
+
 //NewController returns an instance of Controller
-func NewController(t Tester) Controller {
-	return Controller{Tester: t}
+func NewController(t Tester) *Controller {
+	return &Controller{Tester: t}
 }
 
 //RegisterMocker puts mocker to the list of controller mockers
