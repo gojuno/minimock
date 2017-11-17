@@ -37,11 +37,12 @@ type (
 	interfaceInfo struct {
 		Package string
 		Name    string
+		Methods map[string]*types.Signature
 	}
 
 	visitor struct {
-		gen             *generator.Generator
-		methods         map[string]*types.Signature
+		*loader.Program
+		interfaces      map[string]interfaceInfo
 		sourceInterface string
 	}
 )
@@ -100,39 +101,75 @@ func main() {
 	}
 
 	if len(opts.Interfaces) == 1 && strings.HasSuffix(opts.OutputFile, ".go") { //legacy mode
+		interfaceName := opts.Interfaces[0].Name
+		sourcePackage := opts.Interfaces[0].Package
+		interfaces, err := findInterfaces(prog, interfaceName, sourcePackage)
+		if err != nil {
+			die("%v", err)
+		}
+
+		if len(interfaces) == 0 {
+			die("%s was not found in %s", interfaceName, sourcePackage)
+		}
+
 		genOpts := generateOptions{
-			SourcePackage:      opts.Interfaces[0].Package,
+			SourcePackage:      sourcePackage,
 			DestinationPackage: destImportPath,
-			InterfaceName:      opts.Interfaces[0].Name,
+			InterfaceName:      interfaceName,
 			StructName:         opts.StructName,
 			OutputFileName:     opts.OutputFile,
 			PackageName:        packageName,
 		}
-
-		if err := generate(prog, genOpts); err != nil {
+		if err := generate(prog, genOpts, interfaces[interfaceName].Methods); err != nil {
 			die("failed to generate %s: %v", opts.OutputFile, err)
 		}
 	} else {
 		for _, i := range opts.Interfaces {
-			genOpts := generateOptions{
-				SourcePackage:      i.Package,
-				DestinationPackage: destImportPath,
-				InterfaceName:      i.Name,
-				StructName:         i.Name + "Mock",
-				OutputFileName:     filepath.Join(outPackageRealPath, minimock.CamelToSnake(i.Name)+opts.Suffix),
-				PackageName:        packageName,
+			interfaces, err := findInterfaces(prog, i.Name, i.Package)
+			if err != nil {
+				die("%v", err)
 			}
 
-			if err := generate(prog, genOpts); err != nil {
-				die("failed to generate %s: %v", genOpts.OutputFileName, err)
-			}
+			for interfaceName, info := range interfaces {
+				genOpts := generateOptions{
+					SourcePackage:      i.Package,
+					DestinationPackage: destImportPath,
+					InterfaceName:      interfaceName,
+					StructName:         interfaceName + "Mock",
+					OutputFileName:     filepath.Join(outPackageRealPath, minimock.CamelToSnake(interfaceName)+opts.Suffix),
+					PackageName:        packageName,
+				}
 
-			fmt.Printf("Generated file: %s\n", genOpts.OutputFileName)
+				if err := generate(prog, genOpts, info.Methods); err != nil {
+					die("failed to generate %s: %v", genOpts.OutputFileName, err)
+				}
+
+				fmt.Printf("Generated file: %s\n", genOpts.OutputFileName)
+			}
 		}
 	}
 }
 
-func generate(prog *loader.Program, opts generateOptions) error {
+func findInterfaces(prog *loader.Program, sourceInterface, sourcePackage string) (map[string]interfaceInfo, error) {
+	v := &visitor{
+		Program:         prog,
+		sourceInterface: sourceInterface,
+		interfaces:      make(map[string]interfaceInfo),
+	}
+
+	pkg := prog.Package(sourcePackage)
+	if pkg == nil {
+		return nil, fmt.Errorf("unable to load package: %s", sourcePackage)
+	}
+
+	for _, file := range pkg.Files {
+		ast.Walk(v, file)
+	}
+
+	return v.interfaces, nil
+}
+
+func generate(prog *loader.Program, opts generateOptions, methods map[string]*types.Signature) error {
 	if err := os.Remove(opts.OutputFileName); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove output file %s: %v", opts.OutputFileName, err)
 	}
@@ -149,30 +186,16 @@ The original interface %q can be found in %s`, opts.InterfaceName, opts.SourcePa
 	gen.SetDefaultParamsPrefix("p")
 	gen.SetDefaultResultsPrefix("r")
 
-	v := &visitor{
-		gen:             gen,
-		sourceInterface: opts.InterfaceName,
-	}
-
-	pkg := prog.Package(opts.SourcePackage)
-	if pkg == nil {
-		return fmt.Errorf("unable to load package: %s", opts.SourcePackage)
-	}
-
-	for _, file := range pkg.Files {
-		ast.Walk(v, file)
-	}
-
-	if v.methods == nil {
-		return fmt.Errorf("interface %s was not found in %s", opts.InterfaceName, opts.SourcePackage)
-	}
-
-	if len(v.methods) == 0 {
+	if len(methods) == 0 {
 		return fmt.Errorf("empty interface: %s", opts.InterfaceName)
 	}
 
-	if err := gen.ProcessTemplate("interface", template, v.methods); err != nil {
+	if err := gen.ProcessTemplate("interface", template, methods); err != nil {
 		return err
+	}
+
+	if err := os.Remove(opts.OutputFileName); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove output file %s: %v", opts.OutputFileName, err)
 	}
 
 	if err := gen.WriteToFilename(opts.OutputFileName); err != nil {
@@ -187,7 +210,7 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	case *ast.FuncDecl:
 		return nil
 	case *ast.TypeSpec:
-		exprType, err := v.gen.ExpressionType(ts.Type)
+		exprType, err := v.expressionType(ts.Type)
 		if err != nil {
 			die("failed to get expression for %T %s: %v", ts.Type, ts.Name.Name, err)
 		}
@@ -203,10 +226,15 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 			i = underlying
 		case *types.Interface:
 			i = t
+		default:
+			return nil
 		}
 
-		if ts.Name.Name == v.sourceInterface {
-			v.processInterface(i)
+		if ts.Name.Name == v.sourceInterface || v.sourceInterface == "*" {
+			v.interfaces[ts.Name.Name] = interfaceInfo{
+				Name:    ts.Name.Name,
+				Methods: getInterfaceMethodsSignatures(i),
+			}
 		}
 
 		return nil
@@ -215,12 +243,24 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	return v
 }
 
-func (v *visitor) processInterface(t *types.Interface) {
-	v.methods = make(map[string]*types.Signature)
+func (v *visitor) expressionType(e ast.Expr) (types.Type, error) {
+	for _, info := range v.Program.AllPackages {
+		if typesType := info.TypeOf(e); typesType != nil {
+			return typesType, nil
+		}
+	}
+
+	return nil, fmt.Errorf("expression not found: %+v", e)
+}
+
+func getInterfaceMethodsSignatures(t *types.Interface) map[string]*types.Signature {
+	methods := make(map[string]*types.Signature)
 
 	for i := 0; i < t.NumMethods(); i++ {
-		v.methods[t.Method(i).Name()] = t.Method(i).Type().(*types.Signature)
+		methods[t.Method(i).Name()] = t.Method(i).Type().(*types.Signature)
 	}
+
+	return methods
 }
 
 const template = `
