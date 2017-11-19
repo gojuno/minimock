@@ -169,6 +169,15 @@ func findInterfaces(prog *loader.Program, sourceInterface, sourcePackage string)
 	return v.interfaces, nil
 }
 
+func paramsToStructFields(p generator.ParamSet) string {
+	var params []string
+	for _, param := range p {
+		params = append(params, fmt.Sprintf("%s %s", param.Name, param.Type))
+	}
+
+	return strings.Join(params, "\n")
+}
+
 func generate(prog *loader.Program, opts generateOptions, methods map[string]*types.Signature) error {
 	if err := os.Remove(opts.OutputFileName); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove output file %s: %v", opts.OutputFileName, err)
@@ -177,11 +186,12 @@ func generate(prog *loader.Program, opts generateOptions, methods map[string]*ty
 	gen := generator.New(prog)
 	gen.ImportWithAlias(opts.DestinationPackage, "")
 	gen.SetPackageName(opts.PackageName)
+	gen.AddTemplateFunc("toStructFields", paramsToStructFields)
 	gen.SetVar("structName", opts.StructName)
 	gen.SetVar("interfaceName", opts.InterfaceName)
 	gen.SetVar("packagePath", opts.SourcePackage)
 	gen.SetHeader(fmt.Sprintf(`DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.7
+This code was generated automatically using github.com/gojuno/minimock v1.8
 The original interface %q can be found in %s`, opts.InterfaceName, opts.SourcePackage))
 	gen.SetDefaultParamsPrefix("p")
 	gen.SetDefaultResultsPrefix("r")
@@ -205,6 +215,7 @@ The original interface %q can be found in %s`, opts.InterfaceName, opts.SourcePa
 	return nil
 }
 
+// Visit implements ast.Visitor interface
 func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	switch ts := node.(type) {
 	case *ast.FuncDecl:
@@ -263,8 +274,15 @@ func getInterfaceMethodsSignatures(t *types.Interface) map[string]*types.Signatu
 	return methods
 }
 
+func splitNewLine(s string, d string) string {
+	return strings.Replace(s, d, "\n", -1)
+}
+
 const template = `
-	import "github.com/gojuno/minimock"
+	import (
+		"github.com/gojuno/minimock"
+		testify_assert "github.com/stretchr/testify/assert"
+	)
 
 	//{{$structName}} implements {{$packagePath}}.{{$interfaceName}}
 	type {{$structName}} struct {
@@ -294,10 +312,24 @@ const template = `
 	{{ range $methodName, $method := . }}
 		type m{{$structName}}{{$methodName}} struct {
 			mock *{{$structName}}
+			{{if not (eq (params $method).String "")}} mockExpectations *{{$structName}}{{$methodName}}Params{{end}}
 		}
 
+		{{if not (eq (params $method).String "")}}
+			//{{$structName}}{{$methodName}}Params represents input parameters of the {{$interfaceName}}.{{$methodName}}
+			type {{$structName}}{{$methodName}}Params struct {
+				{{toStructFields (params $method)}}
+			}
+
+			//Expect sets up expected params for the {{$interfaceName}}.{{$methodName}}
+			func (m *m{{$structName}}{{$methodName}}) Expect({{params $method}}) *m{{$structName}}{{$methodName}} {
+				m.mockExpectations = &{{$structName}}{{$methodName}}Params{ {{ (params $method).Names }} }
+				return m
+			}
+		{{end}}
+
 		//Return sets up a mock for {{$interfaceName}}.{{$methodName}} to return Return's arguments
-		func (m m{{$structName}}{{$methodName}}) Return({{results $method}}) *{{$structName}} {
+		func (m *m{{$structName}}{{$methodName}}) Return({{results $method}}) *{{$structName}} {
 			m.mock.{{$methodName}}Func = func({{params $method}}) ({{(results $method).Types}}) {
 				return {{ (results $method).Names }}
 			}
@@ -305,7 +337,7 @@ const template = `
 		}
 
 		//Set uses given function f as a mock of {{$interfaceName}}.{{$methodName}} method
-		func (m m{{$structName}}{{$methodName}}) Set(f func({{params $method}}) ({{results $method}})) *{{$structName}}{
+		func (m *m{{$structName}}{{$methodName}}) Set(f func({{params $method}}) ({{results $method}})) *{{$structName}}{
 			m.mock.{{$methodName}}Func = f
 			return m.mock
 		}
@@ -313,6 +345,18 @@ const template = `
 		//{{$methodName}} implements {{$packagePath}}.{{$interfaceName}} interface
 		func (m *{{$structName}}) {{$methodName}}{{signature $method}} {
 			defer atomic.AddUint64(&m.{{$methodName}}Counter, 1)
+			{{if not (eq (params $method).String "")}}
+			if m.{{$methodName}}Mock.mockExpectations != nil {
+				testify_assert.Equal(m.t, *m.{{$methodName}}Mock.mockExpectations, {{$structName}}{{$methodName}}Params{ {{ (params $method).Names }} },
+					"{{$interfaceName}}.{{$methodName}} got unexpected parameters")
+
+				if m.{{$methodName}}Func == nil {
+					{{if not (eq (params $method).Names "") }}
+						m.t.Fatal("No results are set for the {{$structName}}.{{$methodName}}")
+					{{end}}
+					return
+				}
+			}{{end}}
 
 			if m.{{$methodName}}Func == nil {
 				m.t.Fatal("Unexpected call to {{$structName}}.{{$methodName}}")
@@ -410,7 +454,7 @@ func processFlags() *programOptions {
 	var (
 		input       = flag.String("f", "", "DEPRECATED: input file or import path of the package that contains interface declaration")
 		help        = flag.Bool("h", false, "show this help message")
-		interfaces  = flag.String("i", "", "comma-separated names of the interfaces to mock, i.e fmt.Stringer,io.Reader")
+		interfaces  = flag.String("i", "", "comma-separated names of the interfaces to mock, i.e fmt.Stringer,io.Reader, use io.* notation to generate mocks for all interfaces in an io package")
 		output      = flag.String("o", "", "destination file name to place the generated mock or path to destination package when multiple interfaces are given")
 		packageName = flag.String("p", "", "DEPRECATED: destination package name")
 		suffix      = flag.String("s", "_mock_test.go", "output file name suffix which is added to file names when multiple interfaces are given")
