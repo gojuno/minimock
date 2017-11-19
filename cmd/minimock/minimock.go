@@ -208,11 +208,7 @@ The original interface %q can be found in %s`, opts.InterfaceName, opts.SourcePa
 		return fmt.Errorf("failed to remove output file %s: %v", opts.OutputFileName, err)
 	}
 
-	if err := gen.WriteToFilename(opts.OutputFileName); err != nil {
-		return err
-	}
-
-	return nil
+	return gen.WriteToFilename(opts.OutputFileName)
 }
 
 // Visit implements ast.Visitor interface
