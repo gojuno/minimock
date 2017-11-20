@@ -179,10 +179,6 @@ func paramsToStructFields(p generator.ParamSet) string {
 }
 
 func generate(prog *loader.Program, opts generateOptions, methods map[string]*types.Signature) error {
-	if err := os.Remove(opts.OutputFileName); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove output file %s: %v", opts.OutputFileName, err)
-	}
-
 	gen := generator.New(prog)
 	gen.ImportWithAlias(opts.DestinationPackage, "")
 	gen.SetPackageName(opts.PackageName)
@@ -268,10 +264,6 @@ func getInterfaceMethodsSignatures(t *types.Interface) map[string]*types.Signatu
 	}
 
 	return methods
-}
-
-func splitNewLine(s string, d string) string {
-	return strings.Replace(s, d, "\n", -1)
 }
 
 const template = `
