@@ -279,6 +279,7 @@ const template = `
 		{{ range $methodName, $method := . }}
 			{{$methodName}}Func func{{ signature $method }}
 			{{$methodName}}Counter uint64
+			{{$methodName}}PreCounter uint64
 			{{$methodName}}Mock m{{$structName}}{{$methodName}}
 		{{ end }}
 	}
@@ -332,6 +333,7 @@ const template = `
 
 		//{{$methodName}} implements {{$packagePath}}.{{$interfaceName}} interface
 		func (m *{{$structName}}) {{$methodName}}{{signature $method}} {
+			atomic.AddUint64(&m.{{$methodName}}PreCounter, 1)
 			defer atomic.AddUint64(&m.{{$methodName}}Counter, 1)
 			{{if not (eq (params $method).String "")}}
 			if m.{{$methodName}}Mock.mockExpectations != nil {
@@ -355,9 +357,14 @@ const template = `
 			return {{ end }} m.{{$methodName}}Func({{(params $method).Pass}})
 		}
 
-		//{{$methodName}}MinimockCounter returns a count of {{$interfaceName}}.{{$methodName}} invocations
+		//{{$methodName}}MinimockCounter returns a count of {{$structName}}.{{$methodName}}Func invocations
 		func (m *{{$structName}}) {{$methodName}}MinimockCounter() uint64 {
 			return atomic.LoadUint64(&m.{{$methodName}}Counter)
+		}
+
+		//{{$methodName}}MinimockPreCounter returns the value of {{$structName}}.{{$methodName}} invocations
+		func (m *{{$structName}}) {{$methodName}}MinimockPreCounter() uint64 {
+			return atomic.LoadUint64(&m.{{$methodName}}PreCounter)
 		}
 	{{ end }}
 

@@ -17,9 +17,10 @@ import (
 type FormatterMock struct {
 	t minimock.Tester
 
-	FormatFunc    func(p string, p1 ...interface{}) (r string)
-	FormatCounter uint64
-	FormatMock    mFormatterMockFormat
+	FormatFunc       func(p string, p1 ...interface{}) (r string)
+	FormatCounter    uint64
+	FormatPreCounter uint64
+	FormatMock       mFormatterMockFormat
 }
 
 //NewFormatterMock returns a mock for github.com/gojuno/minimock/tests.Formatter
@@ -68,6 +69,7 @@ func (m *mFormatterMockFormat) Set(f func(p string, p1 ...interface{}) (r string
 
 //Format implements github.com/gojuno/minimock/tests.Formatter interface
 func (m *FormatterMock) Format(p string, p1 ...interface{}) (r string) {
+	atomic.AddUint64(&m.FormatPreCounter, 1)
 	defer atomic.AddUint64(&m.FormatCounter, 1)
 
 	if m.FormatMock.mockExpectations != nil {
@@ -90,9 +92,14 @@ func (m *FormatterMock) Format(p string, p1 ...interface{}) (r string) {
 	return m.FormatFunc(p, p1...)
 }
 
-//FormatMinimockCounter returns a count of Formatter.Format invocations
+//FormatMinimockCounter returns a count of FormatterMock.FormatFunc invocations
 func (m *FormatterMock) FormatMinimockCounter() uint64 {
 	return atomic.LoadUint64(&m.FormatCounter)
+}
+
+//FormatMinimockPreCounter returns the value of FormatterMock.Format invocations
+func (m *FormatterMock) FormatMinimockPreCounter() uint64 {
+	return atomic.LoadUint64(&m.FormatPreCounter)
 }
 
 //ValidateCallCounters checks that all mocked methods of the interface have been called at least once

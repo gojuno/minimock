@@ -17,21 +17,25 @@ import (
 type TesterMock struct {
 	t minimock.Tester
 
-	ErrorFunc    func(p ...interface{})
-	ErrorCounter uint64
-	ErrorMock    mTesterMockError
+	ErrorFunc       func(p ...interface{})
+	ErrorCounter    uint64
+	ErrorPreCounter uint64
+	ErrorMock       mTesterMockError
 
-	ErrorfFunc    func(p string, p1 ...interface{})
-	ErrorfCounter uint64
-	ErrorfMock    mTesterMockErrorf
+	ErrorfFunc       func(p string, p1 ...interface{})
+	ErrorfCounter    uint64
+	ErrorfPreCounter uint64
+	ErrorfMock       mTesterMockErrorf
 
-	FatalFunc    func(p ...interface{})
-	FatalCounter uint64
-	FatalMock    mTesterMockFatal
+	FatalFunc       func(p ...interface{})
+	FatalCounter    uint64
+	FatalPreCounter uint64
+	FatalMock       mTesterMockFatal
 
-	FatalfFunc    func(p string, p1 ...interface{})
-	FatalfCounter uint64
-	FatalfMock    mTesterMockFatalf
+	FatalfFunc       func(p string, p1 ...interface{})
+	FatalfCounter    uint64
+	FatalfPreCounter uint64
+	FatalfMock       mTesterMockFatalf
 }
 
 //NewTesterMock returns a mock for github.com/gojuno/minimock.Tester
@@ -82,6 +86,7 @@ func (m *mTesterMockError) Set(f func(p ...interface{})) *TesterMock {
 
 //Error implements github.com/gojuno/minimock.Tester interface
 func (m *TesterMock) Error(p ...interface{}) {
+	atomic.AddUint64(&m.ErrorPreCounter, 1)
 	defer atomic.AddUint64(&m.ErrorCounter, 1)
 
 	if m.ErrorMock.mockExpectations != nil {
@@ -104,9 +109,14 @@ func (m *TesterMock) Error(p ...interface{}) {
 	m.ErrorFunc(p...)
 }
 
-//ErrorMinimockCounter returns a count of Tester.Error invocations
+//ErrorMinimockCounter returns a count of TesterMock.ErrorFunc invocations
 func (m *TesterMock) ErrorMinimockCounter() uint64 {
 	return atomic.LoadUint64(&m.ErrorCounter)
+}
+
+//ErrorMinimockPreCounter returns the value of TesterMock.Error invocations
+func (m *TesterMock) ErrorMinimockPreCounter() uint64 {
+	return atomic.LoadUint64(&m.ErrorPreCounter)
 }
 
 type mTesterMockErrorf struct {
@@ -142,6 +152,7 @@ func (m *mTesterMockErrorf) Set(f func(p string, p1 ...interface{})) *TesterMock
 
 //Errorf implements github.com/gojuno/minimock.Tester interface
 func (m *TesterMock) Errorf(p string, p1 ...interface{}) {
+	atomic.AddUint64(&m.ErrorfPreCounter, 1)
 	defer atomic.AddUint64(&m.ErrorfCounter, 1)
 
 	if m.ErrorfMock.mockExpectations != nil {
@@ -164,9 +175,14 @@ func (m *TesterMock) Errorf(p string, p1 ...interface{}) {
 	m.ErrorfFunc(p, p1...)
 }
 
-//ErrorfMinimockCounter returns a count of Tester.Errorf invocations
+//ErrorfMinimockCounter returns a count of TesterMock.ErrorfFunc invocations
 func (m *TesterMock) ErrorfMinimockCounter() uint64 {
 	return atomic.LoadUint64(&m.ErrorfCounter)
+}
+
+//ErrorfMinimockPreCounter returns the value of TesterMock.Errorf invocations
+func (m *TesterMock) ErrorfMinimockPreCounter() uint64 {
+	return atomic.LoadUint64(&m.ErrorfPreCounter)
 }
 
 type mTesterMockFatal struct {
@@ -201,6 +217,7 @@ func (m *mTesterMockFatal) Set(f func(p ...interface{})) *TesterMock {
 
 //Fatal implements github.com/gojuno/minimock.Tester interface
 func (m *TesterMock) Fatal(p ...interface{}) {
+	atomic.AddUint64(&m.FatalPreCounter, 1)
 	defer atomic.AddUint64(&m.FatalCounter, 1)
 
 	if m.FatalMock.mockExpectations != nil {
@@ -223,9 +240,14 @@ func (m *TesterMock) Fatal(p ...interface{}) {
 	m.FatalFunc(p...)
 }
 
-//FatalMinimockCounter returns a count of Tester.Fatal invocations
+//FatalMinimockCounter returns a count of TesterMock.FatalFunc invocations
 func (m *TesterMock) FatalMinimockCounter() uint64 {
 	return atomic.LoadUint64(&m.FatalCounter)
+}
+
+//FatalMinimockPreCounter returns the value of TesterMock.Fatal invocations
+func (m *TesterMock) FatalMinimockPreCounter() uint64 {
+	return atomic.LoadUint64(&m.FatalPreCounter)
 }
 
 type mTesterMockFatalf struct {
@@ -261,6 +283,7 @@ func (m *mTesterMockFatalf) Set(f func(p string, p1 ...interface{})) *TesterMock
 
 //Fatalf implements github.com/gojuno/minimock.Tester interface
 func (m *TesterMock) Fatalf(p string, p1 ...interface{}) {
+	atomic.AddUint64(&m.FatalfPreCounter, 1)
 	defer atomic.AddUint64(&m.FatalfCounter, 1)
 
 	if m.FatalfMock.mockExpectations != nil {
@@ -283,9 +306,14 @@ func (m *TesterMock) Fatalf(p string, p1 ...interface{}) {
 	m.FatalfFunc(p, p1...)
 }
 
-//FatalfMinimockCounter returns a count of Tester.Fatalf invocations
+//FatalfMinimockCounter returns a count of TesterMock.FatalfFunc invocations
 func (m *TesterMock) FatalfMinimockCounter() uint64 {
 	return atomic.LoadUint64(&m.FatalfCounter)
+}
+
+//FatalfMinimockPreCounter returns the value of TesterMock.Fatalf invocations
+func (m *TesterMock) FatalfMinimockPreCounter() uint64 {
+	return atomic.LoadUint64(&m.FatalfPreCounter)
 }
 
 //ValidateCallCounters checks that all mocked methods of the interface have been called at least once
