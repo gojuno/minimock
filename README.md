@@ -13,6 +13,7 @@ Main features of minimock:
 * It provides a useful Controller.Wait(time.Duration) helper method to test concurrent code
 * It generates helpers to check if the mocked methods have been called and keeps your tests clean and up to date
 * It generates concurrent-safe mock execution counters that you can use in your mocks to implement sophisticated mocks behaviour
+* It's integrated with [GoTests](https://github.com/hexdigest/minimock) which generates table driven tests using minimock
 
 ## Installation
 
@@ -269,6 +270,78 @@ func TestSomething(t *testing.T) {
   go formatterMock.Format("")
 }
 ```
+
+## Using gotests with minimock
+
+Despite the fact that minimock does a lot of work for you, writing test is not only mocking the dependencies.
+There is a nice tool called [GoTests](https://github.com/hexdigest/minimock) that generates table driven tests with minimock in mind.
+
+Let's say you have to test the following code:
+```go
+type Dependency interface {
+	SomeMethod() error
+}
+
+type Service struct {
+	Dep Dependency
+}
+
+func (s Service) DoSomething() bool {
+	if err := s.Dep.SomeMethod(); err != nil {
+		log.Printf("some method returned an error: %v", err)
+		return false
+	}
+
+	return true
+}
+```
+
+GoTests generates the following test for the DoSomething method:
+```go
+func TestService_DoSomething(t *testing.T) {
+	tests := []struct {
+		name  string
+		setup func(mc *minimock.Controller) Service
+		want  bool
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mc := minimock.NewController(t)
+			defer mc.Wait(time.Second)
+			s := tt.setup(mc)
+			if got := s.DoSomething(); got != tt.want {
+				t.Errorf("Service.DoSomething() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+```
+
+So all you need here is to fill the tests slice with:
+```go
+{
+  name: "some method failed",
+  setup: func(mc *minimock.Controller) Service {
+    return Service{
+      Dep: NewDependencyMock(mc).SomeMethodMock.Return(io.EOF),
+    }
+  },
+  want: false,
+},
+{
+  name: "some method succeeded",
+  setup: func(mc *minimock.Controller) Service {
+    return Service{
+      Dep: NewDependencyMock(mc).SomeMethodMock.Return(nil),
+    }
+  },
+  want: true,
+},
+```
+
+And your test is ready!
 
 ## Minimock command line flags:
 ```
