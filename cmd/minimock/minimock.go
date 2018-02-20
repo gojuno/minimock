@@ -15,6 +15,8 @@ import (
 	"github.com/gojuno/minimock"
 )
 
+const version = "1.9"
+
 type (
 	programOptions struct {
 		Interfaces             []interfaceInfo
@@ -187,8 +189,8 @@ func generate(prog *loader.Program, opts generateOptions, methods map[string]*ty
 	gen.SetVar("interfaceName", opts.InterfaceName)
 	gen.SetVar("packagePath", opts.SourcePackage)
 	gen.SetHeader(fmt.Sprintf(`DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.8
-The original interface %q can be found in %s`, opts.InterfaceName, opts.SourcePackage))
+This code was generated automatically using github.com/gojuno/minimock v%s
+The original interface %q can be found in %s`, version, opts.InterfaceName, opts.SourcePackage))
 	gen.SetDefaultParamsPrefix("p")
 	gen.SetDefaultResultsPrefix("r")
 
@@ -454,6 +456,7 @@ func processFlags() *programOptions {
 		packageName = flag.String("p", "", "DEPRECATED: destination package name")
 		suffix      = flag.String("s", "_mock_test.go", "output file name suffix which is added to file names when multiple interfaces are given")
 		sname       = flag.String("t", "", "DEPRECATED: mock struct name (default <interface name>Mock)")
+		v           = flag.Bool("version", false, "show minimock version")
 		withTests   = flag.Bool("withTests", false, "parse *_test.go files in the source package")
 	)
 
@@ -461,6 +464,11 @@ func processFlags() *programOptions {
 
 	if *help {
 		flag.Usage()
+		os.Exit(0)
+	}
+
+	if *v {
+		fmt.Printf("minimock version: %s\n", version)
 		os.Exit(0)
 	}
 
