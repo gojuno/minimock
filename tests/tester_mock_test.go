@@ -2,7 +2,7 @@ package tests
 
 /*
 DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.8
+This code was generated automatically using github.com/gojuno/minimock v1.9
 The original interface "Tester" can be found in github.com/gojuno/minimock
 */
 import (
