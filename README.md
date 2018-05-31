@@ -1,5 +1,5 @@
 ![logo](https://rawgit.com/gojuno/minimock/master/logo.svg)
-[![GoDoc](https://godoc.org/github.com/gojuno/minimock?status.svg)](http://godoc.org/github.com/gojuno/minimock) [![Build Status](https://travis-ci.org/gojuno/minimock.svg?branch=master)](https://travis-ci.org/gojuno/minimock) [![Go Report Card](https://goreportcard.com/badge/github.com/gojuno/minimock)](https://goreportcard.com/report/github.com/gojuno/minimock) ![cover.run go](https://cover.run/go/github.com/gojuno/minimock/tests.svg)
+[![GoDoc](https://godoc.org/github.com/gojuno/minimock?status.svg)](http://godoc.org/github.com/gojuno/minimock) [![Build Status](https://travis-ci.org/gojuno/minimock.svg?branch=master)](https://travis-ci.org/gojuno/minimock) [![Go Report Card](https://goreportcard.com/badge/github.com/gojuno/minimock)](https://goreportcard.com/report/github.com/gojuno/minimock) [![cover.run](https://cover.run/go/github.com/gojuno/minimock.svg?style=flat&tag=golang-1.10)](https://cover.run/go?tag=golang-1.10&repo=github.com%2Fgojuno%2Fminimock)
 
 ## Summary 
 Minimock parses the input Go source file that contains an interface declaration and generates
