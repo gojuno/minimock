@@ -347,6 +347,8 @@ And your test is ready!
 ```
 $ minimock -h
   Usage of minimock:
+    -b string
+      	pipe separated build tags, i.e. linux,386|darwin,!cgo corresponds to the boolean formula: (linux AND 386) OR (darwin AND (NOT cgo))
     -f string
       	DEPRECATED: input file or import path of the package that contains interface declaration
     -h	show this help message

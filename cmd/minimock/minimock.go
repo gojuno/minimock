@@ -15,10 +15,11 @@ import (
 	"github.com/gojuno/minimock"
 )
 
-const version = "1.9"
+const version = "1.10"
 
 type (
 	programOptions struct {
+		BuildTags              []string
 		Interfaces             []interfaceInfo
 		Suffix                 string
 		OutputFile             string
@@ -28,6 +29,7 @@ type (
 	}
 
 	generateOptions struct {
+		BuildTags          []string
 		InterfaceName      string
 		PackageName        string
 		OutputFileName     string
@@ -115,6 +117,7 @@ func main() {
 		}
 
 		genOpts := generateOptions{
+			BuildTags:          opts.BuildTags,
 			SourcePackage:      sourcePackage,
 			DestinationPackage: destImportPath,
 			InterfaceName:      interfaceName,
@@ -134,6 +137,7 @@ func main() {
 
 			for interfaceName, info := range interfaces {
 				genOpts := generateOptions{
+					BuildTags:          opts.BuildTags,
 					SourcePackage:      i.Package,
 					DestinationPackage: destImportPath,
 					InterfaceName:      interfaceName,
@@ -193,6 +197,10 @@ This code was generated automatically using github.com/gojuno/minimock v%s
 The original interface %q can be found in %s`, version, opts.InterfaceName, opts.SourcePackage))
 	gen.SetDefaultParamsPrefix("p")
 	gen.SetDefaultResultsPrefix("r")
+
+	if len(opts.BuildTags) > 0 {
+		gen.AddBuildTags(opts.BuildTags...)
+	}
 
 	if len(methods) == 0 {
 		return fmt.Errorf("empty interface: %s", opts.InterfaceName)
@@ -457,6 +465,7 @@ func processFlags() *programOptions {
 		suffix      = flag.String("s", "_mock_test.go", "output file name suffix which is added to file names when multiple interfaces are given")
 		sname       = flag.String("t", "", "DEPRECATED: mock struct name (default <interface name>Mock)")
 		v           = flag.Bool("version", false, "show minimock version")
+		buildTags   = flag.String("b", "", "pipe separated build tags, i.e. linux,386|darwin,!cgo corresponds to the boolean formula: (linux AND 386) OR (darwin AND (NOT cgo))")
 		withTests   = flag.Bool("withTests", false, "parse *_test.go files in the source package")
 	)
 
@@ -500,6 +509,14 @@ func processFlags() *programOptions {
 		die("missing required parameter: -o, use -h flag for help")
 	}
 
+	var btags []string
+
+	if *buildTags != "" {
+		for _, t := range strings.Split(*buildTags, "|") {
+			btags = append(btags, t)
+		}
+	}
+
 	interfacesList := []interfaceInfo{}
 	for _, i := range strings.Split(*interfaces, ",") {
 		chunks := strings.Split(i, ".")
@@ -513,6 +530,7 @@ func processFlags() *programOptions {
 	}
 
 	return &programOptions{
+		BuildTags:              btags,
 		Interfaces:             interfacesList,
 		OutputFile:             *output,
 		StructName:             *sname,
