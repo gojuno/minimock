@@ -81,6 +81,7 @@ func (m *mTesterMockError) Return() *TesterMock {
 //Set uses given function f as a mock of Tester.Error method
 func (m *mTesterMockError) Set(f func(p ...interface{})) *TesterMock {
 	m.mock.ErrorFunc = f
+	m.mockExpectations = nil
 	return m.mock
 }
 
@@ -147,6 +148,7 @@ func (m *mTesterMockErrorf) Return() *TesterMock {
 //Set uses given function f as a mock of Tester.Errorf method
 func (m *mTesterMockErrorf) Set(f func(p string, p1 ...interface{})) *TesterMock {
 	m.mock.ErrorfFunc = f
+	m.mockExpectations = nil
 	return m.mock
 }
 
@@ -212,6 +214,7 @@ func (m *mTesterMockFatal) Return() *TesterMock {
 //Set uses given function f as a mock of Tester.Fatal method
 func (m *mTesterMockFatal) Set(f func(p ...interface{})) *TesterMock {
 	m.mock.FatalFunc = f
+	m.mockExpectations = nil
 	return m.mock
 }
 
@@ -278,6 +281,7 @@ func (m *mTesterMockFatalf) Return() *TesterMock {
 //Set uses given function f as a mock of Tester.Fatalf method
 func (m *mTesterMockFatalf) Set(f func(p string, p1 ...interface{})) *TesterMock {
 	m.mock.FatalfFunc = f
+	m.mockExpectations = nil
 	return m.mock
 }
 
