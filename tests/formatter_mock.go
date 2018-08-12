@@ -64,6 +64,7 @@ func (m *mFormatterMockFormat) Return(r string) *FormatterMock {
 //Set uses given function f as a mock of Formatter.Format method
 func (m *mFormatterMockFormat) Set(f func(p string, p1 ...interface{}) (r string)) *FormatterMock {
 	m.mock.FormatFunc = f
+	m.mockExpectations = nil
 	return m.mock
 }
 
