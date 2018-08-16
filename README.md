@@ -13,7 +13,7 @@ Main features of minimock:
 * It provides a useful Controller.Wait(time.Duration) helper method to test concurrent code
 * It generates helpers to check if the mocked methods have been called and keeps your tests clean and up to date
 * It generates concurrent-safe mock execution counters that you can use in your mocks to implement sophisticated mocks behaviour
-* It's integrated with [GoTests](https://github.com/hexdigest/gotests) which generates table driven tests using minimock
+* There is template for [GoUnit](https://github.com/hexdigest/gounit) tool which generates table driven tests that make use of minimock
 
 ## Installation
 
