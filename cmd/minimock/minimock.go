@@ -330,6 +330,7 @@ const template = `
 		//Set uses given function f as a mock of {{$interfaceName}}.{{$methodName}} method
 		func (m *m{{$structName}}{{$methodName}}) Set(f func({{params $method}}) ({{results $method}})) *{{$structName}}{
 			m.mock.{{$methodName}}Func = f
+			{{if not (eq (params $method).String "")}}m.mockExpectations = nil{{end}}
 			return m.mock
 		}
 
