@@ -6,9 +6,6 @@ go:
 
 install:
   - go get github.com/golang/lint/golint
-  - go get golang.org/x/tools/go/loader
-  - go get github.com/gojuno/generator
-  - go get github.com/stretchr/testify/assert
 
 script:
   - cd $TRAVIS_BUILD_DIR && make all

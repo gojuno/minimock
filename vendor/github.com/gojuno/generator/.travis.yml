@@ -1,0 +1,11 @@
+language: go
+
+go:
+  - 1.8
+  - 1.9
+  - tip
+
+#install:
+#  - go get -u github.com/jteeuwen/go-bindata/...
+#  - go get github.com/pborman/uuid
+#  - go get gopkg.in/yaml.v2

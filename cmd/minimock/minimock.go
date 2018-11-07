@@ -1,15 +1,21 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"go/ast"
+	"go/parser"
+	"go/token"
 	"go/types"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"golang.org/x/tools/go/loader"
+
+	"github.com/marwan-at-work/vgop/modfile"
 
 	"github.com/gojuno/generator"
 	"github.com/gojuno/minimock"
@@ -81,7 +87,7 @@ func main() {
 		outPackageRealPath = opts.OutputFile
 	}
 
-	destImportPath, err := generator.PackageOf(outPackageRealPath)
+	destImportPath, err := packageOf(outPackageRealPath)
 	if err != nil {
 		die("failed to detect import path of the %s: %v", outPackageRealPath, err)
 	}
@@ -526,7 +532,7 @@ func processFlags() *programOptions {
 func getImportPath(realPath string) string {
 	_, err := os.Stat(realPath)
 	if err == nil {
-		importPath, err := generator.PackageOf(realPath)
+		importPath, err := packageOf(realPath)
 		if err != nil {
 			die("failed to detect import path of the %s: %v", realPath, err)
 		}
@@ -535,6 +541,111 @@ func getImportPath(realPath string) string {
 	}
 
 	return realPath
+}
+
+func packageOf(filePath string) (string, error) {
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to get fiel %q absolute path: %v", filePath, err)
+	}
+
+	f, err := os.Open(absPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open %q: %v", absPath, err)
+	}
+	defer f.Close()
+
+	fi, err := f.Stat()
+	if err != nil {
+		return "", fmt.Errorf("failed to get file information for %q: %v", absPath, err)
+	}
+
+	path := absPath
+	if fi.Mode().IsRegular() {
+		if !strings.HasSuffix(path, ".go") {
+			return "", fmt.Errorf("%q is not a *.go file", absPath)
+		}
+
+		path = filepath.Dir(absPath)
+	}
+
+	gopath := os.Getenv("GOPATH")
+	for _, gp := range filepath.SplitList(gopath) {
+		gp, err = filepath.Abs(gp)
+		if err != nil {
+			continue
+		}
+
+		gp += "/src/"
+
+		if strings.HasPrefix(path, gp) {
+			return strings.Replace(path, gp, "", 1), nil
+		}
+	}
+
+	importPath, err := getModulePath(path)
+	if err != nil {
+		return "", fmt.Errorf("%q is out of GOPATH and %v", path, err)
+	}
+
+	return importPath, nil
+}
+
+var errNoModFileFound = errors.New("go.mod file is not found in any of the parent directories")
+
+func getModulePath(dir string) (string, error) {
+	modFilePath := filepath.Join(dir, "go.mod")
+
+	stat, err := os.Stat(modFilePath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return "", err
+		}
+	} else {
+		if !stat.IsDir() {
+			contents, err := ioutil.ReadFile(modFilePath)
+			if err != nil {
+				return "", err
+			}
+
+			mod, err := modfile.Parse(modFilePath, contents, nil)
+			if err != nil {
+				return "", err
+			}
+
+			return mod.Module.Mod.Path, nil
+		}
+	}
+
+	var packageName, parentDir string
+
+	filter := func(fi os.FileInfo) bool {
+		name := fi.Name()
+		return strings.HasSuffix(name, ".go") && !strings.HasSuffix(name, "_test.go") && !fi.IsDir()
+	}
+
+	fs := token.NewFileSet()
+	packages, err := parser.ParseDir(fs, dir, filter, parser.PackageClauseOnly)
+	if packages != nil {
+		for _, pkg := range packages {
+			packageName = pkg.Name
+			break
+		}
+	}
+
+	if packageName == "" {
+		parentDir, packageName = filepath.Split(dir)
+		if parentDir == dir {
+			return "", errNoModFileFound
+		}
+	}
+
+	parentModPath, err := getModulePath(parentDir)
+	if err != nil {
+		return "", err
+	}
+
+	return parentModPath + "/" + packageName, nil
 }
 
 func die(format string, args ...interface{}) {

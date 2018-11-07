@@ -1,0 +1,20 @@
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
+# github.com/gojuno/generator v0.0.0-20180725114326-487ec858da35
+github.com/gojuno/generator
+# github.com/marwan-at-work/vgop v0.0.0-20180824202541-054e5a7d7b48
+github.com/marwan-at-work/vgop/modfile
+github.com/marwan-at-work/vgop/module
+github.com/marwan-at-work/vgop/semver
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
+# github.com/stretchr/testify v1.2.2
+github.com/stretchr/testify/assert
+# golang.org/x/tools v0.0.0-20181105230042-78dc5bac0cac
+golang.org/x/tools/go/loader
+golang.org/x/tools/imports
+golang.org/x/tools/go/ast/astutil
+golang.org/x/tools/go/buildutil
+golang.org/x/tools/go/internal/cgo
+golang.org/x/tools/internal/gopathwalk
+golang.org/x/tools/internal/fastwalk
