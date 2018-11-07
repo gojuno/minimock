@@ -2,7 +2,6 @@ language: go
 
 go:
   - 1.x
-  - master
 
 install:
   - go get github.com/golang/lint/golint
