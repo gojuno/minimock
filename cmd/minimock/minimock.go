@@ -442,8 +442,6 @@ const template = `
 
 			return m.{{$methodName}}Func == nil || atomic.LoadUint64(&m.{{$methodName}}Counter) > 0
 		}
-
-
 	{{ end }}
 
 	//ValidateCallCounters checks that all mocked methods of the interface have been called at least once
