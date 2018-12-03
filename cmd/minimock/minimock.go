@@ -309,10 +309,11 @@ const template = `
 	{{ range $methodName, $method := . }}
 		type m{{$structName}}{{$methodName}} struct {
 			mock *{{$structName}}
-			{{if not (eq (params $method).String "")}} mockExpectations *{{$structName}}{{$methodName}}Params{{end}}
+			{{if gt (len (params $method)) 0 }} mainExpectation *{{$structName}}{{$methodName}}Params{{end}}
+			expectationSeries []*{{$structName}}{{$methodName}}Expectation
 		}
 
-		{{if not (eq (params $method).String "")}}
+		{{if gt (len (params $method)) 0 }}
 			//{{$structName}}{{$methodName}}Params represents input parameters of the {{$interfaceName}}.{{$methodName}}
 			type {{$structName}}{{$methodName}}Params struct {
 				{{toStructFields (params $method)}}
@@ -320,7 +321,7 @@ const template = `
 
 			//Expect sets up expected params for the {{$interfaceName}}.{{$methodName}}
 			func (m *m{{$structName}}{{$methodName}}) Expect({{params $method}}) *m{{$structName}}{{$methodName}} {
-				m.mockExpectations = &{{$structName}}{{$methodName}}Params{ {{ (params $method).Names }} }
+				m.mainExpectation = &{{$structName}}{{$methodName}}Params{ {{ (params $method).Names }} }
 				return m
 			}
 		{{end}}
@@ -330,31 +331,89 @@ const template = `
 			m.mock.{{$methodName}}Func = func({{params $method}}) ({{(results $method).Types}}) {
 				return {{ (results $method).Names }}
 			}
+			m.expectationSeries = nil
 			return m.mock
 		}
+
+		type {{$structName}}{{$methodName}}Expectation struct {
+			{{if gt (len (params $method)) 0 }}  input  *{{$structName}}{{$methodName}}Input  {{end}}
+			{{if gt (len (results $method)) 0 }} result *{{$structName}}{{$methodName}}Result {{end}}
+		}
+
+		{{if gt (len (params $method)) 0 }}
+			type {{$structName}}{{$methodName}}Input struct {
+				{{toStructFields (params $method)}}
+			}
+		{{end}}
+
+		{{if gt (len (results $method)) 0 }}
+			type {{$structName}}{{$methodName}}Result struct {
+				{{toStructFields (results $method)}}
+			}
+		{{end}}
+
+		func (m *m{{$structName}}{{$methodName}}) ExpectOnce({{params $method}}) *{{$structName}}{{$methodName}}Expectation {
+			expectation := &{{$structName}}{{$methodName}}Expectation{}
+			{{if gt (len (params $method)) 0 }} expectation.input = &{{$structName}}{{$methodName}}Input{ {{ (params $method).Names }} } {{end}}
+			m.expectationSeries = append(m.expectationSeries, expectation)
+			m.mock.{{$methodName}}Func = nil
+			{{if gt (len (params $method)) 0 }}m.mainExpectation = nil{{end}}
+			return expectation
+		}
+
+		{{if gt (len (results $method)) 0 }}
+		func (e *{{$structName}}{{$methodName}}Expectation) Return({{results $method}}) {
+			e.result = &{{$structName}}{{$methodName}}Result{ {{ (results $method).Names }} }
+		}
+		{{end}}
 
 		//Set uses given function f as a mock of {{$interfaceName}}.{{$methodName}} method
 		func (m *m{{$structName}}{{$methodName}}) Set(f func({{params $method}}) ({{results $method}})) *{{$structName}}{
 			m.mock.{{$methodName}}Func = f
-			{{if not (eq (params $method).String "")}}m.mockExpectations = nil{{end}}
+			{{if gt (len (params $method)) 0 }}m.mainExpectation = nil{{end}}
+			m.expectationSeries = nil
 			return m.mock
 		}
 
 		//{{$methodName}} implements {{$packagePath}}.{{$interfaceName}} interface
 		func (m *{{$structName}}) {{$methodName}}{{signature $method}} {
-			atomic.AddUint64(&m.{{$methodName}}PreCounter, 1)
+			counter := atomic.AddUint64(&m.{{$methodName}}PreCounter, 1)
 			defer atomic.AddUint64(&m.{{$methodName}}Counter, 1)
-			{{if not (eq (params $method).String "")}}
-			if m.{{$methodName}}Mock.mockExpectations != nil {
-				testify_assert.Equal(m.t, *m.{{$methodName}}Mock.mockExpectations, {{$structName}}{{$methodName}}Params{ {{ (params $method).Names }} },
-					"{{$interfaceName}}.{{$methodName}} got unexpected parameters")
+
+			if len(m.{{$methodName}}Mock.expectationSeries) > 0 {
+				if counter > uint64(len(m.{{$methodName}}Mock.expectationSeries)) {
+					m.t.Fatal("Unexpected call to {{$structName}}.{{$methodName}}")
+					return			
+				}
+
+				{{if gt (len (params $method)) 0 }}
+					input := m.{{$methodName}}Mock.expectationSeries[counter-1].input
+					testify_assert.Equal(m.t, *input, {{$structName}}{{$methodName}}Input{ {{ (params $method).Names }} }, "{{$interfaceName}}.{{$methodName}} got unexpected parameters")
+				{{ end }}
+
+				{{if gt (len (results $method)) 0 }}
+ 					result := m.{{$methodName}}Mock.expectationSeries[counter-1].result
+					if result == nil {	
+						m.t.Fatal("No results are set for the {{$structName}}.{{$methodName}}")  
+						return
+					}
+
+					{{ range $param := (results $method) }} 
+					{{ $param.Name }} = result.{{ $param.Name }} {{ end }}
+
+				{{ end }}
+				return
+			}
+
+			{{if gt (len (params $method)) 0 }}
+			if m.{{$methodName}}Mock.mainExpectation != nil {
+				testify_assert.Equal(m.t, *m.{{$methodName}}Mock.mainExpectation, {{$structName}}{{$methodName}}Params{ {{ (params $method).Names }} }, "{{$interfaceName}}.{{$methodName}} got unexpected parameters")
 
 				if m.{{$methodName}}Func == nil {
-					{{if not (eq (params $method).Names "") }}
-						m.t.Fatal("No results are set for the {{$structName}}.{{$methodName}}")
-					{{end}}
+					{{if gt (len (params $method)) 0 }} m.t.Fatal("No results are set for the {{$structName}}.{{$methodName}}") {{end}}
 					return
 				}
+
 			}{{end}}
 
 			if m.{{$methodName}}Func == nil {
@@ -362,8 +421,7 @@ const template = `
 				return
 			}
 
-			{{if gt (len (results $method)) 0 }}
-			return {{ end }} m.{{$methodName}}Func({{(params $method).Pass}})
+			{{if gt (len (results $method)) 0 }} return {{ end }} m.{{$methodName}}Func({{(params $method).Pass}})
 		}
 
 		//{{$methodName}}MinimockCounter returns a count of {{$structName}}.{{$methodName}}Func invocations
@@ -375,13 +433,24 @@ const template = `
 		func (m *{{$structName}}) {{$methodName}}MinimockPreCounter() uint64 {
 			return atomic.LoadUint64(&m.{{$methodName}}PreCounter)
 		}
+
+		//{{$methodName}}Finished returns true if mock invocations count is ok
+		func (m *{{$structName}}) {{$methodName}}Finished() bool {
+			if len(m.{{$methodName}}Mock.expectationSeries) > 0 {
+				return atomic.LoadUint64(&m.{{$methodName}}Counter) == uint64(len(m.{{$methodName}}Mock.expectationSeries))
+			}
+
+			return m.{{$methodName}}Func == nil || atomic.LoadUint64(&m.{{$methodName}}Counter) > 0
+		}
+
+
 	{{ end }}
 
 	//ValidateCallCounters checks that all mocked methods of the interface have been called at least once
 	//Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 	func (m *{{$structName}}) ValidateCallCounters() {
 		{{ range $methodName, $method := . }}
-			if m.{{$methodName}}Func != nil && atomic.LoadUint64(&m.{{$methodName}}Counter) == 0 {
+			if !m.{{$methodName}}Finished() {
 				m.t.Fatal("Expected call to {{$structName}}.{{$methodName}}")
 			}
 		{{ end }}
@@ -402,7 +471,7 @@ const template = `
 	//MinimockFinish checks that all mocked methods of the interface have been called at least once
 	func (m *{{$structName}}) MinimockFinish() {
 		{{ range $methodName, $method := . }}
-			if m.{{$methodName}}Func != nil && atomic.LoadUint64(&m.{{$methodName}}Counter) == 0 {
+			if !m.{{$methodName}}Finished()  {
 				m.t.Fatal("Expected call to {{$structName}}.{{$methodName}}")
 			}
 		{{ end }}
@@ -420,7 +489,7 @@ const template = `
 		timeoutCh := time.After(timeout)
 		for {
 			ok := true
-			{{ range $methodName, $method := . }}ok = ok && (m.{{$methodName}}Func == nil || atomic.LoadUint64(&m.{{$methodName}}Counter) > 0)
+			{{ range $methodName, $method := . }}ok = ok && m.{{$methodName}}Finished() 
 			{{ end }}
 
 			if ok {
@@ -430,7 +499,7 @@ const template = `
 			select {
 			case <-timeoutCh:
 				{{ range $methodName, $method := . }}
-					if m.{{$methodName}}Func != nil && atomic.LoadUint64(&m.{{$methodName}}Counter) == 0 {
+					if !m.{{$methodName}}Finished() {
 						m.t.Error("Expected call to {{$structName}}.{{$methodName}}")
 					}
 				{{ end }}
@@ -446,7 +515,7 @@ const template = `
 	//it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
 	func (m *{{$structName}}) AllMocksCalled() bool {
 		{{ range $methodName, $method := . }}
-			if m.{{$methodName}}Func != nil && atomic.LoadUint64(&m.{{$methodName}}Counter) == 0 {
+			if !m.{{$methodName}}Finished() {
 				return false
 			}
 		{{ end }}
