@@ -3,7 +3,7 @@ package tests
 /*
 DO NOT EDIT!
 This code was generated automatically using github.com/gojuno/minimock v1.9
-The original interface "Formatter" can be found in github.com/gojuno/minimock/tests
+The original interface "Formatter" can be found in github.com/kirylandruski/minimock/tests
 */
 import (
 	"sync/atomic"
@@ -13,7 +13,7 @@ import (
 	testify_assert "github.com/stretchr/testify/assert"
 )
 
-//FormatterMock implements github.com/gojuno/minimock/tests.Formatter
+//FormatterMock implements github.com/kirylandruski/minimock/tests.Formatter
 type FormatterMock struct {
 	t minimock.Tester
 
@@ -23,7 +23,7 @@ type FormatterMock struct {
 	FormatMock       mFormatterMockFormat
 }
 
-//NewFormatterMock returns a mock for github.com/gojuno/minimock/tests.Formatter
+//NewFormatterMock returns a mock for github.com/kirylandruski/minimock/tests.Formatter
 func NewFormatterMock(t minimock.Tester) *FormatterMock {
 	m := &FormatterMock{t: t}
 
@@ -37,52 +37,113 @@ func NewFormatterMock(t minimock.Tester) *FormatterMock {
 }
 
 type mFormatterMockFormat struct {
-	mock             *FormatterMock
-	mockExpectations *FormatterMockFormatParams
+	mock              *FormatterMock
+	mainExpectation   *FormatterMockFormatExpectation
+	expectationSeries []*FormatterMockFormatExpectation
 }
 
-//FormatterMockFormatParams represents input parameters of the Formatter.Format
-type FormatterMockFormatParams struct {
+type FormatterMockFormatExpectation struct {
+	input  *FormatterMockFormatInput
+	result *FormatterMockFormatResult
+}
+
+type FormatterMockFormatInput struct {
 	p  string
 	p1 []interface{}
 }
 
-//Expect sets up expected params for the Formatter.Format
+type FormatterMockFormatResult struct {
+	r string
+}
+
+//Expect specifies that invocation of Formatter.Format is expected from 1 to Infinity times
 func (m *mFormatterMockFormat) Expect(p string, p1 ...interface{}) *mFormatterMockFormat {
-	m.mockExpectations = &FormatterMockFormatParams{p, p1}
+	m.mock.FormatFunc = nil
+	m.expectationSeries = nil
+
+	if m.mainExpectation == nil {
+		m.mainExpectation = &FormatterMockFormatExpectation{}
+	}
+	m.mainExpectation.input = &FormatterMockFormatInput{p, p1}
 	return m
 }
 
-//Return sets up a mock for Formatter.Format to return Return's arguments
+//Return specifies results of invocation of Formatter.Format
 func (m *mFormatterMockFormat) Return(r string) *FormatterMock {
-	m.mock.FormatFunc = func(p string, p1 ...interface{}) string {
-		return r
+	m.mock.FormatFunc = nil
+	m.expectationSeries = nil
+
+	if m.mainExpectation == nil {
+		m.mainExpectation = &FormatterMockFormatExpectation{}
 	}
+	m.mainExpectation.result = &FormatterMockFormatResult{r}
 	return m.mock
+}
+
+//ExpectOnce specifies that invocation of Formatter.Format is expected once
+func (m *mFormatterMockFormat) ExpectOnce(p string, p1 ...interface{}) *FormatterMockFormatExpectation {
+	m.mock.FormatFunc = nil
+	m.mainExpectation = nil
+
+	expectation := &FormatterMockFormatExpectation{}
+	expectation.input = &FormatterMockFormatInput{p, p1}
+	m.expectationSeries = append(m.expectationSeries, expectation)
+	return expectation
+}
+
+func (e *FormatterMockFormatExpectation) Return(r string) {
+	e.result = &FormatterMockFormatResult{r}
 }
 
 //Set uses given function f as a mock of Formatter.Format method
 func (m *mFormatterMockFormat) Set(f func(p string, p1 ...interface{}) (r string)) *FormatterMock {
+	m.mainExpectation = nil
+	m.expectationSeries = nil
+
 	m.mock.FormatFunc = f
-	m.mockExpectations = nil
 	return m.mock
 }
 
-//Format implements github.com/gojuno/minimock/tests.Formatter interface
+//Format implements github.com/kirylandruski/minimock/tests.Formatter interface
 func (m *FormatterMock) Format(p string, p1 ...interface{}) (r string) {
-	atomic.AddUint64(&m.FormatPreCounter, 1)
+	counter := atomic.AddUint64(&m.FormatPreCounter, 1)
 	defer atomic.AddUint64(&m.FormatCounter, 1)
 
-	if m.FormatMock.mockExpectations != nil {
-		testify_assert.Equal(m.t, *m.FormatMock.mockExpectations, FormatterMockFormatParams{p, p1},
-			"Formatter.Format got unexpected parameters")
-
-		if m.FormatFunc == nil {
-
-			m.t.Fatal("No results are set for the FormatterMock.Format")
-
+	if len(m.FormatMock.expectationSeries) > 0 {
+		if counter > uint64(len(m.FormatMock.expectationSeries)) {
+			m.t.Fatal("Unexpected call to FormatterMock.Format")
 			return
 		}
+
+		input := m.FormatMock.expectationSeries[counter-1].input
+		testify_assert.Equal(m.t, *input, FormatterMockFormatInput{p, p1}, "Formatter.Format got unexpected parameters")
+
+		result := m.FormatMock.expectationSeries[counter-1].result
+		if result == nil {
+			m.t.Fatal("No results are set for the FormatterMock.Format")
+			return
+		}
+
+		r = result.r
+
+		return
+	}
+
+	if m.FormatMock.mainExpectation != nil {
+
+		input := m.FormatMock.mainExpectation.input
+		if input != nil {
+			testify_assert.Equal(m.t, *input, FormatterMockFormatInput{p, p1}, "Formatter.Format got unexpected parameters")
+		}
+
+		result := m.FormatMock.mainExpectation.result
+		if result == nil {
+			m.t.Fatal("No results are set for the FormatterMock.Format")
+		}
+
+		r = result.r
+
+		return
 	}
 
 	if m.FormatFunc == nil {
@@ -103,11 +164,31 @@ func (m *FormatterMock) FormatMinimockPreCounter() uint64 {
 	return atomic.LoadUint64(&m.FormatPreCounter)
 }
 
+//FormatFinished returns true if mock invocations count is ok
+func (m *FormatterMock) FormatFinished() bool {
+	// if expectation series were set then invocations count should be equal to expectations count
+	if len(m.FormatMock.expectationSeries) > 0 {
+		return atomic.LoadUint64(&m.FormatCounter) == uint64(len(m.FormatMock.expectationSeries))
+	}
+
+	// if main expectation was set then invocations count should be greater than zero
+	if m.FormatMock.mainExpectation != nil {
+		return atomic.LoadUint64(&m.FormatCounter) > 0
+	}
+
+	// if func was set then invocations count should be greater than zero
+	if m.FormatFunc != nil {
+		return atomic.LoadUint64(&m.FormatCounter) > 0
+	}
+
+	return true
+}
+
 //ValidateCallCounters checks that all mocked methods of the interface have been called at least once
 //Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 func (m *FormatterMock) ValidateCallCounters() {
 
-	if m.FormatFunc != nil && atomic.LoadUint64(&m.FormatCounter) == 0 {
+	if !m.FormatFinished() {
 		m.t.Fatal("Expected call to FormatterMock.Format")
 	}
 
@@ -128,7 +209,7 @@ func (m *FormatterMock) Finish() {
 //MinimockFinish checks that all mocked methods of the interface have been called at least once
 func (m *FormatterMock) MinimockFinish() {
 
-	if m.FormatFunc != nil && atomic.LoadUint64(&m.FormatCounter) == 0 {
+	if !m.FormatFinished() {
 		m.t.Fatal("Expected call to FormatterMock.Format")
 	}
 
@@ -146,7 +227,7 @@ func (m *FormatterMock) MinimockWait(timeout time.Duration) {
 	timeoutCh := time.After(timeout)
 	for {
 		ok := true
-		ok = ok && (m.FormatFunc == nil || atomic.LoadUint64(&m.FormatCounter) > 0)
+		ok = ok && m.FormatFinished()
 
 		if ok {
 			return
@@ -155,7 +236,7 @@ func (m *FormatterMock) MinimockWait(timeout time.Duration) {
 		select {
 		case <-timeoutCh:
 
-			if m.FormatFunc != nil && atomic.LoadUint64(&m.FormatCounter) == 0 {
+			if !m.FormatFinished() {
 				m.t.Error("Expected call to FormatterMock.Format")
 			}
 
@@ -171,7 +252,7 @@ func (m *FormatterMock) MinimockWait(timeout time.Duration) {
 //it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
 func (m *FormatterMock) AllMocksCalled() bool {
 
-	if m.FormatFunc != nil && atomic.LoadUint64(&m.FormatCounter) == 0 {
+	if !m.FormatFinished() {
 		return false
 	}
 

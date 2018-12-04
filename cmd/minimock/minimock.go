@@ -454,12 +454,10 @@ const template = `
 				return atomic.LoadUint64(&m.{{$methodName}}Counter) == uint64(len(m.{{$methodName}}Mock.expectationSeries))
 			}
 
-			{{if gt (len (params $method)) 0 }} 
 			// if main expectation was set then invocations count should be greater than zero
-			if m.{{$methodName}}Mock.mainExpectation != nil && m.{{$methodName}}Mock.mainExpectation.input != nil {
+			if m.{{$methodName}}Mock.mainExpectation != nil {
 				return atomic.LoadUint64(&m.{{$methodName}}Counter) > 0
 			}
-			{{end}}
 
 			// if func was set then invocations count should be greater than zero
 			if m.{{$methodName}}Func != nil {
