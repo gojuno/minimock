@@ -55,55 +55,92 @@ func NewTesterMock(t minimock.Tester) *TesterMock {
 }
 
 type mTesterMockError struct {
-	mock             *TesterMock
-	mockExpectations *TesterMockErrorParams
+	mock              *TesterMock
+	mainExpectation   *TesterMockErrorExpectation
+	expectationSeries []*TesterMockErrorExpectation
 }
 
-//TesterMockErrorParams represents input parameters of the Tester.Error
-type TesterMockErrorParams struct {
+type TesterMockErrorExpectation struct {
+	input *TesterMockErrorInput
+}
+
+type TesterMockErrorInput struct {
 	p []interface{}
 }
 
-//Expect sets up expected params for the Tester.Error
+//Expect specifies that invocation of Tester.Error is expected from 1 to Infinity times
 func (m *mTesterMockError) Expect(p ...interface{}) *mTesterMockError {
-	m.mockExpectations = &TesterMockErrorParams{p}
+	m.mock.ErrorFunc = nil
+	m.expectationSeries = nil
+
+	if m.mainExpectation == nil {
+		m.mainExpectation = &TesterMockErrorExpectation{}
+	}
+	m.mainExpectation.input = &TesterMockErrorInput{p}
 	return m
 }
 
-//Return sets up a mock for Tester.Error to return Return's arguments
+//Return specifies results of invocation of Tester.Error
 func (m *mTesterMockError) Return() *TesterMock {
-	m.mock.ErrorFunc = func(p ...interface{}) {
-		return
+	m.mock.ErrorFunc = nil
+	m.expectationSeries = nil
+
+	if m.mainExpectation == nil {
+		m.mainExpectation = &TesterMockErrorExpectation{}
 	}
+
 	return m.mock
+}
+
+//ExpectOnce specifies that invocation of Tester.Error is expected once
+func (m *mTesterMockError) ExpectOnce(p ...interface{}) *TesterMockErrorExpectation {
+	m.mock.ErrorFunc = nil
+	m.mainExpectation = nil
+
+	expectation := &TesterMockErrorExpectation{}
+	expectation.input = &TesterMockErrorInput{p}
+	m.expectationSeries = append(m.expectationSeries, expectation)
+	return expectation
 }
 
 //Set uses given function f as a mock of Tester.Error method
 func (m *mTesterMockError) Set(f func(p ...interface{})) *TesterMock {
+	m.mainExpectation = nil
+	m.expectationSeries = nil
+
 	m.mock.ErrorFunc = f
-	m.mockExpectations = nil
 	return m.mock
 }
 
 //Error implements github.com/gojuno/minimock.Tester interface
 func (m *TesterMock) Error(p ...interface{}) {
-	atomic.AddUint64(&m.ErrorPreCounter, 1)
+	counter := atomic.AddUint64(&m.ErrorPreCounter, 1)
 	defer atomic.AddUint64(&m.ErrorCounter, 1)
 
-	if m.ErrorMock.mockExpectations != nil {
-		testify_assert.Equal(m.t, *m.ErrorMock.mockExpectations, TesterMockErrorParams{p},
-			"Tester.Error got unexpected parameters")
-
-		if m.ErrorFunc == nil {
-
-			m.t.Fatal("No results are set for the TesterMock.Error")
-
+	if len(m.ErrorMock.expectationSeries) > 0 {
+		if counter > uint64(len(m.ErrorMock.expectationSeries)) {
+			m.t.Fatalf("Unexpected call to TesterMock.Error. %v", p)
 			return
 		}
+
+		input := m.ErrorMock.expectationSeries[counter-1].input
+		testify_assert.Equal(m.t, *input, TesterMockErrorInput{p}, "Tester.Error got unexpected parameters")
+
+		return
+	}
+
+	if m.ErrorMock.mainExpectation != nil {
+
+		input := m.ErrorMock.mainExpectation.input
+		if input != nil {
+			testify_assert.Equal(m.t, *input, TesterMockErrorInput{p}, "Tester.Error got unexpected parameters")
+		}
+
+		return
 	}
 
 	if m.ErrorFunc == nil {
-		m.t.Fatal("Unexpected call to TesterMock.Error")
+		m.t.Fatalf("Unexpected call to TesterMock.Error. %v", p)
 		return
 	}
 
@@ -120,57 +157,114 @@ func (m *TesterMock) ErrorMinimockPreCounter() uint64 {
 	return atomic.LoadUint64(&m.ErrorPreCounter)
 }
 
-type mTesterMockErrorf struct {
-	mock             *TesterMock
-	mockExpectations *TesterMockErrorfParams
+//ErrorFinished returns true if mock invocations count is ok
+func (m *TesterMock) ErrorFinished() bool {
+	// if expectation series were set then invocations count should be equal to expectations count
+	if len(m.ErrorMock.expectationSeries) > 0 {
+		return atomic.LoadUint64(&m.ErrorCounter) == uint64(len(m.ErrorMock.expectationSeries))
+	}
+
+	// if main expectation was set then invocations count should be greater than zero
+	if m.ErrorMock.mainExpectation != nil {
+		return atomic.LoadUint64(&m.ErrorCounter) > 0
+	}
+
+	// if func was set then invocations count should be greater than zero
+	if m.ErrorFunc != nil {
+		return atomic.LoadUint64(&m.ErrorCounter) > 0
+	}
+
+	return true
 }
 
-//TesterMockErrorfParams represents input parameters of the Tester.Errorf
-type TesterMockErrorfParams struct {
+type mTesterMockErrorf struct {
+	mock              *TesterMock
+	mainExpectation   *TesterMockErrorfExpectation
+	expectationSeries []*TesterMockErrorfExpectation
+}
+
+type TesterMockErrorfExpectation struct {
+	input *TesterMockErrorfInput
+}
+
+type TesterMockErrorfInput struct {
 	p  string
 	p1 []interface{}
 }
 
-//Expect sets up expected params for the Tester.Errorf
+//Expect specifies that invocation of Tester.Errorf is expected from 1 to Infinity times
 func (m *mTesterMockErrorf) Expect(p string, p1 ...interface{}) *mTesterMockErrorf {
-	m.mockExpectations = &TesterMockErrorfParams{p, p1}
+	m.mock.ErrorfFunc = nil
+	m.expectationSeries = nil
+
+	if m.mainExpectation == nil {
+		m.mainExpectation = &TesterMockErrorfExpectation{}
+	}
+	m.mainExpectation.input = &TesterMockErrorfInput{p, p1}
 	return m
 }
 
-//Return sets up a mock for Tester.Errorf to return Return's arguments
+//Return specifies results of invocation of Tester.Errorf
 func (m *mTesterMockErrorf) Return() *TesterMock {
-	m.mock.ErrorfFunc = func(p string, p1 ...interface{}) {
-		return
+	m.mock.ErrorfFunc = nil
+	m.expectationSeries = nil
+
+	if m.mainExpectation == nil {
+		m.mainExpectation = &TesterMockErrorfExpectation{}
 	}
+
 	return m.mock
+}
+
+//ExpectOnce specifies that invocation of Tester.Errorf is expected once
+func (m *mTesterMockErrorf) ExpectOnce(p string, p1 ...interface{}) *TesterMockErrorfExpectation {
+	m.mock.ErrorfFunc = nil
+	m.mainExpectation = nil
+
+	expectation := &TesterMockErrorfExpectation{}
+	expectation.input = &TesterMockErrorfInput{p, p1}
+	m.expectationSeries = append(m.expectationSeries, expectation)
+	return expectation
 }
 
 //Set uses given function f as a mock of Tester.Errorf method
 func (m *mTesterMockErrorf) Set(f func(p string, p1 ...interface{})) *TesterMock {
+	m.mainExpectation = nil
+	m.expectationSeries = nil
+
 	m.mock.ErrorfFunc = f
-	m.mockExpectations = nil
 	return m.mock
 }
 
 //Errorf implements github.com/gojuno/minimock.Tester interface
 func (m *TesterMock) Errorf(p string, p1 ...interface{}) {
-	atomic.AddUint64(&m.ErrorfPreCounter, 1)
+	counter := atomic.AddUint64(&m.ErrorfPreCounter, 1)
 	defer atomic.AddUint64(&m.ErrorfCounter, 1)
 
-	if m.ErrorfMock.mockExpectations != nil {
-		testify_assert.Equal(m.t, *m.ErrorfMock.mockExpectations, TesterMockErrorfParams{p, p1},
-			"Tester.Errorf got unexpected parameters")
-
-		if m.ErrorfFunc == nil {
-
-			m.t.Fatal("No results are set for the TesterMock.Errorf")
-
+	if len(m.ErrorfMock.expectationSeries) > 0 {
+		if counter > uint64(len(m.ErrorfMock.expectationSeries)) {
+			m.t.Fatalf("Unexpected call to TesterMock.Errorf. %v %v", p, p1)
 			return
 		}
+
+		input := m.ErrorfMock.expectationSeries[counter-1].input
+		testify_assert.Equal(m.t, *input, TesterMockErrorfInput{p, p1}, "Tester.Errorf got unexpected parameters")
+
+		return
+	}
+
+	if m.ErrorfMock.mainExpectation != nil {
+
+		input := m.ErrorfMock.mainExpectation.input
+		if input != nil {
+			testify_assert.Equal(m.t, *input, TesterMockErrorfInput{p, p1}, "Tester.Errorf got unexpected parameters")
+		}
+
+		return
 	}
 
 	if m.ErrorfFunc == nil {
-		m.t.Fatal("Unexpected call to TesterMock.Errorf")
+		m.t.Fatalf("Unexpected call to TesterMock.Errorf. %v %v", p, p1)
 		return
 	}
 
@@ -187,56 +281,113 @@ func (m *TesterMock) ErrorfMinimockPreCounter() uint64 {
 	return atomic.LoadUint64(&m.ErrorfPreCounter)
 }
 
-type mTesterMockFatal struct {
-	mock             *TesterMock
-	mockExpectations *TesterMockFatalParams
+//ErrorfFinished returns true if mock invocations count is ok
+func (m *TesterMock) ErrorfFinished() bool {
+	// if expectation series were set then invocations count should be equal to expectations count
+	if len(m.ErrorfMock.expectationSeries) > 0 {
+		return atomic.LoadUint64(&m.ErrorfCounter) == uint64(len(m.ErrorfMock.expectationSeries))
+	}
+
+	// if main expectation was set then invocations count should be greater than zero
+	if m.ErrorfMock.mainExpectation != nil {
+		return atomic.LoadUint64(&m.ErrorfCounter) > 0
+	}
+
+	// if func was set then invocations count should be greater than zero
+	if m.ErrorfFunc != nil {
+		return atomic.LoadUint64(&m.ErrorfCounter) > 0
+	}
+
+	return true
 }
 
-//TesterMockFatalParams represents input parameters of the Tester.Fatal
-type TesterMockFatalParams struct {
+type mTesterMockFatal struct {
+	mock              *TesterMock
+	mainExpectation   *TesterMockFatalExpectation
+	expectationSeries []*TesterMockFatalExpectation
+}
+
+type TesterMockFatalExpectation struct {
+	input *TesterMockFatalInput
+}
+
+type TesterMockFatalInput struct {
 	p []interface{}
 }
 
-//Expect sets up expected params for the Tester.Fatal
+//Expect specifies that invocation of Tester.Fatal is expected from 1 to Infinity times
 func (m *mTesterMockFatal) Expect(p ...interface{}) *mTesterMockFatal {
-	m.mockExpectations = &TesterMockFatalParams{p}
+	m.mock.FatalFunc = nil
+	m.expectationSeries = nil
+
+	if m.mainExpectation == nil {
+		m.mainExpectation = &TesterMockFatalExpectation{}
+	}
+	m.mainExpectation.input = &TesterMockFatalInput{p}
 	return m
 }
 
-//Return sets up a mock for Tester.Fatal to return Return's arguments
+//Return specifies results of invocation of Tester.Fatal
 func (m *mTesterMockFatal) Return() *TesterMock {
-	m.mock.FatalFunc = func(p ...interface{}) {
-		return
+	m.mock.FatalFunc = nil
+	m.expectationSeries = nil
+
+	if m.mainExpectation == nil {
+		m.mainExpectation = &TesterMockFatalExpectation{}
 	}
+
 	return m.mock
+}
+
+//ExpectOnce specifies that invocation of Tester.Fatal is expected once
+func (m *mTesterMockFatal) ExpectOnce(p ...interface{}) *TesterMockFatalExpectation {
+	m.mock.FatalFunc = nil
+	m.mainExpectation = nil
+
+	expectation := &TesterMockFatalExpectation{}
+	expectation.input = &TesterMockFatalInput{p}
+	m.expectationSeries = append(m.expectationSeries, expectation)
+	return expectation
 }
 
 //Set uses given function f as a mock of Tester.Fatal method
 func (m *mTesterMockFatal) Set(f func(p ...interface{})) *TesterMock {
+	m.mainExpectation = nil
+	m.expectationSeries = nil
+
 	m.mock.FatalFunc = f
-	m.mockExpectations = nil
 	return m.mock
 }
 
 //Fatal implements github.com/gojuno/minimock.Tester interface
 func (m *TesterMock) Fatal(p ...interface{}) {
-	atomic.AddUint64(&m.FatalPreCounter, 1)
+	counter := atomic.AddUint64(&m.FatalPreCounter, 1)
 	defer atomic.AddUint64(&m.FatalCounter, 1)
 
-	if m.FatalMock.mockExpectations != nil {
-		testify_assert.Equal(m.t, *m.FatalMock.mockExpectations, TesterMockFatalParams{p},
-			"Tester.Fatal got unexpected parameters")
-
-		if m.FatalFunc == nil {
-
-			m.t.Fatal("No results are set for the TesterMock.Fatal")
-
+	if len(m.FatalMock.expectationSeries) > 0 {
+		if counter > uint64(len(m.FatalMock.expectationSeries)) {
+			m.t.Fatalf("Unexpected call to TesterMock.Fatal. %v", p)
 			return
 		}
+
+		input := m.FatalMock.expectationSeries[counter-1].input
+		testify_assert.Equal(m.t, *input, TesterMockFatalInput{p}, "Tester.Fatal got unexpected parameters")
+
+		return
+	}
+
+	if m.FatalMock.mainExpectation != nil {
+
+		input := m.FatalMock.mainExpectation.input
+		if input != nil {
+			testify_assert.Equal(m.t, *input, TesterMockFatalInput{p}, "Tester.Fatal got unexpected parameters")
+		}
+
+		return
 	}
 
 	if m.FatalFunc == nil {
-		m.t.Fatal("Unexpected call to TesterMock.Fatal")
+		m.t.Fatalf("Unexpected call to TesterMock.Fatal. %v", p)
 		return
 	}
 
@@ -253,57 +404,114 @@ func (m *TesterMock) FatalMinimockPreCounter() uint64 {
 	return atomic.LoadUint64(&m.FatalPreCounter)
 }
 
-type mTesterMockFatalf struct {
-	mock             *TesterMock
-	mockExpectations *TesterMockFatalfParams
+//FatalFinished returns true if mock invocations count is ok
+func (m *TesterMock) FatalFinished() bool {
+	// if expectation series were set then invocations count should be equal to expectations count
+	if len(m.FatalMock.expectationSeries) > 0 {
+		return atomic.LoadUint64(&m.FatalCounter) == uint64(len(m.FatalMock.expectationSeries))
+	}
+
+	// if main expectation was set then invocations count should be greater than zero
+	if m.FatalMock.mainExpectation != nil {
+		return atomic.LoadUint64(&m.FatalCounter) > 0
+	}
+
+	// if func was set then invocations count should be greater than zero
+	if m.FatalFunc != nil {
+		return atomic.LoadUint64(&m.FatalCounter) > 0
+	}
+
+	return true
 }
 
-//TesterMockFatalfParams represents input parameters of the Tester.Fatalf
-type TesterMockFatalfParams struct {
+type mTesterMockFatalf struct {
+	mock              *TesterMock
+	mainExpectation   *TesterMockFatalfExpectation
+	expectationSeries []*TesterMockFatalfExpectation
+}
+
+type TesterMockFatalfExpectation struct {
+	input *TesterMockFatalfInput
+}
+
+type TesterMockFatalfInput struct {
 	p  string
 	p1 []interface{}
 }
 
-//Expect sets up expected params for the Tester.Fatalf
+//Expect specifies that invocation of Tester.Fatalf is expected from 1 to Infinity times
 func (m *mTesterMockFatalf) Expect(p string, p1 ...interface{}) *mTesterMockFatalf {
-	m.mockExpectations = &TesterMockFatalfParams{p, p1}
+	m.mock.FatalfFunc = nil
+	m.expectationSeries = nil
+
+	if m.mainExpectation == nil {
+		m.mainExpectation = &TesterMockFatalfExpectation{}
+	}
+	m.mainExpectation.input = &TesterMockFatalfInput{p, p1}
 	return m
 }
 
-//Return sets up a mock for Tester.Fatalf to return Return's arguments
+//Return specifies results of invocation of Tester.Fatalf
 func (m *mTesterMockFatalf) Return() *TesterMock {
-	m.mock.FatalfFunc = func(p string, p1 ...interface{}) {
-		return
+	m.mock.FatalfFunc = nil
+	m.expectationSeries = nil
+
+	if m.mainExpectation == nil {
+		m.mainExpectation = &TesterMockFatalfExpectation{}
 	}
+
 	return m.mock
+}
+
+//ExpectOnce specifies that invocation of Tester.Fatalf is expected once
+func (m *mTesterMockFatalf) ExpectOnce(p string, p1 ...interface{}) *TesterMockFatalfExpectation {
+	m.mock.FatalfFunc = nil
+	m.mainExpectation = nil
+
+	expectation := &TesterMockFatalfExpectation{}
+	expectation.input = &TesterMockFatalfInput{p, p1}
+	m.expectationSeries = append(m.expectationSeries, expectation)
+	return expectation
 }
 
 //Set uses given function f as a mock of Tester.Fatalf method
 func (m *mTesterMockFatalf) Set(f func(p string, p1 ...interface{})) *TesterMock {
+	m.mainExpectation = nil
+	m.expectationSeries = nil
+
 	m.mock.FatalfFunc = f
-	m.mockExpectations = nil
 	return m.mock
 }
 
 //Fatalf implements github.com/gojuno/minimock.Tester interface
 func (m *TesterMock) Fatalf(p string, p1 ...interface{}) {
-	atomic.AddUint64(&m.FatalfPreCounter, 1)
+	counter := atomic.AddUint64(&m.FatalfPreCounter, 1)
 	defer atomic.AddUint64(&m.FatalfCounter, 1)
 
-	if m.FatalfMock.mockExpectations != nil {
-		testify_assert.Equal(m.t, *m.FatalfMock.mockExpectations, TesterMockFatalfParams{p, p1},
-			"Tester.Fatalf got unexpected parameters")
-
-		if m.FatalfFunc == nil {
-
-			m.t.Fatal("No results are set for the TesterMock.Fatalf")
-
+	if len(m.FatalfMock.expectationSeries) > 0 {
+		if counter > uint64(len(m.FatalfMock.expectationSeries)) {
+			m.t.Fatalf("Unexpected call to TesterMock.Fatalf. %v %v", p, p1)
 			return
 		}
+
+		input := m.FatalfMock.expectationSeries[counter-1].input
+		testify_assert.Equal(m.t, *input, TesterMockFatalfInput{p, p1}, "Tester.Fatalf got unexpected parameters")
+
+		return
+	}
+
+	if m.FatalfMock.mainExpectation != nil {
+
+		input := m.FatalfMock.mainExpectation.input
+		if input != nil {
+			testify_assert.Equal(m.t, *input, TesterMockFatalfInput{p, p1}, "Tester.Fatalf got unexpected parameters")
+		}
+
+		return
 	}
 
 	if m.FatalfFunc == nil {
-		m.t.Fatal("Unexpected call to TesterMock.Fatalf")
+		m.t.Fatalf("Unexpected call to TesterMock.Fatalf. %v %v", p, p1)
 		return
 	}
 
@@ -320,23 +528,43 @@ func (m *TesterMock) FatalfMinimockPreCounter() uint64 {
 	return atomic.LoadUint64(&m.FatalfPreCounter)
 }
 
+//FatalfFinished returns true if mock invocations count is ok
+func (m *TesterMock) FatalfFinished() bool {
+	// if expectation series were set then invocations count should be equal to expectations count
+	if len(m.FatalfMock.expectationSeries) > 0 {
+		return atomic.LoadUint64(&m.FatalfCounter) == uint64(len(m.FatalfMock.expectationSeries))
+	}
+
+	// if main expectation was set then invocations count should be greater than zero
+	if m.FatalfMock.mainExpectation != nil {
+		return atomic.LoadUint64(&m.FatalfCounter) > 0
+	}
+
+	// if func was set then invocations count should be greater than zero
+	if m.FatalfFunc != nil {
+		return atomic.LoadUint64(&m.FatalfCounter) > 0
+	}
+
+	return true
+}
+
 //ValidateCallCounters checks that all mocked methods of the interface have been called at least once
 //Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 func (m *TesterMock) ValidateCallCounters() {
 
-	if m.ErrorFunc != nil && atomic.LoadUint64(&m.ErrorCounter) == 0 {
+	if !m.ErrorFinished() {
 		m.t.Fatal("Expected call to TesterMock.Error")
 	}
 
-	if m.ErrorfFunc != nil && atomic.LoadUint64(&m.ErrorfCounter) == 0 {
+	if !m.ErrorfFinished() {
 		m.t.Fatal("Expected call to TesterMock.Errorf")
 	}
 
-	if m.FatalFunc != nil && atomic.LoadUint64(&m.FatalCounter) == 0 {
+	if !m.FatalFinished() {
 		m.t.Fatal("Expected call to TesterMock.Fatal")
 	}
 
-	if m.FatalfFunc != nil && atomic.LoadUint64(&m.FatalfCounter) == 0 {
+	if !m.FatalfFinished() {
 		m.t.Fatal("Expected call to TesterMock.Fatalf")
 	}
 
@@ -357,19 +585,19 @@ func (m *TesterMock) Finish() {
 //MinimockFinish checks that all mocked methods of the interface have been called at least once
 func (m *TesterMock) MinimockFinish() {
 
-	if m.ErrorFunc != nil && atomic.LoadUint64(&m.ErrorCounter) == 0 {
+	if !m.ErrorFinished() {
 		m.t.Fatal("Expected call to TesterMock.Error")
 	}
 
-	if m.ErrorfFunc != nil && atomic.LoadUint64(&m.ErrorfCounter) == 0 {
+	if !m.ErrorfFinished() {
 		m.t.Fatal("Expected call to TesterMock.Errorf")
 	}
 
-	if m.FatalFunc != nil && atomic.LoadUint64(&m.FatalCounter) == 0 {
+	if !m.FatalFinished() {
 		m.t.Fatal("Expected call to TesterMock.Fatal")
 	}
 
-	if m.FatalfFunc != nil && atomic.LoadUint64(&m.FatalfCounter) == 0 {
+	if !m.FatalfFinished() {
 		m.t.Fatal("Expected call to TesterMock.Fatalf")
 	}
 
@@ -387,10 +615,10 @@ func (m *TesterMock) MinimockWait(timeout time.Duration) {
 	timeoutCh := time.After(timeout)
 	for {
 		ok := true
-		ok = ok && (m.ErrorFunc == nil || atomic.LoadUint64(&m.ErrorCounter) > 0)
-		ok = ok && (m.ErrorfFunc == nil || atomic.LoadUint64(&m.ErrorfCounter) > 0)
-		ok = ok && (m.FatalFunc == nil || atomic.LoadUint64(&m.FatalCounter) > 0)
-		ok = ok && (m.FatalfFunc == nil || atomic.LoadUint64(&m.FatalfCounter) > 0)
+		ok = ok && m.ErrorFinished()
+		ok = ok && m.ErrorfFinished()
+		ok = ok && m.FatalFinished()
+		ok = ok && m.FatalfFinished()
 
 		if ok {
 			return
@@ -399,19 +627,19 @@ func (m *TesterMock) MinimockWait(timeout time.Duration) {
 		select {
 		case <-timeoutCh:
 
-			if m.ErrorFunc != nil && atomic.LoadUint64(&m.ErrorCounter) == 0 {
+			if !m.ErrorFinished() {
 				m.t.Error("Expected call to TesterMock.Error")
 			}
 
-			if m.ErrorfFunc != nil && atomic.LoadUint64(&m.ErrorfCounter) == 0 {
+			if !m.ErrorfFinished() {
 				m.t.Error("Expected call to TesterMock.Errorf")
 			}
 
-			if m.FatalFunc != nil && atomic.LoadUint64(&m.FatalCounter) == 0 {
+			if !m.FatalFinished() {
 				m.t.Error("Expected call to TesterMock.Fatal")
 			}
 
-			if m.FatalfFunc != nil && atomic.LoadUint64(&m.FatalfCounter) == 0 {
+			if !m.FatalfFinished() {
 				m.t.Error("Expected call to TesterMock.Fatalf")
 			}
 
@@ -427,19 +655,19 @@ func (m *TesterMock) MinimockWait(timeout time.Duration) {
 //it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
 func (m *TesterMock) AllMocksCalled() bool {
 
-	if m.ErrorFunc != nil && atomic.LoadUint64(&m.ErrorCounter) == 0 {
+	if !m.ErrorFinished() {
 		return false
 	}
 
-	if m.ErrorfFunc != nil && atomic.LoadUint64(&m.ErrorfCounter) == 0 {
+	if !m.ErrorfFinished() {
 		return false
 	}
 
-	if m.FatalFunc != nil && atomic.LoadUint64(&m.FatalCounter) == 0 {
+	if !m.FatalFinished() {
 		return false
 	}
 
-	if m.FatalfFunc != nil && atomic.LoadUint64(&m.FatalfCounter) == 0 {
+	if !m.FatalfFinished() {
 		return false
 	}
 
