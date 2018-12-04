@@ -387,7 +387,7 @@ const template = `
 
 			if len(m.{{$methodName}}Mock.expectationSeries) > 0 {
 				if counter > uint64(len(m.{{$methodName}}Mock.expectationSeries)) {
-					m.t.Fatal("Unexpected call to {{$structName}}.{{$methodName}}")
+					m.t.Fatalf("Unexpected call to {{$structName}}.{{$methodName}}.{{range (params $method)}} %v{{end}}", {{ (params $method).Names }} )
 					return			
 				}
 
@@ -428,7 +428,7 @@ const template = `
 			}
 
 			if m.{{$methodName}}Func == nil {
-				m.t.Fatal("Unexpected call to {{$structName}}.{{$methodName}}")
+				m.t.Fatalf("Unexpected call to {{$structName}}.{{$methodName}}.{{range (params $method)}} %v{{end}}", {{ (params $method).Names }} )
 				return
 			}
 

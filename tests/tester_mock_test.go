@@ -119,7 +119,7 @@ func (m *TesterMock) Error(p ...interface{}) {
 
 	if len(m.ErrorMock.expectationSeries) > 0 {
 		if counter > uint64(len(m.ErrorMock.expectationSeries)) {
-			m.t.Fatal("Unexpected call to TesterMock.Error")
+			m.t.Fatalf("Unexpected call to TesterMock.Error. %v", p)
 			return
 		}
 
@@ -140,7 +140,7 @@ func (m *TesterMock) Error(p ...interface{}) {
 	}
 
 	if m.ErrorFunc == nil {
-		m.t.Fatal("Unexpected call to TesterMock.Error")
+		m.t.Fatalf("Unexpected call to TesterMock.Error. %v", p)
 		return
 	}
 
@@ -243,7 +243,7 @@ func (m *TesterMock) Errorf(p string, p1 ...interface{}) {
 
 	if len(m.ErrorfMock.expectationSeries) > 0 {
 		if counter > uint64(len(m.ErrorfMock.expectationSeries)) {
-			m.t.Fatal("Unexpected call to TesterMock.Errorf")
+			m.t.Fatalf("Unexpected call to TesterMock.Errorf. %v %v", p, p1)
 			return
 		}
 
@@ -264,7 +264,7 @@ func (m *TesterMock) Errorf(p string, p1 ...interface{}) {
 	}
 
 	if m.ErrorfFunc == nil {
-		m.t.Fatal("Unexpected call to TesterMock.Errorf")
+		m.t.Fatalf("Unexpected call to TesterMock.Errorf. %v %v", p, p1)
 		return
 	}
 
@@ -366,7 +366,7 @@ func (m *TesterMock) Fatal(p ...interface{}) {
 
 	if len(m.FatalMock.expectationSeries) > 0 {
 		if counter > uint64(len(m.FatalMock.expectationSeries)) {
-			m.t.Fatal("Unexpected call to TesterMock.Fatal")
+			m.t.Fatalf("Unexpected call to TesterMock.Fatal. %v", p)
 			return
 		}
 
@@ -387,7 +387,7 @@ func (m *TesterMock) Fatal(p ...interface{}) {
 	}
 
 	if m.FatalFunc == nil {
-		m.t.Fatal("Unexpected call to TesterMock.Fatal")
+		m.t.Fatalf("Unexpected call to TesterMock.Fatal. %v", p)
 		return
 	}
 
@@ -490,7 +490,7 @@ func (m *TesterMock) Fatalf(p string, p1 ...interface{}) {
 
 	if len(m.FatalfMock.expectationSeries) > 0 {
 		if counter > uint64(len(m.FatalfMock.expectationSeries)) {
-			m.t.Fatal("Unexpected call to TesterMock.Fatalf")
+			m.t.Fatalf("Unexpected call to TesterMock.Fatalf. %v %v", p, p1)
 			return
 		}
 
@@ -511,7 +511,7 @@ func (m *TesterMock) Fatalf(p string, p1 ...interface{}) {
 	}
 
 	if m.FatalfFunc == nil {
-		m.t.Fatal("Unexpected call to TesterMock.Fatalf")
+		m.t.Fatalf("Unexpected call to TesterMock.Fatalf. %v %v", p, p1)
 		return
 	}
 

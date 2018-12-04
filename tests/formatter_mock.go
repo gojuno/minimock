@@ -111,7 +111,7 @@ func (m *FormatterMock) Format(p string, p1 ...interface{}) (r string) {
 
 	if len(m.FormatMock.expectationSeries) > 0 {
 		if counter > uint64(len(m.FormatMock.expectationSeries)) {
-			m.t.Fatal("Unexpected call to FormatterMock.Format")
+			m.t.Fatalf("Unexpected call to FormatterMock.Format. %v %v", p, p1)
 			return
 		}
 
@@ -147,7 +147,7 @@ func (m *FormatterMock) Format(p string, p1 ...interface{}) (r string) {
 	}
 
 	if m.FormatFunc == nil {
-		m.t.Fatal("Unexpected call to FormatterMock.Format")
+		m.t.Fatalf("Unexpected call to FormatterMock.Format. %v %v", p, p1)
 		return
 	}
 
