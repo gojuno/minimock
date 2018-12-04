@@ -80,6 +80,18 @@ func (m *mTesterMockError) Expect(p ...interface{}) *mTesterMockError {
 	return m
 }
 
+//Return specifies results of invocation of Tester.Error
+func (m *mTesterMockError) Return() *TesterMock {
+	m.mock.ErrorFunc = nil
+	m.expectationSeries = nil
+
+	if m.mainExpectation == nil {
+		m.mainExpectation = &TesterMockErrorExpectation{}
+	}
+
+	return m.mock
+}
+
 //ExpectOnce specifies that invocation of Tester.Error is expected once
 func (m *mTesterMockError) ExpectOnce(p ...interface{}) *TesterMockErrorExpectation {
 	m.mock.ErrorFunc = nil
@@ -190,6 +202,18 @@ func (m *mTesterMockErrorf) Expect(p string, p1 ...interface{}) *mTesterMockErro
 	}
 	m.mainExpectation.input = &TesterMockErrorfInput{p, p1}
 	return m
+}
+
+//Return specifies results of invocation of Tester.Errorf
+func (m *mTesterMockErrorf) Return() *TesterMock {
+	m.mock.ErrorfFunc = nil
+	m.expectationSeries = nil
+
+	if m.mainExpectation == nil {
+		m.mainExpectation = &TesterMockErrorfExpectation{}
+	}
+
+	return m.mock
 }
 
 //ExpectOnce specifies that invocation of Tester.Errorf is expected once
@@ -303,6 +327,18 @@ func (m *mTesterMockFatal) Expect(p ...interface{}) *mTesterMockFatal {
 	return m
 }
 
+//Return specifies results of invocation of Tester.Fatal
+func (m *mTesterMockFatal) Return() *TesterMock {
+	m.mock.FatalFunc = nil
+	m.expectationSeries = nil
+
+	if m.mainExpectation == nil {
+		m.mainExpectation = &TesterMockFatalExpectation{}
+	}
+
+	return m.mock
+}
+
 //ExpectOnce specifies that invocation of Tester.Fatal is expected once
 func (m *mTesterMockFatal) ExpectOnce(p ...interface{}) *TesterMockFatalExpectation {
 	m.mock.FatalFunc = nil
@@ -413,6 +449,18 @@ func (m *mTesterMockFatalf) Expect(p string, p1 ...interface{}) *mTesterMockFata
 	}
 	m.mainExpectation.input = &TesterMockFatalfInput{p, p1}
 	return m
+}
+
+//Return specifies results of invocation of Tester.Fatalf
+func (m *mTesterMockFatalf) Return() *TesterMock {
+	m.mock.FatalfFunc = nil
+	m.expectationSeries = nil
+
+	if m.mainExpectation == nil {
+		m.mainExpectation = &TesterMockFatalfExpectation{}
+	}
+
+	return m.mock
 }
 
 //ExpectOnce specifies that invocation of Tester.Fatalf is expected once

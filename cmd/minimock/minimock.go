@@ -342,7 +342,6 @@ const template = `
 			return m
 		}
 
-		{{if gt (len (results $method)) 0 }} 
 		//Return specifies results of invocation of {{$interfaceName}}.{{$methodName}}
 		func (m *m{{$structName}}{{$methodName}}) Return({{results $method}}) *{{$structName}} {
 			m.mock.{{$methodName}}Func = nil
@@ -354,7 +353,6 @@ const template = `
 			{{if gt (len (results $method)) 0 }} m.mainExpectation.result = &{{$structName}}{{$methodName}}Result{ {{ (results $method).Names }} } {{end}}
 			return m.mock
 		}
-		{{end}}
 
 		//ExpectOnce specifies that invocation of {{$interfaceName}}.{{$methodName}} is expected once
 		func (m *m{{$structName}}{{$methodName}}) ExpectOnce({{params $method}}) *{{$structName}}{{$methodName}}Expectation {
