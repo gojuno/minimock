@@ -308,31 +308,9 @@ const template = `
 
 	{{ range $methodName, $method := . }}
 		type m{{$structName}}{{$methodName}} struct {
-			mock *{{$structName}}
-			{{if gt (len (params $method)) 0 }} mainExpectation *{{$structName}}{{$methodName}}Params{{end}}
+			mock              *{{$structName}}
+			mainExpectation   *{{$structName}}{{$methodName}}Expectation
 			expectationSeries []*{{$structName}}{{$methodName}}Expectation
-		}
-
-		{{if gt (len (params $method)) 0 }}
-			//{{$structName}}{{$methodName}}Params represents input parameters of the {{$interfaceName}}.{{$methodName}}
-			type {{$structName}}{{$methodName}}Params struct {
-				{{toStructFields (params $method)}}
-			}
-
-			//Expect sets up expected params for the {{$interfaceName}}.{{$methodName}}
-			func (m *m{{$structName}}{{$methodName}}) Expect({{params $method}}) *m{{$structName}}{{$methodName}} {
-				m.mainExpectation = &{{$structName}}{{$methodName}}Params{ {{ (params $method).Names }} }
-				return m
-			}
-		{{end}}
-
-		//Return sets up a mock for {{$interfaceName}}.{{$methodName}} to return Return's arguments
-		func (m *m{{$structName}}{{$methodName}}) Return({{results $method}}) *{{$structName}} {
-			m.mock.{{$methodName}}Func = func({{params $method}}) ({{(results $method).Types}}) {
-				return {{ (results $method).Names }}
-			}
-			m.expectationSeries = nil
-			return m.mock
 		}
 
 		type {{$structName}}{{$methodName}}Expectation struct {
@@ -352,12 +330,40 @@ const template = `
 			}
 		{{end}}
 
+		//Expect specifies that invocation of {{$interfaceName}}.{{$methodName}} is expected from 1 to Infinity times
+		func (m *m{{$structName}}{{$methodName}}) Expect({{params $method}}) *m{{$structName}}{{$methodName}} {
+			m.mock.{{$methodName}}Func = nil
+			m.expectationSeries = nil
+
+			if m.mainExpectation == nil {
+				m.mainExpectation = &{{$structName}}{{$methodName}}Expectation{}
+			}
+			{{if gt (len (params $method)) 0 }} m.mainExpectation.input = &{{$structName}}{{$methodName}}Input{ {{ (params $method).Names }} } {{end}}
+			return m
+		}
+
+		{{if gt (len (results $method)) 0 }} 
+		//Return specifies results of invocation of {{$interfaceName}}.{{$methodName}}
+		func (m *m{{$structName}}{{$methodName}}) Return({{results $method}}) *{{$structName}} {
+			m.mock.{{$methodName}}Func = nil
+			m.expectationSeries = nil
+
+			if m.mainExpectation == nil {
+				m.mainExpectation = &{{$structName}}{{$methodName}}Expectation{}
+			}
+			{{if gt (len (results $method)) 0 }} m.mainExpectation.result = &{{$structName}}{{$methodName}}Result{ {{ (results $method).Names }} } {{end}}
+			return m.mock
+		}
+		{{end}}
+
+		//ExpectOnce specifies that invocation of {{$interfaceName}}.{{$methodName}} is expected once
 		func (m *m{{$structName}}{{$methodName}}) ExpectOnce({{params $method}}) *{{$structName}}{{$methodName}}Expectation {
+			m.mock.{{$methodName}}Func = nil
+			m.mainExpectation = nil
+
 			expectation := &{{$structName}}{{$methodName}}Expectation{}
 			{{if gt (len (params $method)) 0 }} expectation.input = &{{$structName}}{{$methodName}}Input{ {{ (params $method).Names }} } {{end}}
 			m.expectationSeries = append(m.expectationSeries, expectation)
-			m.mock.{{$methodName}}Func = nil
-			{{if gt (len (params $method)) 0 }}m.mainExpectation = nil{{end}}
 			return expectation
 		}
 
@@ -369,9 +375,10 @@ const template = `
 
 		//Set uses given function f as a mock of {{$interfaceName}}.{{$methodName}} method
 		func (m *m{{$structName}}{{$methodName}}) Set(f func({{params $method}}) ({{results $method}})) *{{$structName}}{
-			m.mock.{{$methodName}}Func = f
-			{{if gt (len (params $method)) 0 }}m.mainExpectation = nil{{end}}
+			m.mainExpectation = nil
 			m.expectationSeries = nil
+
+			m.mock.{{$methodName}}Func = f
 			return m.mock
 		}
 
@@ -397,24 +404,30 @@ const template = `
 						m.t.Fatal("No results are set for the {{$structName}}.{{$methodName}}")  
 						return
 					}
-
 					{{ range $param := (results $method) }} 
 					{{ $param.Name }} = result.{{ $param.Name }} {{ end }}
-
 				{{ end }}
 				return
 			}
 
-			{{if gt (len (params $method)) 0 }}
 			if m.{{$methodName}}Mock.mainExpectation != nil {
-				testify_assert.Equal(m.t, *m.{{$methodName}}Mock.mainExpectation, {{$structName}}{{$methodName}}Params{ {{ (params $method).Names }} }, "{{$interfaceName}}.{{$methodName}} got unexpected parameters")
+				{{if gt (len (params $method)) 0 }}
+					input := m.{{$methodName}}Mock.mainExpectation.input
+					if input != nil {
+						testify_assert.Equal(m.t, *input, {{$structName}}{{$methodName}}Input{ {{ (params $method).Names }} }, "{{$interfaceName}}.{{$methodName}} got unexpected parameters")
+					}
+				{{ end }}
 
-				if m.{{$methodName}}Func == nil {
-					{{if gt (len (params $method)) 0 }} m.t.Fatal("No results are set for the {{$structName}}.{{$methodName}}") {{end}}
-					return
-				}
-
-			}{{end}}
+				{{if gt (len (results $method)) 0 }}
+					result := m.{{$methodName}}Mock.mainExpectation.result
+					if result == nil {
+						m.t.Fatal("No results are set for the {{$structName}}.{{$methodName}}") 
+					}
+					{{ range $param := (results $method) }} 
+					{{ $param.Name }} = result.{{ $param.Name }} {{ end }}
+				{{ end }}
+				return
+			}
 
 			if m.{{$methodName}}Func == nil {
 				m.t.Fatal("Unexpected call to {{$structName}}.{{$methodName}}")
@@ -436,11 +449,24 @@ const template = `
 
 		//{{$methodName}}Finished returns true if mock invocations count is ok
 		func (m *{{$structName}}) {{$methodName}}Finished() bool {
+			// if expectation series were set then invocations count should be equal to expectations count
 			if len(m.{{$methodName}}Mock.expectationSeries) > 0 {
 				return atomic.LoadUint64(&m.{{$methodName}}Counter) == uint64(len(m.{{$methodName}}Mock.expectationSeries))
 			}
 
-			return m.{{$methodName}}Func == nil || atomic.LoadUint64(&m.{{$methodName}}Counter) > 0
+			{{if gt (len (params $method)) 0 }} 
+			// if main expectation was set then invocations count should be greater than zero
+			if m.{{$methodName}}Mock.mainExpectation != nil && m.{{$methodName}}Mock.mainExpectation.input != nil {
+				return atomic.LoadUint64(&m.{{$methodName}}Counter) > 0
+			}
+			{{end}}
+
+			// if func was set then invocations count should be greater than zero
+			if m.{{$methodName}}Func != nil {
+				return atomic.LoadUint64(&m.{{$methodName}}Counter) > 0
+			}
+
+			return true
 		}
 	{{ end }}
 
