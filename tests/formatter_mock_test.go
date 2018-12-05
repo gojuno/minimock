@@ -113,64 +113,64 @@ func TestFormatterMock_Finish(t *testing.T) {
 	assert.True(t, mockCalled)
 }
 
-func TestMFormatterMockFormat_ExpectOnce(t *testing.T) {
+func TestMFormatterMockFormat_SeriesExpect(t *testing.T) {
 	tester := NewTesterMock(t)
 
 	formatter := NewFormatterMock(tester)
 	defer formatter.Finish()
 
-	formatter.FormatMock.ExpectOnce("hello %v", "username").Return("hello username")
-	formatter.FormatMock.ExpectOnce("goodbye %v", "username").Return("goodbye username")
+	formatter.FormatMock.SeriesExpect("hello %v", "username").Return("hello username")
+	formatter.FormatMock.SeriesExpect("goodbye %v", "username").Return("goodbye username")
 
 	assert.Equal(t, "hello username", formatter.Format("hello %v", "username"))
 	assert.Equal(t, "goodbye username", formatter.Format("goodbye %v", "username"))
 }
 
-func TestMFormatterMockFormat_ExpectOnce_NoReturn(t *testing.T) {
+func TestMFormatterMockFormat_SeriesExpect_NoReturn(t *testing.T) {
 	tester := NewTesterMock(t)
 
 	formatter := NewFormatterMock(tester)
 	defer formatter.Finish()
 
-	formatter.FormatMock.ExpectOnce("hello %v", "username").Return("hello username")
-	formatter.FormatMock.ExpectOnce("goodbye %v", "username") // no return here will produce error
+	formatter.FormatMock.SeriesExpect("hello %v", "username").Return("hello username")
+	formatter.FormatMock.SeriesExpect("goodbye %v", "username") // no return here will produce error
 
 	// return is set for this invocation
 	formatter.Format("hello %v", "username")
 
 	// return is not set for this invocation
-	tester.FatalMock.ExpectOnce("No results are set for the FormatterMock.Format")
+	tester.FatalMock.SeriesExpect("No results are set for the FormatterMock.Format")
 	formatter.Format("goodbye %v", "username")
 }
 
-func TestMFormatterMockFormat_ExpectOnce_NotEnoughCalls(t *testing.T) {
+func TestMFormatterMockFormat_SeriesExpect_NotEnoughCalls(t *testing.T) {
 	tester := NewTesterMock(t)
 
 	formatter := NewFormatterMock(tester)
 
-	formatter.FormatMock.ExpectOnce("hello %v", "username").Return("hello username")
-	formatter.FormatMock.ExpectOnce("goodbye %v", "username")
+	formatter.FormatMock.SeriesExpect("hello %v", "username").Return("hello username")
+	formatter.FormatMock.SeriesExpect("goodbye %v", "username")
 
 	formatter.Format("hello %v", "username")
 
 	// expected two invocations of Format, but did only one
-	tester.FatalMock.ExpectOnce("Expected call to FormatterMock.Format")
+	tester.FatalMock.SeriesExpect("Expected call to FormatterMock.Format")
 	formatter.Finish()
 }
 
-func TestMFormatterMockFormat_ExpectOnce_TooMuchCalls(t *testing.T) {
+func TestMFormatterMockFormat_SeriesExpect_TooMuchCalls(t *testing.T) {
 	tester := NewTesterMock(t)
 
 	formatter := NewFormatterMock(tester)
 
-	formatter.FormatMock.ExpectOnce("hello %v", "username").Return("hello username")
-	formatter.FormatMock.ExpectOnce("goodbye %v", "username").Return("goodbye username")
+	formatter.FormatMock.SeriesExpect("hello %v", "username").Return("hello username")
+	formatter.FormatMock.SeriesExpect("goodbye %v", "username").Return("goodbye username")
 
 	formatter.Format("hello %v", "username")
 	formatter.Format("goodbye %v", "username")
 
 	// expected two invocations to Format, but do three
-	tester.FatalfMock.ExpectOnce("Unexpected call to FormatterMock.Format. %v %v", "hello again", []interface{}{"username"})
+	tester.FatalfMock.SeriesExpect("Unexpected call to FormatterMock.Format. %v %v", "hello again", []interface{}{"username"})
 	formatter.Format("hello again", "username")
 }
 

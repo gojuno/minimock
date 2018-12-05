@@ -92,8 +92,8 @@ func (m *mTesterMockError) Return() *TesterMock {
 	return m.mock
 }
 
-//ExpectOnce specifies that invocation of Tester.Error is expected once
-func (m *mTesterMockError) ExpectOnce(p ...interface{}) *TesterMockErrorExpectation {
+//SeriesExpect specifies that invocation of Tester.Error is expected once
+func (m *mTesterMockError) SeriesExpect(p ...interface{}) *TesterMockErrorExpectation {
 	m.mock.ErrorFunc = nil
 	m.mainExpectation = nil
 
@@ -161,7 +161,7 @@ func (m *TesterMock) ErrorMinimockPreCounter() uint64 {
 func (m *TesterMock) ErrorFinished() bool {
 	// if expectation series were set then invocations count should be equal to expectations count
 	if len(m.ErrorMock.expectationSeries) > 0 {
-		return atomic.LoadUint64(&m.ErrorCounter) == uint64(len(m.ErrorMock.expectationSeries))
+		return atomic.LoadUint64(&m.ErrorCounter) >= uint64(len(m.ErrorMock.expectationSeries))
 	}
 
 	// if main expectation was set then invocations count should be greater than zero
@@ -216,8 +216,8 @@ func (m *mTesterMockErrorf) Return() *TesterMock {
 	return m.mock
 }
 
-//ExpectOnce specifies that invocation of Tester.Errorf is expected once
-func (m *mTesterMockErrorf) ExpectOnce(p string, p1 ...interface{}) *TesterMockErrorfExpectation {
+//SeriesExpect specifies that invocation of Tester.Errorf is expected once
+func (m *mTesterMockErrorf) SeriesExpect(p string, p1 ...interface{}) *TesterMockErrorfExpectation {
 	m.mock.ErrorfFunc = nil
 	m.mainExpectation = nil
 
@@ -285,7 +285,7 @@ func (m *TesterMock) ErrorfMinimockPreCounter() uint64 {
 func (m *TesterMock) ErrorfFinished() bool {
 	// if expectation series were set then invocations count should be equal to expectations count
 	if len(m.ErrorfMock.expectationSeries) > 0 {
-		return atomic.LoadUint64(&m.ErrorfCounter) == uint64(len(m.ErrorfMock.expectationSeries))
+		return atomic.LoadUint64(&m.ErrorfCounter) >= uint64(len(m.ErrorfMock.expectationSeries))
 	}
 
 	// if main expectation was set then invocations count should be greater than zero
@@ -339,8 +339,8 @@ func (m *mTesterMockFatal) Return() *TesterMock {
 	return m.mock
 }
 
-//ExpectOnce specifies that invocation of Tester.Fatal is expected once
-func (m *mTesterMockFatal) ExpectOnce(p ...interface{}) *TesterMockFatalExpectation {
+//SeriesExpect specifies that invocation of Tester.Fatal is expected once
+func (m *mTesterMockFatal) SeriesExpect(p ...interface{}) *TesterMockFatalExpectation {
 	m.mock.FatalFunc = nil
 	m.mainExpectation = nil
 
@@ -408,7 +408,7 @@ func (m *TesterMock) FatalMinimockPreCounter() uint64 {
 func (m *TesterMock) FatalFinished() bool {
 	// if expectation series were set then invocations count should be equal to expectations count
 	if len(m.FatalMock.expectationSeries) > 0 {
-		return atomic.LoadUint64(&m.FatalCounter) == uint64(len(m.FatalMock.expectationSeries))
+		return atomic.LoadUint64(&m.FatalCounter) >= uint64(len(m.FatalMock.expectationSeries))
 	}
 
 	// if main expectation was set then invocations count should be greater than zero
@@ -463,8 +463,8 @@ func (m *mTesterMockFatalf) Return() *TesterMock {
 	return m.mock
 }
 
-//ExpectOnce specifies that invocation of Tester.Fatalf is expected once
-func (m *mTesterMockFatalf) ExpectOnce(p string, p1 ...interface{}) *TesterMockFatalfExpectation {
+//SeriesExpect specifies that invocation of Tester.Fatalf is expected once
+func (m *mTesterMockFatalf) SeriesExpect(p string, p1 ...interface{}) *TesterMockFatalfExpectation {
 	m.mock.FatalfFunc = nil
 	m.mainExpectation = nil
 
@@ -532,7 +532,7 @@ func (m *TesterMock) FatalfMinimockPreCounter() uint64 {
 func (m *TesterMock) FatalfFinished() bool {
 	// if expectation series were set then invocations count should be equal to expectations count
 	if len(m.FatalfMock.expectationSeries) > 0 {
-		return atomic.LoadUint64(&m.FatalfCounter) == uint64(len(m.FatalfMock.expectationSeries))
+		return atomic.LoadUint64(&m.FatalfCounter) >= uint64(len(m.FatalfMock.expectationSeries))
 	}
 
 	// if main expectation was set then invocations count should be greater than zero

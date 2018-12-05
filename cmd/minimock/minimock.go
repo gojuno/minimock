@@ -354,8 +354,8 @@ const template = `
 			return m.mock
 		}
 
-		//ExpectOnce specifies that invocation of {{$interfaceName}}.{{$methodName}} is expected once
-		func (m *m{{$structName}}{{$methodName}}) ExpectOnce({{params $method}}) *{{$structName}}{{$methodName}}Expectation {
+		//SeriesExpect specifies that invocation of {{$interfaceName}}.{{$methodName}} is expected once
+		func (m *m{{$structName}}{{$methodName}}) SeriesExpect({{params $method}}) *{{$structName}}{{$methodName}}Expectation {
 			m.mock.{{$methodName}}Func = nil
 			m.mainExpectation = nil
 
@@ -449,7 +449,7 @@ const template = `
 		func (m *{{$structName}}) {{$methodName}}Finished() bool {
 			// if expectation series were set then invocations count should be equal to expectations count
 			if len(m.{{$methodName}}Mock.expectationSeries) > 0 {
-				return atomic.LoadUint64(&m.{{$methodName}}Counter) == uint64(len(m.{{$methodName}}Mock.expectationSeries))
+				return atomic.LoadUint64(&m.{{$methodName}}Counter) >= uint64(len(m.{{$methodName}}Mock.expectationSeries))
 			}
 
 			// if main expectation was set then invocations count should be greater than zero

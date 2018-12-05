@@ -80,8 +80,8 @@ func (m *mFormatterMockFormat) Return(r string) *FormatterMock {
 	return m.mock
 }
 
-//ExpectOnce specifies that invocation of Formatter.Format is expected once
-func (m *mFormatterMockFormat) ExpectOnce(p string, p1 ...interface{}) *FormatterMockFormatExpectation {
+//SeriesExpect specifies that invocation of Formatter.Format is expected once
+func (m *mFormatterMockFormat) SeriesExpect(p string, p1 ...interface{}) *FormatterMockFormatExpectation {
 	m.mock.FormatFunc = nil
 	m.mainExpectation = nil
 
@@ -168,7 +168,7 @@ func (m *FormatterMock) FormatMinimockPreCounter() uint64 {
 func (m *FormatterMock) FormatFinished() bool {
 	// if expectation series were set then invocations count should be equal to expectations count
 	if len(m.FormatMock.expectationSeries) > 0 {
-		return atomic.LoadUint64(&m.FormatCounter) == uint64(len(m.FormatMock.expectationSeries))
+		return atomic.LoadUint64(&m.FormatCounter) >= uint64(len(m.FormatMock.expectationSeries))
 	}
 
 	// if main expectation was set then invocations count should be greater than zero
