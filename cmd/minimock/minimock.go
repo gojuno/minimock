@@ -65,7 +65,7 @@ func main() {
 			IgnoreFuncBodies:         true,
 			FakeImportC:              true,
 			DisableUnusedImportCheck: true,
-			Error: func(err error) {},
+			Error:                    func(err error) {},
 		},
 	}
 
@@ -313,18 +313,21 @@ const template = `
 			expectationSeries []*{{$structName}}{{$methodName}}Expectation
 		}
 
+		// {{$structName}}{{$methodName}}Expectation specifies expectation struct of the {{$interfaceName}}.{{$methodName}}
 		type {{$structName}}{{$methodName}}Expectation struct {
 			{{if gt (len (params $method)) 0 }}  input  *{{$structName}}{{$methodName}}Input  {{end}}
 			{{if gt (len (results $method)) 0 }} result *{{$structName}}{{$methodName}}Result {{end}}
 		}
 
 		{{if gt (len (params $method)) 0 }}
+			// {{$structName}}{{$methodName}}Input represents input parameters of the {{$interfaceName}}.{{$methodName}}
 			type {{$structName}}{{$methodName}}Input struct {
 				{{toStructFields (params $method)}}
 			}
 		{{end}}
 
 		{{if gt (len (results $method)) 0 }}
+			// {{$structName}}{{$methodName}}Result represents results of the {{$interfaceName}}.{{$methodName}}
 			type {{$structName}}{{$methodName}}Result struct {
 				{{toStructFields (results $method)}}
 			}
@@ -366,6 +369,7 @@ const template = `
 		}
 
 		{{if gt (len (results $method)) 0 }}
+		//Return sets up return arguments of expectation struct for {{$interfaceName}}.{{$methodName}} 
 		func (e *{{$structName}}{{$methodName}}Expectation) Return({{results $method}}) {
 			e.result = &{{$structName}}{{$methodName}}Result{ {{ (results $method).Names }} }
 		}
