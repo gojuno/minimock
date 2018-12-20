@@ -108,7 +108,7 @@ func main() {
 		packageName = prog.Package(destImportPath).Pkg.Name()
 	}
 
-	if len(opts.Interfaces) == 1 && strings.HasSuffix(opts.OutputFile, ".go") { //legacy mode
+	if len(opts.Interfaces) == 1 && strings.HasSuffix(opts.OutputFile, ".go") { // legacy mode
 		interfaceName := opts.Interfaces[0].Name
 		sourcePackage := opts.Interfaces[0].Package
 		interfaces, err := findInterfaces(prog, interfaceName, sourcePackage)
@@ -280,7 +280,7 @@ const template = `
 		testify_assert "github.com/stretchr/testify/assert"
 	)
 
-	//{{$structName}} implements {{$packagePath}}.{{$interfaceName}}
+	// {{$structName}} implements {{$packagePath}}.{{$interfaceName}}
 	type {{$structName}} struct {
 		t minimock.Tester
 
@@ -292,7 +292,7 @@ const template = `
 		{{ end }}
 	}
 
-	//New{{$structName}} returns a mock for {{$packagePath}}.{{$interfaceName}}
+	// New{{$structName}} returns a mock for {{$packagePath}}.{{$interfaceName}}
 	func New{{$structName}}(t minimock.Tester) *{{$structName}} {
 		m := &{{$structName}}{t: t}
 
@@ -333,7 +333,7 @@ const template = `
 			}
 		{{end}}
 
-		//Expect specifies that invocation of {{$interfaceName}}.{{$methodName}} is expected from 1 to Infinity times
+		// Expect specifies that invocation of {{$interfaceName}}.{{$methodName}} is expected from 1 to Infinity times
 		func (m *m{{$structName}}{{$methodName}}) Expect({{params $method}}) *m{{$structName}}{{$methodName}} {
 			m.mock.{{$methodName}}Func = nil
 			m.expectationSeries = nil
@@ -345,7 +345,7 @@ const template = `
 			return m
 		}
 
-		//Return specifies results of invocation of {{$interfaceName}}.{{$methodName}}
+		// Return specifies results of invocation of {{$interfaceName}}.{{$methodName}}
 		func (m *m{{$structName}}{{$methodName}}) Return({{results $method}}) *{{$structName}} {
 			m.mock.{{$methodName}}Func = nil
 			m.expectationSeries = nil
@@ -357,7 +357,7 @@ const template = `
 			return m.mock
 		}
 
-		//ExpectOnce specifies that invocation of {{$interfaceName}}.{{$methodName}} is expected once
+		// ExpectOnce specifies that invocation of {{$interfaceName}}.{{$methodName}} is expected once
 		func (m *m{{$structName}}{{$methodName}}) ExpectOnce({{params $method}}) *{{$structName}}{{$methodName}}Expectation {
 			m.mock.{{$methodName}}Func = nil
 			m.mainExpectation = nil
@@ -369,13 +369,13 @@ const template = `
 		}
 
 		{{if gt (len (results $method)) 0 }}
-		//Return sets up return arguments of expectation struct for {{$interfaceName}}.{{$methodName}} 
+		// Return sets up return arguments of expectation struct for {{$interfaceName}}.{{$methodName}} 
 		func (e *{{$structName}}{{$methodName}}Expectation) Return({{results $method}}) {
 			e.result = &{{$structName}}{{$methodName}}Result{ {{ (results $method).Names }} }
 		}
 		{{end}}
 
-		//Set uses given function f as a mock of {{$interfaceName}}.{{$methodName}} method
+		// Set uses given function f as a mock of {{$interfaceName}}.{{$methodName}} method
 		func (m *m{{$structName}}{{$methodName}}) Set(f func({{params $method}}) ({{results $method}})) *{{$structName}}{
 			m.mainExpectation = nil
 			m.expectationSeries = nil
@@ -384,7 +384,7 @@ const template = `
 			return m.mock
 		}
 
-		//{{$methodName}} implements {{$packagePath}}.{{$interfaceName}} interface
+		// {{$methodName}} implements {{$packagePath}}.{{$interfaceName}} interface
 		func (m *{{$structName}}) {{$methodName}}{{signature $method}} {
 			counter := atomic.AddUint64(&m.{{$methodName}}PreCounter, 1)
 			defer atomic.AddUint64(&m.{{$methodName}}Counter, 1)
@@ -439,17 +439,17 @@ const template = `
 			{{if gt (len (results $method)) 0 }} return {{ end }} m.{{$methodName}}Func({{(params $method).Pass}})
 		}
 
-		//{{$methodName}}MinimockCounter returns a count of {{$structName}}.{{$methodName}}Func invocations
+		// {{$methodName}}MinimockCounter returns a count of {{$structName}}.{{$methodName}}Func invocations
 		func (m *{{$structName}}) {{$methodName}}MinimockCounter() uint64 {
 			return atomic.LoadUint64(&m.{{$methodName}}Counter)
 		}
 
-		//{{$methodName}}MinimockPreCounter returns the value of {{$structName}}.{{$methodName}} invocations
+		// {{$methodName}}MinimockPreCounter returns the value of {{$structName}}.{{$methodName}} invocations
 		func (m *{{$structName}}) {{$methodName}}MinimockPreCounter() uint64 {
 			return atomic.LoadUint64(&m.{{$methodName}}PreCounter)
 		}
 
-		//{{$methodName}}Finished returns true if mock invocations count is ok
+		// {{$methodName}}Finished returns true if mock invocations count is ok
 		func (m *{{$structName}}) {{$methodName}}Finished() bool {
 			// if expectation series were set then invocations count should be equal to expectations count
 			if len(m.{{$methodName}}Mock.expectationSeries) > 0 {
@@ -470,8 +470,8 @@ const template = `
 		}
 	{{ end }}
 
-	//ValidateCallCounters checks that all mocked methods of the interface have been called at least once
-	//Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
+	// ValidateCallCounters checks that all mocked methods of the interface have been called at least once
+	// Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 	func (m *{{$structName}}) ValidateCallCounters() {
 		{{ range $methodName, $method := . }}
 			if !m.{{$methodName}}Finished() {
@@ -480,19 +480,19 @@ const template = `
 		{{ end }}
 	}
 
-	//CheckMocksCalled checks that all mocked methods of the interface have been called at least once
-	//Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
+	// CheckMocksCalled checks that all mocked methods of the interface have been called at least once
+	// Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 	func (m *{{$structName}}) CheckMocksCalled() {
 		m.Finish()
 	}
 
-	//Finish checks that all mocked methods of the interface have been called at least once
-	//Deprecated: please use MinimockFinish or use Finish method of minimock.Controller
+	// Finish checks that all mocked methods of the interface have been called at least once
+	// Deprecated: please use MinimockFinish or use Finish method of minimock.Controller
 	func (m *{{$structName}}) Finish() {
 		m.MinimockFinish()
 	}
 
-	//MinimockFinish checks that all mocked methods of the interface have been called at least once
+	// MinimockFinish checks that all mocked methods of the interface have been called at least once
 	func (m *{{$structName}}) MinimockFinish() {
 		{{ range $methodName, $method := . }}
 			if !m.{{$methodName}}Finished()  {
@@ -501,14 +501,14 @@ const template = `
 		{{ end }}
 	}
 
-	//Wait waits for all mocked methods to be called at least once
-	//Deprecated: please use MinimockWait or use Wait method of minimock.Controller
+	// Wait waits for all mocked methods to be called at least once
+	// Deprecated: please use MinimockWait or use Wait method of minimock.Controller
 	func (m *{{$structName}}) Wait(timeout time.Duration) {
 		m.MinimockWait(timeout)
 	}
 
-	//MinimockWait waits for all mocked methods to be called at least once
-	//this method is called by minimock.Controller
+	// MinimockWait waits for all mocked methods to be called at least once
+	// this method is called by minimock.Controller
 	func (m *{{$structName}}) MinimockWait(timeout time.Duration) {
 		timeoutCh := time.After(timeout)
 		for {
@@ -535,8 +535,8 @@ const template = `
 		}
 	}
 
-	//AllMocksCalled returns true if all mocked methods were called before the execution of AllMocksCalled,
-	//it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
+	// AllMocksCalled returns true if all mocked methods were called before the execution of AllMocksCalled,
+	// it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
 	func (m *{{$structName}}) AllMocksCalled() bool {
 		{{ range $methodName, $method := . }}
 			if !m.{{$methodName}}Finished() {
@@ -601,15 +601,8 @@ func processFlags() *programOptions {
 	}
 
 	interfacesList := []interfaceInfo{}
-	for _, i := range strings.Split(*interfaces, ",") {
-		chunks := strings.Split(i, ".")
-		if len(chunks) < 2 {
-			die("invalid interface name: %s\nname should be in the form <import path>.<interface type>, i.e. io.Reader\n", i)
-		}
-
-		importPath := getImportPath(strings.Join(chunks[0:len(chunks)-1], "."))
-
-		interfacesList = append(interfacesList, interfaceInfo{Package: importPath, Name: chunks[len(chunks)-1]})
+	for _, interfacePath := range strings.Split(*interfaces, ",") {
+		interfacesList = append(interfacesList, getInterfaceInfo(interfacePath))
 	}
 
 	return &programOptions{
@@ -619,6 +612,21 @@ func processFlags() *programOptions {
 		DestinationPackageName: *packageName,
 		ImportWithTests:        *withTests,
 		Suffix:                 *suffix,
+	}
+}
+
+func getInterfaceInfo(interfacePath string) interfaceInfo {
+	chunks := strings.Split(interfacePath, ".")
+	realPath := strings.Join(chunks[0:len(chunks)-1], ".")
+	if len(chunks) < 2 {
+		var err error
+		if realPath, err = filepath.Abs("."); err != nil {
+			die("cannot resolve interface absolute file path", err)
+		}
+	}
+	return interfaceInfo{
+		Package: getImportPath(realPath),
+		Name:    chunks[len(chunks)-1],
 	}
 }
 

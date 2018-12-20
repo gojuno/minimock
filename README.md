@@ -35,6 +35,12 @@ Here is how to generate the mock for this interface:
 minimock -i github.com/gojuno/minimock/tests.Formatter -o ./tests/
 ```
 
+You can skip the package name if you are in the directory where `Formater` is defined:
+```
+cd ~/go/src/github.com/gojuno/minimock/tests
+minimock -i Formatter -o ./tests/
+```
+
 The result file ./tests/formatter_mock_test.go will be:
 ```go
 
