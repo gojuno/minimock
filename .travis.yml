@@ -4,7 +4,15 @@ go:
   - 1.x
 
 install:
-  - go get github.com/golang/lint/golint
+  - go get github.com/mattn/goveralls
+  - if ! go get github.com/golang/tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
+    #- curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.12.5
+  - curl -L https://git.io/vp6lP | sh #gometalinter installation
+  - export PATH=$PATH:`pwd`/bin
 
 script:
   - cd $TRAVIS_BUILD_DIR && make all
+  - cd tests/
+  - go test -c -covermode=count -coverpkg=github.com/gojuno/minimock/tests
+  - ./tests.test -test.coverprofile coverage.cov
+  - $HOME/gopath/bin/goveralls -service=travis-ci -coverprofile=coverage.cov

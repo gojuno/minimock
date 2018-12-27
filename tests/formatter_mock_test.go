@@ -7,6 +7,7 @@ import (
 
 	"github.com/gojuno/minimock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFormatterMock_ImplementsStringer(t *testing.T) {
@@ -17,12 +18,12 @@ func TestFormatterMock_ImplementsStringer(t *testing.T) {
 func TestFormatterMock_UnmockedCallFailsTest(t *testing.T) {
 	var mockCalled bool
 	tester := NewTesterMock(t)
-	tester.FatalfFunc = func(s string, args ...interface{}) {
+	tester.FatalfMock.Set(func(s string, args ...interface{}) {
 		assert.Equal(t, "Unexpected call to FormatterMock.Format. %v %v", s)
 		assert.Equal(t, "this call fails because Format method isn't mocked", args[0])
 
 		mockCalled = true
-	}
+	})
 
 	defer tester.MinimockFinish()
 
@@ -35,9 +36,9 @@ func TestFormatterMock_MockedCallSucceeds(t *testing.T) {
 	tester := NewTesterMock(t)
 
 	formatterMock := NewFormatterMock(tester)
-	formatterMock.FormatFunc = func(format string, args ...interface{}) string {
+	formatterMock.FormatMock.Set(func(format string, args ...interface{}) string {
 		return "mock is successfully called"
-	}
+	})
 	defer tester.MinimockFinish()
 
 	df := dummyFormatter{formatterMock}
@@ -48,9 +49,9 @@ func TestFormatterMock_Wait(t *testing.T) {
 	tester := NewTesterMock(t)
 
 	formatterMock := NewFormatterMock(tester)
-	formatterMock.FormatFunc = func(format string, args ...interface{}) string {
+	formatterMock.FormatMock.Set(func(format string, args ...interface{}) string {
 		return "mock is successfully called from the goroutine"
-	}
+	})
 
 	go func() {
 		df := dummyFormatter{formatterMock}
@@ -67,6 +68,55 @@ func TestFormatterMock_Expect(t *testing.T) {
 
 	df := dummyFormatter{formatterMock}
 	df.Format("Hello", "world", "!")
+
+	assert.EqualValues(t, 1, formatterMock.FormatBeforeCounter())
+	assert.EqualValues(t, 1, formatterMock.FormatAfterCounter())
+}
+
+func TestFormatterMock_ExpectDifferentArguments(t *testing.T) {
+	assert.Panics(t, func() {
+		tester := NewTesterMock(t)
+		defer tester.MinimockFinish()
+
+		tester.ErrorfMock.Set(func(s string, args ...interface{}) {
+			assert.Equal(t, "FormatterMock.Format got unexpected parameters, want: %#v, got: %#v%s\n", s)
+			require.Len(t, args, 3)
+			assert.Equal(t, FormatterMockFormatParams{s1: "expected"}, args[0])
+			assert.Equal(t, FormatterMockFormatParams{s1: "actual"}, args[1])
+		})
+
+		tester.FatalMock.Expect("No results are set for the FormatterMock.Format").Return()
+
+		formatterMock := NewFormatterMock(tester)
+		formatterMock.FormatMock.Expect("expected")
+		formatterMock.Format("actual")
+	})
+}
+
+func TestFormatterMock_ExpectAfterSet(t *testing.T) {
+	tester := NewTesterMock(t)
+	defer tester.MinimockFinish()
+
+	tester.FatalfMock.Expect("FormatterMock.Format mock is already set by Set").Return()
+
+	formatterMock := NewFormatterMock(tester)
+	formatterMock.FormatMock.Set(func(string, ...interface{}) string { return "" })
+
+	formatterMock.FormatMock.Expect("Should not work")
+}
+
+func TestFormatterMock_ExpectAfterWhen(t *testing.T) {
+	tester := NewTesterMock(t)
+	defer tester.MinimockFinish()
+
+	tester.FatalfMock.Expect("Expectation set by When has same params: %#v", FormatterMockFormatParams{s1: "Should not work", p1: nil}).Return()
+
+	formatterMock := NewFormatterMock(tester)
+	formatterMock.FormatMock.When("Should not work").Then("")
+
+	formatterMock.Format("Should not work")
+
+	formatterMock.FormatMock.Expect("Should not work")
 }
 
 func TestFormatterMock_Return(t *testing.T) {
@@ -75,6 +125,18 @@ func TestFormatterMock_Return(t *testing.T) {
 	formatterMock := NewFormatterMock(tester).FormatMock.Return("Hello world!")
 	df := dummyFormatter{formatterMock}
 	assert.Equal(t, "Hello world!", df.Format(""))
+}
+
+func TestFormatterMock_ReturnAfterSet(t *testing.T) {
+	tester := NewTesterMock(t)
+	defer tester.MinimockFinish()
+
+	tester.FatalfMock.Expect("FormatterMock.Format mock is already set by Set").Return()
+
+	formatterMock := NewFormatterMock(tester)
+	formatterMock.FormatMock.Set(func(string, ...interface{}) string { return "" })
+
+	formatterMock.FormatMock.Return("Should not work")
 }
 
 func TestFormatterMock_Set(t *testing.T) {
@@ -88,90 +150,104 @@ func TestFormatterMock_Set(t *testing.T) {
 	assert.Equal(t, "set", df.Format(""))
 }
 
-func TestFormatterMock_AllMocksCalled(t *testing.T) {
+func TestFormatterMock_SetAfterExpect(t *testing.T) {
 	tester := NewTesterMock(t)
+	defer tester.MinimockFinish()
 
-	formatterMock := NewFormatterMock(tester).FormatMock.Return("all mocks called")
-	assert.False(t, formatterMock.AllMocksCalled())
+	tester.FatalfMock.Expect("Default expectation is already set for the Formatter.Format method").Return()
 
-	assert.Equal(t, "all mocks called", formatterMock.Format(""))
-	assert.True(t, formatterMock.AllMocksCalled())
+	formatterMock := NewFormatterMock(tester).FormatMock.Expect("").Return("")
+
+	//second attempt should fail
+	formatterMock.FormatMock.Set(func(string, ...interface{}) string { return "" })
 }
 
-func TestFormatterMock_Finish(t *testing.T) {
-	var mockCalled bool
-
+func TestFormatterMock_SetAfterWhen(t *testing.T) {
 	tester := NewTesterMock(t)
-	tester.FatalMock.Set(func(args ...interface{}) {
-		assert.Len(t, args, 1)
-		assert.Equal(t, "Expected call to FormatterMock.Format", args[0])
-		mockCalled = true
-	})
+	defer tester.MinimockFinish()
 
-	formatterMock := NewFormatterMock(tester).FormatMock.Return("")
-	formatterMock.Finish()
-	assert.True(t, mockCalled)
+	tester.FatalfMock.Expect("Some expectations are already set for the Formatter.Format method").Return()
+
+	formatterMock := NewFormatterMock(tester).FormatMock.When("").Then("")
+
+	//second attempt should fail
+	formatterMock.FormatMock.Set(func(string, ...interface{}) string { return "" })
 }
 
-func TestMFormatterMockFormat_ExpectOnce(t *testing.T) {
-	tester := NewTesterMock(t)
+func TestFormatterMockFormat_WhenThen(t *testing.T) {
+	formatter := NewFormatterMock(t)
+	defer formatter.MinimockFinish()
 
-	formatter := NewFormatterMock(tester)
-	defer formatter.Finish()
-
-	formatter.FormatMock.ExpectOnce("hello %v", "username").Return("hello username")
-	formatter.FormatMock.ExpectOnce("goodbye %v", "username").Return("goodbye username")
+	formatter.FormatMock.When("hello %v", "username").Then("hello username")
+	formatter.FormatMock.When("goodbye %v", "username").Then("goodbye username")
 
 	assert.Equal(t, "hello username", formatter.Format("hello %v", "username"))
 	assert.Equal(t, "goodbye username", formatter.Format("goodbye %v", "username"))
 }
 
-func TestMFormatterMockFormat_ExpectOnce_NoReturn(t *testing.T) {
+func TestFormatterMockFormat_WhenAfterSet(t *testing.T) {
 	tester := NewTesterMock(t)
+	defer tester.MinimockFinish()
 
-	formatter := NewFormatterMock(tester)
-	defer formatter.Finish()
+	tester.FatalfMock.Expect("FormatterMock.Format mock is already set by Set").Return()
 
-	formatter.FormatMock.ExpectOnce("hello %v", "username").Return("hello username")
-	formatter.FormatMock.ExpectOnce("goodbye %v", "username") // no return here will produce error
+	formatterMock := NewFormatterMock(tester)
+	formatterMock.FormatMock.Set(func(string, ...interface{}) string { return "" })
 
-	// return is set for this invocation
-	formatter.Format("hello %v", "username")
-
-	// return is not set for this invocation
-	tester.FatalMock.ExpectOnce("No results are set for the FormatterMock.Format")
-	formatter.Format("goodbye %v", "username")
+	formatterMock.FormatMock.When("Should not work")
 }
 
-func TestMFormatterMockFormat_ExpectOnce_NotEnoughCalls(t *testing.T) {
-	tester := NewTesterMock(t)
+func TestFormatterMock_MinimockFormatDone(t *testing.T) {
+	formatterMock := NewFormatterMock(t)
 
-	formatter := NewFormatterMock(tester)
+	formatterMock.FormatMock.expectations = []*FormatterMockFormatExpectation{{}}
+	assert.False(t, formatterMock.MinimockFormatDone())
 
-	formatter.FormatMock.ExpectOnce("hello %v", "username").Return("hello username")
-	formatter.FormatMock.ExpectOnce("goodbye %v", "username")
-
-	formatter.Format("hello %v", "username")
-
-	// expected two invocations of Format, but did only one
-	tester.FatalMock.ExpectOnce("Expected call to FormatterMock.Format")
-	formatter.Finish()
+	formatterMock = NewFormatterMock(t)
+	formatterMock.FormatMock.defaultExpectation = &FormatterMockFormatExpectation{}
+	assert.False(t, formatterMock.MinimockFormatDone())
 }
 
-func TestMFormatterMockFormat_ExpectOnce_TooMuchCalls(t *testing.T) {
+func TestFormatterMock_MinimockFinish(t *testing.T) {
 	tester := NewTesterMock(t)
+	defer tester.MinimockFinish()
 
-	formatter := NewFormatterMock(tester)
+	tester.ErrorMock.Expect("Expected call to FormatterMock.Format").Return()
+	tester.FailNowMock.Expect().Return()
 
-	formatter.FormatMock.ExpectOnce("hello %v", "username").Return("hello username")
-	formatter.FormatMock.ExpectOnce("goodbye %v", "username").Return("goodbye username")
+	formatterMock := NewFormatterMock(tester)
+	formatterMock.FormatMock.Set(func(string, ...interface{}) string { return "" })
 
-	formatter.Format("hello %v", "username")
-	formatter.Format("goodbye %v", "username")
+	formatterMock.MinimockFinish()
+}
 
-	// expected two invocations to Format, but do three
-	tester.FatalfMock.ExpectOnce("Unexpected call to FormatterMock.Format. %v %v", "hello again", []interface{}{"username"})
-	formatter.Format("hello again", "username")
+func TestFormatterMock_MinimockFinish_WithNoMetExpectations(t *testing.T) {
+	tester := NewTesterMock(t)
+	defer tester.MinimockFinish()
+
+	tester.ErrorfMock.Set(func(m string, args ...interface{}) {
+		assert.Equal(t, m, "Expected call to FormatterMock.Format with params: %#v")
+	})
+	tester.FailNowMock.Expect().Return()
+
+	formatterMock := NewFormatterMock(tester)
+	formatterMock.FormatMock.Expect("a").Return("a")
+	formatterMock.FormatMock.When("b").Then("b")
+
+	formatterMock.MinimockFinish()
+}
+
+func TestFormatterMock_MinimockWait(t *testing.T) {
+	tester := NewTesterMock(t)
+	defer tester.MinimockFinish()
+
+	tester.ErrorMock.Expect("Expected call to FormatterMock.Format").Return()
+	tester.FailNowMock.Expect().Return()
+
+	formatterMock := NewFormatterMock(tester)
+	formatterMock.FormatMock.Set(func(string, ...interface{}) string { return "" })
+
+	formatterMock.MinimockWait(time.Millisecond)
 }
 
 type dummyFormatter struct {
