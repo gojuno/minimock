@@ -42,7 +42,7 @@ func main() {
 			os.Exit(2)
 		}
 
-		die(1, "%v", err)
+		die("%v", err)
 	}
 
 	if opts == nil { //help requested
@@ -50,7 +50,7 @@ func main() {
 	}
 
 	if err = run(opts); err != nil {
-		die(1, "%v", err)
+		die("%v", err)
 	}
 }
 
@@ -202,7 +202,7 @@ func match(s, pattern string) bool {
 	return pattern == "*" || s == pattern
 }
 
-func usage(fs *flag.FlagSet, w io.Writer) error {
+func usage(fs *flag.FlagSet, w io.Writer) {
 	const usageTemplate = `Usage: {{bold "minimock"}} [{{bold "-i"}} source.interface] [{{bold "-o"}} output/dir/or/file.go] [{{bold "-g"}}]
 {{.}}
 Examples:
@@ -228,7 +228,9 @@ For more information please visit https://github.com/gojuno/minimock
 	fs.SetOutput(buf)
 	fs.PrintDefaults()
 
-	return t.Execute(w, buf.String())
+	if err := t.Execute(w, buf.String()); err != nil {
+		panic(err) //something went completely wrong, i.e. OOM, closed pipe, etc
+	}
 }
 
 var errInvalidArguments = errors.New("invalid arguments")
@@ -250,7 +252,8 @@ func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
 	}
 
 	if *help {
-		return nil, usage(fs, stdout)
+		usage(fs, stdout)
+		return nil, nil
 	}
 
 	interfaces := strings.Split(*input, ",")
@@ -340,7 +343,10 @@ func makeInterfaceInfo(typ, writeTo string) (*interfaceInfo, error) {
 	return &info, nil
 }
 
-func die(exitCode int, format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, "minimock: "+format+"\n", args...)
-	os.Exit(exitCode)
+func die(format string, args ...interface{}) {
+	if _, err := fmt.Fprintf(os.Stderr, "minimock: "+format+"\n", args...); err != nil {
+		panic(err)
+	}
+
+	os.Exit(1)
 }
