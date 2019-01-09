@@ -1,15 +1,17 @@
-all: install test lint
+all: install test lint clean
 
 generate:
 	go run ./cmd/minimock/minimock.go -i github.com/gojuno/minimock.Tester -o ./tests
 	go run ./cmd/minimock/minimock.go -i ./tests.Formatter -o ./tests/formatter_mock.go
 
 lint:
-	#golangci-lint run ./...
-	gometalinter ./... -I minimock -e vendor
+	gometalinter ./... -I minimock --disable=gotype
 
 install:
 	go install ./cmd/minimock
+
+clean:
+	rm -Rf bin/ dist/
 
 test: generate
 	go test -race ./...
