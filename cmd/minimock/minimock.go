@@ -21,7 +21,7 @@ import (
 	"github.com/gojuno/minimock"
 )
 
-const version = "1.9"
+const version = "1.9.1"
 
 type (
 	programOptions struct {
@@ -369,7 +369,7 @@ const template = `
 		}
 
 		{{if gt (len (results $method)) 0 }}
-		// Return sets up return arguments of expectation struct for {{$interfaceName}}.{{$methodName}} 
+		// Return sets up return arguments of expectation struct for {{$interfaceName}}.{{$methodName}}
 		func (e *{{$structName}}{{$methodName}}Expectation) Return({{results $method}}) {
 			e.result = &{{$structName}}{{$methodName}}Result{ {{ (results $method).Names }} }
 		}
@@ -392,7 +392,7 @@ const template = `
 			if len(m.{{$methodName}}Mock.expectationSeries) > 0 {
 				if counter > uint64(len(m.{{$methodName}}Mock.expectationSeries)) {
 					m.t.Fatalf("Unexpected call to {{$structName}}.{{$methodName}}.{{range (params $method)}} %v{{end}}", {{ (params $method).Names }} )
-					return			
+					return
 				}
 
 				{{if gt (len (params $method)) 0 }}
@@ -402,11 +402,11 @@ const template = `
 
 				{{if gt (len (results $method)) 0 }}
  					result := m.{{$methodName}}Mock.expectationSeries[counter-1].result
-					if result == nil {	
-						m.t.Fatal("No results are set for the {{$structName}}.{{$methodName}}")  
+					if result == nil {
+						m.t.Fatal("No results are set for the {{$structName}}.{{$methodName}}")
 						return
 					}
-					{{ range $param := (results $method) }} 
+					{{ range $param := (results $method) }}
 					{{ $param.Name }} = result.{{ $param.Name }} {{ end }}
 				{{ end }}
 				return
@@ -423,9 +423,9 @@ const template = `
 				{{if gt (len (results $method)) 0 }}
 					result := m.{{$methodName}}Mock.mainExpectation.result
 					if result == nil {
-						m.t.Fatal("No results are set for the {{$structName}}.{{$methodName}}") 
+						m.t.Fatal("No results are set for the {{$structName}}.{{$methodName}}")
 					}
-					{{ range $param := (results $method) }} 
+					{{ range $param := (results $method) }}
 					{{ $param.Name }} = result.{{ $param.Name }} {{ end }}
 				{{ end }}
 				return
@@ -513,7 +513,7 @@ const template = `
 		timeoutCh := time.After(timeout)
 		for {
 			ok := true
-			{{ range $methodName, $method := . }}ok = ok && m.{{$methodName}}Finished() 
+			{{ range $methodName, $method := . }}ok = ok && m.{{$methodName}}Finished()
 			{{ end }}
 
 			if ok {
