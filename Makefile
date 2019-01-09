@@ -5,7 +5,7 @@ generate:
 	go run ./cmd/minimock/minimock.go -i ./tests.Formatter -o ./tests/formatter_mock.go
 
 lint:
-	gometalinter ./... -I minimock --disable=gotype
+	gometalinter ./... -I minimock -e gopathwalk --disable=gotype
 
 install:
 	go install ./cmd/minimock

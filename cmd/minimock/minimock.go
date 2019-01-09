@@ -36,21 +36,25 @@ type (
 )
 
 func main() {
-	opts, err := processFlags(os.Args[1:], os.Stderr)
+	opts, err := processArgs(os.Args[1:], os.Stdout, os.Stderr)
 	if err != nil {
-		die(2, "%v", err)
+		if err == errInvalidArguments {
+			os.Exit(2)
+		}
+
+		die(1, "%v", err)
 	}
 
-	if opts == nil {
-		os.Exit(2)
+	if opts == nil { //help requested
+		os.Exit(0)
 	}
 
-	if err = processOptions(opts); err != nil {
+	if err = run(opts); err != nil {
 		die(1, "%v", err)
 	}
 }
 
-func processOptions(opts *options) (err error) {
+func run(opts *options) (err error) {
 	var (
 		sourcePackage *packages.Package
 		astPackage    *ast.Package
@@ -198,46 +202,62 @@ func match(s, pattern string) bool {
 	return pattern == "*" || s == pattern
 }
 
-func processFlags(args []string, stderr io.Writer) (*options, error) {
+func usage(fs *flag.FlagSet, w io.Writer) error {
+	const usageTemplate = `Usage: {{bold "minimock"}} [{{bold "-i"}} source.interface] [{{bold "-o"}} output/dir/or/file.go] [{{bold "-g"}}]
+{{.}}
+Examples:
+
+  Generate mocks for all interfaces that can be found in the current directory:
+    {{bold "minimock"}}
+
+  Generate mock for the io.Writer interface and put it into the "./buffer" package:
+    {{bold "minimock"}} {{bold "-i"}} io.Writer {{bold "-o"}} ./buffer
+
+  Generate mocks for the fmt.Stringer and all interfaces from the "io" package and put them into the "./buffer" package:
+    {{bold "minimock"}} {{bold "-i"}} fmt.Stringer,io.* {{bold "-o"}} ./buffer
+
+For more information please visit https://github.com/gojuno/minimock
+`
+
+	t := template.Must(template.New("usage").Funcs(template.FuncMap{
+		"bold": func(s string) string { return "\033[1m" + s + "\033[0m" },
+	}).Parse(usageTemplate))
+
+	buf := bytes.NewBuffer([]byte{})
+
+	fs.SetOutput(buf)
+	fs.PrintDefaults()
+
+	return t.Execute(w, buf.String())
+}
+
+var errInvalidArguments = errors.New("invalid arguments")
+
+func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
 	var opts options
 
 	fs := flag.NewFlagSet("", flag.ContinueOnError)
-	fs.SetOutput(stderr)
 
 	fs.BoolVar(&opts.noGenerate, "g", false, "don't put go:generate instruction into the generated code")
-	input := fs.String("i", "*", "comma-separated names of the interfaces to mock, i.e fmt.Stringer,io.Reader\nuse io.* notation to generate mocks for all interfaces in the io package")
-	output := fs.String("o", "", "comma-separated destination file name(s) or package(s) to put the generated mocks in,\nby default the generated mock is placed into the source package directory")
+	input := fs.String("i", "*", "comma-separated names of the interfaces to mock, i.e fmt.Stringer,io.Reader\nuse io.* notation to generate mocks for all interfaces in the \"io\" package")
+	output := fs.String("o", "", "comma-separated destination file names or packages to put the generated mocks in,\nby default the generated mock is placed in the source package directory")
+	help := fs.Bool("h", false, "show this help message")
 
-	fs.Usage = func() {
-		fmt.Fprintln(stderr, "Usage: \033[1mminimock\033[0m [\033[1m-i\033[0m source.interface] [\033[1m-o\033[0m output/dir/or/file.go] [\033[1m-g\033[0m]")
-		fs.PrintDefaults()
-
-		fmt.Fprintf(stderr, "\nExamples:\n\n")
-		fmt.Fprintf(stderr, "  Generate mocks for all interfaces that can be found in the current directory:\n")
-		fmt.Fprintf(stderr, "    \033[1mminimock\033[0m\n\n")
-
-		fmt.Fprintf(stderr, "  Generate mock for the io.Writer interface and put it into the \"./buffer\" subpackage/dir:\n")
-		fmt.Fprintf(stderr, "    \033[1mminimock\033[0m \033[1m-i\033[0m io.Writer \033[1m-o\033[0m ./buffer\n\n")
-
-		fmt.Fprintf(stderr, "  Generate mocks for the fmt.Stringer and all interfaces from the \"io\" package and put them into the \"./buffer\" subpackage/dir:\n")
-		fmt.Fprintf(stderr, "    \033[1mminimock\033[0m \033[1m-i\033[0m fmt.Stringer,io.* \033[1m-o\033[0m ./buffer\n\n")
-
-		fmt.Fprintln(stderr, "\nFor more information please visit https://github.com/gojuno/minimock")
-	}
+	fs.Usage = func() { usage(fs, stderr) }
 
 	if err := fs.Parse(args); err != nil {
-		if err != flag.ErrHelp {
-			fmt.Fprintf(stderr, "%v\n\n", err)
-			fs.Usage()
-		}
-		return nil, nil
+		return nil, errInvalidArguments
+	}
+
+	if *help {
+		return nil, usage(fs, stdout)
 	}
 
 	interfaces := strings.Split(*input, ",")
 
 	var writeTo = make([]string, len(interfaces))
 	if *output != "" {
-		//if only one output package/file was given
+		//if only one output package specified
 		if to := strings.Split(*output, ","); len(to) == 1 {
 			for i := range writeTo {
 				writeTo[i] = to[0]

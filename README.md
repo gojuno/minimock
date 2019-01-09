@@ -16,7 +16,7 @@ The main features of minimock are:
 * It's ready for Go modules.
 * It works well with [table driven tests](https://dave.cheney.net/2013/06/09/writing-table-driven-tests-in-go) because you can set up mocks for several methods in one line of code using the builder pattern.
 * It can generate several mocks in one run.
-* It generates code that passes [golangci-lint](https://github.com/golangci/golangci-lint) checks.
+* It generates code that passes [gometalinter](https://github.com/alecthomas/gometalinter) checks.
 * It puts //go:generate instruction into the generated code, so all you need to do when the source interface is updated is to run the `go generate ./...` command from within the project's directory.
 * It provides Finish and Wait helpers to check if all mocked methods have been called during the test and keeps your test code clean and up to date.
 * It provides When and Then helpers to set up several expectations and results for any method.
@@ -32,14 +32,15 @@ go get github.com/gojuno/minimock/cmd/minimock
 ## Usage
 
 ```
- minimock \[-i source.interface\] \[-o output/dir/or/file.go\] \[-g\]
+ minimock [-i source.interface] [-o output/dir/or/file.go] [-g]
   -g	don't put go:generate instruction into the generated code
+  -h	show this help message
   -i string
     	comma-separated names of the interfaces to mock, i.e fmt.Stringer,io.Reader
-    	use io.* notation to generate mocks for all interfaces in the io package (default "*")
+    	use io.* notation to generate mocks for all interfaces in the "io" package (default "*")
   -o string
-    	destination file name or directory to put the generated mocks in,
-    	by default the generated mock is placed in the source package
+    	comma-separated destination file names or packages to put the generated mocks in,
+    	by default the generated mock is placed in the source package directory
 ```
 
 Let's say we have the following interface declaration in github.com/gojuno/minimock/tests package:
