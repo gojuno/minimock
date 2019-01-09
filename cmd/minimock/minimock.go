@@ -20,6 +20,8 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+var version = "dev" //do not modify! version var is modified during the build via ldflags option
+
 type (
 	options struct {
 		interfaces []interfaceInfo
@@ -78,6 +80,7 @@ func processOptions(opts *options) (err error) {
 			BodyTemplate:   minimock.BodyTemplate,
 			HeaderVars: map[string]interface{}{
 				"GenerateInstruction": !opts.noGenerate,
+				"Version":             version,
 			},
 			Funcs: template.FuncMap{
 				"title": strings.Title,

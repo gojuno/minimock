@@ -1,7 +1,7 @@
 package tests
 
 // DO NOT EDIT!
-// The code below was generated with http://github.com/gojuno/minimock
+// The code below was generated with http://github.com/gojuno/minimock (dev)
 
 //go:generate minimock -i github.com/gojuno/minimock.Tester -o ./tests/tester_mock_test.go
 
