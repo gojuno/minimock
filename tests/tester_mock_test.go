@@ -2,7 +2,7 @@ package tests
 
 /*
 DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.9
+This code was generated automatically using github.com/gojuno/minimock v1.9.1
 The original interface "Tester" can be found in github.com/gojuno/minimock
 */
 import (
@@ -13,7 +13,7 @@ import (
 	testify_assert "github.com/stretchr/testify/assert"
 )
 
-//TesterMock implements github.com/gojuno/minimock.Tester
+// TesterMock implements github.com/gojuno/minimock.Tester
 type TesterMock struct {
 	t minimock.Tester
 
@@ -38,7 +38,7 @@ type TesterMock struct {
 	FatalfMock       mTesterMockFatalf
 }
 
-//NewTesterMock returns a mock for github.com/gojuno/minimock.Tester
+// NewTesterMock returns a mock for github.com/gojuno/minimock.Tester
 func NewTesterMock(t minimock.Tester) *TesterMock {
 	m := &TesterMock{t: t}
 
@@ -60,15 +60,17 @@ type mTesterMockError struct {
 	expectationSeries []*TesterMockErrorExpectation
 }
 
+// TesterMockErrorExpectation specifies expectation struct of the Tester.Error
 type TesterMockErrorExpectation struct {
 	input *TesterMockErrorInput
 }
 
+// TesterMockErrorInput represents input parameters of the Tester.Error
 type TesterMockErrorInput struct {
 	p []interface{}
 }
 
-//Expect specifies that invocation of Tester.Error is expected from 1 to Infinity times
+// Expect specifies that invocation of Tester.Error is expected from 1 to Infinity times
 func (m *mTesterMockError) Expect(p ...interface{}) *mTesterMockError {
 	m.mock.ErrorFunc = nil
 	m.expectationSeries = nil
@@ -80,7 +82,7 @@ func (m *mTesterMockError) Expect(p ...interface{}) *mTesterMockError {
 	return m
 }
 
-//Return specifies results of invocation of Tester.Error
+// Return specifies results of invocation of Tester.Error
 func (m *mTesterMockError) Return() *TesterMock {
 	m.mock.ErrorFunc = nil
 	m.expectationSeries = nil
@@ -92,7 +94,7 @@ func (m *mTesterMockError) Return() *TesterMock {
 	return m.mock
 }
 
-//ExpectOnce specifies that invocation of Tester.Error is expected once
+// ExpectOnce specifies that invocation of Tester.Error is expected once
 func (m *mTesterMockError) ExpectOnce(p ...interface{}) *TesterMockErrorExpectation {
 	m.mock.ErrorFunc = nil
 	m.mainExpectation = nil
@@ -103,7 +105,7 @@ func (m *mTesterMockError) ExpectOnce(p ...interface{}) *TesterMockErrorExpectat
 	return expectation
 }
 
-//Set uses given function f as a mock of Tester.Error method
+// Set uses given function f as a mock of Tester.Error method
 func (m *mTesterMockError) Set(f func(p ...interface{})) *TesterMock {
 	m.mainExpectation = nil
 	m.expectationSeries = nil
@@ -112,7 +114,7 @@ func (m *mTesterMockError) Set(f func(p ...interface{})) *TesterMock {
 	return m.mock
 }
 
-//Error implements github.com/gojuno/minimock.Tester interface
+// Error implements github.com/gojuno/minimock.Tester interface
 func (m *TesterMock) Error(p ...interface{}) {
 	counter := atomic.AddUint64(&m.ErrorPreCounter, 1)
 	defer atomic.AddUint64(&m.ErrorCounter, 1)
@@ -147,17 +149,17 @@ func (m *TesterMock) Error(p ...interface{}) {
 	m.ErrorFunc(p...)
 }
 
-//ErrorMinimockCounter returns a count of TesterMock.ErrorFunc invocations
+// ErrorMinimockCounter returns a count of TesterMock.ErrorFunc invocations
 func (m *TesterMock) ErrorMinimockCounter() uint64 {
 	return atomic.LoadUint64(&m.ErrorCounter)
 }
 
-//ErrorMinimockPreCounter returns the value of TesterMock.Error invocations
+// ErrorMinimockPreCounter returns the value of TesterMock.Error invocations
 func (m *TesterMock) ErrorMinimockPreCounter() uint64 {
 	return atomic.LoadUint64(&m.ErrorPreCounter)
 }
 
-//ErrorFinished returns true if mock invocations count is ok
+// ErrorFinished returns true if mock invocations count is ok
 func (m *TesterMock) ErrorFinished() bool {
 	// if expectation series were set then invocations count should be equal to expectations count
 	if len(m.ErrorMock.expectationSeries) > 0 {
@@ -183,16 +185,18 @@ type mTesterMockErrorf struct {
 	expectationSeries []*TesterMockErrorfExpectation
 }
 
+// TesterMockErrorfExpectation specifies expectation struct of the Tester.Errorf
 type TesterMockErrorfExpectation struct {
 	input *TesterMockErrorfInput
 }
 
+// TesterMockErrorfInput represents input parameters of the Tester.Errorf
 type TesterMockErrorfInput struct {
 	p  string
 	p1 []interface{}
 }
 
-//Expect specifies that invocation of Tester.Errorf is expected from 1 to Infinity times
+// Expect specifies that invocation of Tester.Errorf is expected from 1 to Infinity times
 func (m *mTesterMockErrorf) Expect(p string, p1 ...interface{}) *mTesterMockErrorf {
 	m.mock.ErrorfFunc = nil
 	m.expectationSeries = nil
@@ -204,7 +208,7 @@ func (m *mTesterMockErrorf) Expect(p string, p1 ...interface{}) *mTesterMockErro
 	return m
 }
 
-//Return specifies results of invocation of Tester.Errorf
+// Return specifies results of invocation of Tester.Errorf
 func (m *mTesterMockErrorf) Return() *TesterMock {
 	m.mock.ErrorfFunc = nil
 	m.expectationSeries = nil
@@ -216,7 +220,7 @@ func (m *mTesterMockErrorf) Return() *TesterMock {
 	return m.mock
 }
 
-//ExpectOnce specifies that invocation of Tester.Errorf is expected once
+// ExpectOnce specifies that invocation of Tester.Errorf is expected once
 func (m *mTesterMockErrorf) ExpectOnce(p string, p1 ...interface{}) *TesterMockErrorfExpectation {
 	m.mock.ErrorfFunc = nil
 	m.mainExpectation = nil
@@ -227,7 +231,7 @@ func (m *mTesterMockErrorf) ExpectOnce(p string, p1 ...interface{}) *TesterMockE
 	return expectation
 }
 
-//Set uses given function f as a mock of Tester.Errorf method
+// Set uses given function f as a mock of Tester.Errorf method
 func (m *mTesterMockErrorf) Set(f func(p string, p1 ...interface{})) *TesterMock {
 	m.mainExpectation = nil
 	m.expectationSeries = nil
@@ -236,7 +240,7 @@ func (m *mTesterMockErrorf) Set(f func(p string, p1 ...interface{})) *TesterMock
 	return m.mock
 }
 
-//Errorf implements github.com/gojuno/minimock.Tester interface
+// Errorf implements github.com/gojuno/minimock.Tester interface
 func (m *TesterMock) Errorf(p string, p1 ...interface{}) {
 	counter := atomic.AddUint64(&m.ErrorfPreCounter, 1)
 	defer atomic.AddUint64(&m.ErrorfCounter, 1)
@@ -271,17 +275,17 @@ func (m *TesterMock) Errorf(p string, p1 ...interface{}) {
 	m.ErrorfFunc(p, p1...)
 }
 
-//ErrorfMinimockCounter returns a count of TesterMock.ErrorfFunc invocations
+// ErrorfMinimockCounter returns a count of TesterMock.ErrorfFunc invocations
 func (m *TesterMock) ErrorfMinimockCounter() uint64 {
 	return atomic.LoadUint64(&m.ErrorfCounter)
 }
 
-//ErrorfMinimockPreCounter returns the value of TesterMock.Errorf invocations
+// ErrorfMinimockPreCounter returns the value of TesterMock.Errorf invocations
 func (m *TesterMock) ErrorfMinimockPreCounter() uint64 {
 	return atomic.LoadUint64(&m.ErrorfPreCounter)
 }
 
-//ErrorfFinished returns true if mock invocations count is ok
+// ErrorfFinished returns true if mock invocations count is ok
 func (m *TesterMock) ErrorfFinished() bool {
 	// if expectation series were set then invocations count should be equal to expectations count
 	if len(m.ErrorfMock.expectationSeries) > 0 {
@@ -307,15 +311,17 @@ type mTesterMockFatal struct {
 	expectationSeries []*TesterMockFatalExpectation
 }
 
+// TesterMockFatalExpectation specifies expectation struct of the Tester.Fatal
 type TesterMockFatalExpectation struct {
 	input *TesterMockFatalInput
 }
 
+// TesterMockFatalInput represents input parameters of the Tester.Fatal
 type TesterMockFatalInput struct {
 	p []interface{}
 }
 
-//Expect specifies that invocation of Tester.Fatal is expected from 1 to Infinity times
+// Expect specifies that invocation of Tester.Fatal is expected from 1 to Infinity times
 func (m *mTesterMockFatal) Expect(p ...interface{}) *mTesterMockFatal {
 	m.mock.FatalFunc = nil
 	m.expectationSeries = nil
@@ -327,7 +333,7 @@ func (m *mTesterMockFatal) Expect(p ...interface{}) *mTesterMockFatal {
 	return m
 }
 
-//Return specifies results of invocation of Tester.Fatal
+// Return specifies results of invocation of Tester.Fatal
 func (m *mTesterMockFatal) Return() *TesterMock {
 	m.mock.FatalFunc = nil
 	m.expectationSeries = nil
@@ -339,7 +345,7 @@ func (m *mTesterMockFatal) Return() *TesterMock {
 	return m.mock
 }
 
-//ExpectOnce specifies that invocation of Tester.Fatal is expected once
+// ExpectOnce specifies that invocation of Tester.Fatal is expected once
 func (m *mTesterMockFatal) ExpectOnce(p ...interface{}) *TesterMockFatalExpectation {
 	m.mock.FatalFunc = nil
 	m.mainExpectation = nil
@@ -350,7 +356,7 @@ func (m *mTesterMockFatal) ExpectOnce(p ...interface{}) *TesterMockFatalExpectat
 	return expectation
 }
 
-//Set uses given function f as a mock of Tester.Fatal method
+// Set uses given function f as a mock of Tester.Fatal method
 func (m *mTesterMockFatal) Set(f func(p ...interface{})) *TesterMock {
 	m.mainExpectation = nil
 	m.expectationSeries = nil
@@ -359,7 +365,7 @@ func (m *mTesterMockFatal) Set(f func(p ...interface{})) *TesterMock {
 	return m.mock
 }
 
-//Fatal implements github.com/gojuno/minimock.Tester interface
+// Fatal implements github.com/gojuno/minimock.Tester interface
 func (m *TesterMock) Fatal(p ...interface{}) {
 	counter := atomic.AddUint64(&m.FatalPreCounter, 1)
 	defer atomic.AddUint64(&m.FatalCounter, 1)
@@ -394,17 +400,17 @@ func (m *TesterMock) Fatal(p ...interface{}) {
 	m.FatalFunc(p...)
 }
 
-//FatalMinimockCounter returns a count of TesterMock.FatalFunc invocations
+// FatalMinimockCounter returns a count of TesterMock.FatalFunc invocations
 func (m *TesterMock) FatalMinimockCounter() uint64 {
 	return atomic.LoadUint64(&m.FatalCounter)
 }
 
-//FatalMinimockPreCounter returns the value of TesterMock.Fatal invocations
+// FatalMinimockPreCounter returns the value of TesterMock.Fatal invocations
 func (m *TesterMock) FatalMinimockPreCounter() uint64 {
 	return atomic.LoadUint64(&m.FatalPreCounter)
 }
 
-//FatalFinished returns true if mock invocations count is ok
+// FatalFinished returns true if mock invocations count is ok
 func (m *TesterMock) FatalFinished() bool {
 	// if expectation series were set then invocations count should be equal to expectations count
 	if len(m.FatalMock.expectationSeries) > 0 {
@@ -430,16 +436,18 @@ type mTesterMockFatalf struct {
 	expectationSeries []*TesterMockFatalfExpectation
 }
 
+// TesterMockFatalfExpectation specifies expectation struct of the Tester.Fatalf
 type TesterMockFatalfExpectation struct {
 	input *TesterMockFatalfInput
 }
 
+// TesterMockFatalfInput represents input parameters of the Tester.Fatalf
 type TesterMockFatalfInput struct {
 	p  string
 	p1 []interface{}
 }
 
-//Expect specifies that invocation of Tester.Fatalf is expected from 1 to Infinity times
+// Expect specifies that invocation of Tester.Fatalf is expected from 1 to Infinity times
 func (m *mTesterMockFatalf) Expect(p string, p1 ...interface{}) *mTesterMockFatalf {
 	m.mock.FatalfFunc = nil
 	m.expectationSeries = nil
@@ -451,7 +459,7 @@ func (m *mTesterMockFatalf) Expect(p string, p1 ...interface{}) *mTesterMockFata
 	return m
 }
 
-//Return specifies results of invocation of Tester.Fatalf
+// Return specifies results of invocation of Tester.Fatalf
 func (m *mTesterMockFatalf) Return() *TesterMock {
 	m.mock.FatalfFunc = nil
 	m.expectationSeries = nil
@@ -463,7 +471,7 @@ func (m *mTesterMockFatalf) Return() *TesterMock {
 	return m.mock
 }
 
-//ExpectOnce specifies that invocation of Tester.Fatalf is expected once
+// ExpectOnce specifies that invocation of Tester.Fatalf is expected once
 func (m *mTesterMockFatalf) ExpectOnce(p string, p1 ...interface{}) *TesterMockFatalfExpectation {
 	m.mock.FatalfFunc = nil
 	m.mainExpectation = nil
@@ -474,7 +482,7 @@ func (m *mTesterMockFatalf) ExpectOnce(p string, p1 ...interface{}) *TesterMockF
 	return expectation
 }
 
-//Set uses given function f as a mock of Tester.Fatalf method
+// Set uses given function f as a mock of Tester.Fatalf method
 func (m *mTesterMockFatalf) Set(f func(p string, p1 ...interface{})) *TesterMock {
 	m.mainExpectation = nil
 	m.expectationSeries = nil
@@ -483,7 +491,7 @@ func (m *mTesterMockFatalf) Set(f func(p string, p1 ...interface{})) *TesterMock
 	return m.mock
 }
 
-//Fatalf implements github.com/gojuno/minimock.Tester interface
+// Fatalf implements github.com/gojuno/minimock.Tester interface
 func (m *TesterMock) Fatalf(p string, p1 ...interface{}) {
 	counter := atomic.AddUint64(&m.FatalfPreCounter, 1)
 	defer atomic.AddUint64(&m.FatalfCounter, 1)
@@ -518,17 +526,17 @@ func (m *TesterMock) Fatalf(p string, p1 ...interface{}) {
 	m.FatalfFunc(p, p1...)
 }
 
-//FatalfMinimockCounter returns a count of TesterMock.FatalfFunc invocations
+// FatalfMinimockCounter returns a count of TesterMock.FatalfFunc invocations
 func (m *TesterMock) FatalfMinimockCounter() uint64 {
 	return atomic.LoadUint64(&m.FatalfCounter)
 }
 
-//FatalfMinimockPreCounter returns the value of TesterMock.Fatalf invocations
+// FatalfMinimockPreCounter returns the value of TesterMock.Fatalf invocations
 func (m *TesterMock) FatalfMinimockPreCounter() uint64 {
 	return atomic.LoadUint64(&m.FatalfPreCounter)
 }
 
-//FatalfFinished returns true if mock invocations count is ok
+// FatalfFinished returns true if mock invocations count is ok
 func (m *TesterMock) FatalfFinished() bool {
 	// if expectation series were set then invocations count should be equal to expectations count
 	if len(m.FatalfMock.expectationSeries) > 0 {
@@ -548,8 +556,8 @@ func (m *TesterMock) FatalfFinished() bool {
 	return true
 }
 
-//ValidateCallCounters checks that all mocked methods of the interface have been called at least once
-//Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
+// ValidateCallCounters checks that all mocked methods of the interface have been called at least once
+// Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 func (m *TesterMock) ValidateCallCounters() {
 
 	if !m.ErrorFinished() {
@@ -570,19 +578,19 @@ func (m *TesterMock) ValidateCallCounters() {
 
 }
 
-//CheckMocksCalled checks that all mocked methods of the interface have been called at least once
-//Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
+// CheckMocksCalled checks that all mocked methods of the interface have been called at least once
+// Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 func (m *TesterMock) CheckMocksCalled() {
 	m.Finish()
 }
 
-//Finish checks that all mocked methods of the interface have been called at least once
-//Deprecated: please use MinimockFinish or use Finish method of minimock.Controller
+// Finish checks that all mocked methods of the interface have been called at least once
+// Deprecated: please use MinimockFinish or use Finish method of minimock.Controller
 func (m *TesterMock) Finish() {
 	m.MinimockFinish()
 }
 
-//MinimockFinish checks that all mocked methods of the interface have been called at least once
+// MinimockFinish checks that all mocked methods of the interface have been called at least once
 func (m *TesterMock) MinimockFinish() {
 
 	if !m.ErrorFinished() {
@@ -603,14 +611,14 @@ func (m *TesterMock) MinimockFinish() {
 
 }
 
-//Wait waits for all mocked methods to be called at least once
-//Deprecated: please use MinimockWait or use Wait method of minimock.Controller
+// Wait waits for all mocked methods to be called at least once
+// Deprecated: please use MinimockWait or use Wait method of minimock.Controller
 func (m *TesterMock) Wait(timeout time.Duration) {
 	m.MinimockWait(timeout)
 }
 
-//MinimockWait waits for all mocked methods to be called at least once
-//this method is called by minimock.Controller
+// MinimockWait waits for all mocked methods to be called at least once
+// this method is called by minimock.Controller
 func (m *TesterMock) MinimockWait(timeout time.Duration) {
 	timeoutCh := time.After(timeout)
 	for {
@@ -651,8 +659,8 @@ func (m *TesterMock) MinimockWait(timeout time.Duration) {
 	}
 }
 
-//AllMocksCalled returns true if all mocked methods were called before the execution of AllMocksCalled,
-//it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
+// AllMocksCalled returns true if all mocked methods were called before the execution of AllMocksCalled,
+// it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
 func (m *TesterMock) AllMocksCalled() bool {
 
 	if !m.ErrorFinished() {

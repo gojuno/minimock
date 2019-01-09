@@ -2,8 +2,8 @@ package tests
 
 /*
 DO NOT EDIT!
-This code was generated automatically using github.com/gojuno/minimock v1.9
-The original interface "Formatter" can be found in github.com/kirylandruski/minimock/tests
+This code was generated automatically using github.com/gojuno/minimock v1.9.1
+The original interface "Formatter" can be found in github.com/gojuno/minimock/tests
 */
 import (
 	"sync/atomic"
@@ -13,7 +13,7 @@ import (
 	testify_assert "github.com/stretchr/testify/assert"
 )
 
-//FormatterMock implements github.com/kirylandruski/minimock/tests.Formatter
+// FormatterMock implements github.com/gojuno/minimock/tests.Formatter
 type FormatterMock struct {
 	t minimock.Tester
 
@@ -23,7 +23,7 @@ type FormatterMock struct {
 	FormatMock       mFormatterMockFormat
 }
 
-//NewFormatterMock returns a mock for github.com/kirylandruski/minimock/tests.Formatter
+// NewFormatterMock returns a mock for github.com/gojuno/minimock/tests.Formatter
 func NewFormatterMock(t minimock.Tester) *FormatterMock {
 	m := &FormatterMock{t: t}
 
@@ -42,21 +42,24 @@ type mFormatterMockFormat struct {
 	expectationSeries []*FormatterMockFormatExpectation
 }
 
+// FormatterMockFormatExpectation specifies expectation struct of the Formatter.Format
 type FormatterMockFormatExpectation struct {
 	input  *FormatterMockFormatInput
 	result *FormatterMockFormatResult
 }
 
+// FormatterMockFormatInput represents input parameters of the Formatter.Format
 type FormatterMockFormatInput struct {
 	p  string
 	p1 []interface{}
 }
 
+// FormatterMockFormatResult represents results of the Formatter.Format
 type FormatterMockFormatResult struct {
 	r string
 }
 
-//Expect specifies that invocation of Formatter.Format is expected from 1 to Infinity times
+// Expect specifies that invocation of Formatter.Format is expected from 1 to Infinity times
 func (m *mFormatterMockFormat) Expect(p string, p1 ...interface{}) *mFormatterMockFormat {
 	m.mock.FormatFunc = nil
 	m.expectationSeries = nil
@@ -68,7 +71,7 @@ func (m *mFormatterMockFormat) Expect(p string, p1 ...interface{}) *mFormatterMo
 	return m
 }
 
-//Return specifies results of invocation of Formatter.Format
+// Return specifies results of invocation of Formatter.Format
 func (m *mFormatterMockFormat) Return(r string) *FormatterMock {
 	m.mock.FormatFunc = nil
 	m.expectationSeries = nil
@@ -80,7 +83,7 @@ func (m *mFormatterMockFormat) Return(r string) *FormatterMock {
 	return m.mock
 }
 
-//ExpectOnce specifies that invocation of Formatter.Format is expected once
+// ExpectOnce specifies that invocation of Formatter.Format is expected once
 func (m *mFormatterMockFormat) ExpectOnce(p string, p1 ...interface{}) *FormatterMockFormatExpectation {
 	m.mock.FormatFunc = nil
 	m.mainExpectation = nil
@@ -91,11 +94,12 @@ func (m *mFormatterMockFormat) ExpectOnce(p string, p1 ...interface{}) *Formatte
 	return expectation
 }
 
+// Return sets up return arguments of expectation struct for Formatter.Format
 func (e *FormatterMockFormatExpectation) Return(r string) {
 	e.result = &FormatterMockFormatResult{r}
 }
 
-//Set uses given function f as a mock of Formatter.Format method
+// Set uses given function f as a mock of Formatter.Format method
 func (m *mFormatterMockFormat) Set(f func(p string, p1 ...interface{}) (r string)) *FormatterMock {
 	m.mainExpectation = nil
 	m.expectationSeries = nil
@@ -104,7 +108,7 @@ func (m *mFormatterMockFormat) Set(f func(p string, p1 ...interface{}) (r string
 	return m.mock
 }
 
-//Format implements github.com/kirylandruski/minimock/tests.Formatter interface
+// Format implements github.com/gojuno/minimock/tests.Formatter interface
 func (m *FormatterMock) Format(p string, p1 ...interface{}) (r string) {
 	counter := atomic.AddUint64(&m.FormatPreCounter, 1)
 	defer atomic.AddUint64(&m.FormatCounter, 1)
@@ -154,17 +158,17 @@ func (m *FormatterMock) Format(p string, p1 ...interface{}) (r string) {
 	return m.FormatFunc(p, p1...)
 }
 
-//FormatMinimockCounter returns a count of FormatterMock.FormatFunc invocations
+// FormatMinimockCounter returns a count of FormatterMock.FormatFunc invocations
 func (m *FormatterMock) FormatMinimockCounter() uint64 {
 	return atomic.LoadUint64(&m.FormatCounter)
 }
 
-//FormatMinimockPreCounter returns the value of FormatterMock.Format invocations
+// FormatMinimockPreCounter returns the value of FormatterMock.Format invocations
 func (m *FormatterMock) FormatMinimockPreCounter() uint64 {
 	return atomic.LoadUint64(&m.FormatPreCounter)
 }
 
-//FormatFinished returns true if mock invocations count is ok
+// FormatFinished returns true if mock invocations count is ok
 func (m *FormatterMock) FormatFinished() bool {
 	// if expectation series were set then invocations count should be equal to expectations count
 	if len(m.FormatMock.expectationSeries) > 0 {
@@ -184,8 +188,8 @@ func (m *FormatterMock) FormatFinished() bool {
 	return true
 }
 
-//ValidateCallCounters checks that all mocked methods of the interface have been called at least once
-//Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
+// ValidateCallCounters checks that all mocked methods of the interface have been called at least once
+// Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 func (m *FormatterMock) ValidateCallCounters() {
 
 	if !m.FormatFinished() {
@@ -194,19 +198,19 @@ func (m *FormatterMock) ValidateCallCounters() {
 
 }
 
-//CheckMocksCalled checks that all mocked methods of the interface have been called at least once
-//Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
+// CheckMocksCalled checks that all mocked methods of the interface have been called at least once
+// Deprecated: please use MinimockFinish method or use Finish method of minimock.Controller
 func (m *FormatterMock) CheckMocksCalled() {
 	m.Finish()
 }
 
-//Finish checks that all mocked methods of the interface have been called at least once
-//Deprecated: please use MinimockFinish or use Finish method of minimock.Controller
+// Finish checks that all mocked methods of the interface have been called at least once
+// Deprecated: please use MinimockFinish or use Finish method of minimock.Controller
 func (m *FormatterMock) Finish() {
 	m.MinimockFinish()
 }
 
-//MinimockFinish checks that all mocked methods of the interface have been called at least once
+// MinimockFinish checks that all mocked methods of the interface have been called at least once
 func (m *FormatterMock) MinimockFinish() {
 
 	if !m.FormatFinished() {
@@ -215,14 +219,14 @@ func (m *FormatterMock) MinimockFinish() {
 
 }
 
-//Wait waits for all mocked methods to be called at least once
-//Deprecated: please use MinimockWait or use Wait method of minimock.Controller
+// Wait waits for all mocked methods to be called at least once
+// Deprecated: please use MinimockWait or use Wait method of minimock.Controller
 func (m *FormatterMock) Wait(timeout time.Duration) {
 	m.MinimockWait(timeout)
 }
 
-//MinimockWait waits for all mocked methods to be called at least once
-//this method is called by minimock.Controller
+// MinimockWait waits for all mocked methods to be called at least once
+// this method is called by minimock.Controller
 func (m *FormatterMock) MinimockWait(timeout time.Duration) {
 	timeoutCh := time.After(timeout)
 	for {
@@ -248,8 +252,8 @@ func (m *FormatterMock) MinimockWait(timeout time.Duration) {
 	}
 }
 
-//AllMocksCalled returns true if all mocked methods were called before the execution of AllMocksCalled,
-//it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
+// AllMocksCalled returns true if all mocked methods were called before the execution of AllMocksCalled,
+// it can be used with assert/require, i.e. assert.True(mock.AllMocksCalled())
 func (m *FormatterMock) AllMocksCalled() bool {
 
 	if !m.FormatFinished() {
