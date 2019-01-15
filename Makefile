@@ -8,6 +8,7 @@ lint:
 	gometalinter ./... -I minimock -e gopathwalk --disable=gotype --deadline=2m
 
 install:
+	go mod download
 	go install ./cmd/minimock
 
 clean:

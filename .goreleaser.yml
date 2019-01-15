@@ -1,7 +1,6 @@
 project_name: minimock
 before:
   hooks:
-    - go mod download
     - make all
 builds:
 - 
