@@ -26,6 +26,7 @@ type (
 	options struct {
 		interfaces []interfaceInfo
 		noGenerate bool
+		suffix     string
 	}
 
 	interfaceInfo struct {
@@ -91,7 +92,7 @@ func run(opts *options) (err error) {
 			},
 		}
 
-		if err := processPackage(gopts, interfaces, in.WriteTo); err != nil {
+		if err := processPackage(gopts, interfaces, in.WriteTo, opts.suffix); err != nil {
 			return err
 		}
 	}
@@ -99,10 +100,10 @@ func run(opts *options) (err error) {
 	return nil
 }
 
-func processPackage(opts generator.Options, interfaces []string, writeTo string) (err error) {
+func processPackage(opts generator.Options, interfaces []string, writeTo, suffix string) (err error) {
 	for _, name := range interfaces {
 		opts.InterfaceName = name
-		opts.OutputFile, err = destinationFile(name, writeTo)
+		opts.OutputFile, err = destinationFile(name, writeTo, suffix)
 		if err != nil {
 			return errors.Wrapf(err, "failed to generate mock for %s", name)
 		}
@@ -139,7 +140,7 @@ func isGoFile(path string) (bool, error) {
 	return strings.HasSuffix(path, ".go") && !stat.IsDir(), nil
 }
 
-func destinationFile(interfaceName, writeTo string) (string, error) {
+func destinationFile(interfaceName, writeTo, suffix string) (string, error) {
 	ok, err := isGoFile(writeTo)
 	if err != nil {
 		return "", err
@@ -150,7 +151,7 @@ func destinationFile(interfaceName, writeTo string) (string, error) {
 	if ok {
 		path = writeTo
 	} else {
-		path = filepath.Join(writeTo, minimock.CamelToSnake(interfaceName)+"_mock_test.go")
+		path = filepath.Join(writeTo, minimock.CamelToSnake(interfaceName)+suffix)
 	}
 
 	if !strings.HasPrefix(path, "/") && !strings.HasPrefix(path, ".") {
@@ -241,6 +242,8 @@ func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
 	fs := flag.NewFlagSet("", flag.ContinueOnError)
 
 	fs.BoolVar(&opts.noGenerate, "g", false, "don't put go:generate instruction into the generated code")
+	fs.StringVar(&opts.suffix, "s", "_mock_test.go", "mock file suffix")
+
 	input := fs.String("i", "*", "comma-separated names of the interfaces to mock, i.e fmt.Stringer,io.Reader\nuse io.* notation to generate mocks for all interfaces in the \"io\" package")
 	output := fs.String("o", "", "comma-separated destination file names or packages to put the generated mocks in,\nby default the generated mock is placed in the source package directory")
 	help := fs.Bool("h", false, "show this help message")

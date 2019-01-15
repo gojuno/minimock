@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.org/gojuno/minimock.svg?branch=master)](https://travis-ci.org/gojuno/minimock)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gojuno/minimock)](https://goreportcard.com/report/github.com/gojuno/minimock)
 [![Coverage Status](https://coveralls.io/repos/github/gojuno/minimock/badge.svg?branch=master)](https://coveralls.io/github/gojuno/minimock?branch=master)
+[![Release](https://img.shields.io/github/release/gojuno/minimock.svg)](https://github.com/gojuno/minimock/releases/latest)
 [![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/avelino/awesome-go#testing)
 
 
@@ -41,6 +42,8 @@ go get github.com/gojuno/minimock/cmd/minimock
   -o string
     	comma-separated destination file names or packages to put the generated mocks in,
     	by default the generated mock is placed in the source package directory
+  -s string
+    	mock file suffix (default "_mock_test.go")
 ```
 
 Let's say we have the following interface declaration in github.com/gojuno/minimock/tests package:
