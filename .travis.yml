@@ -9,6 +9,7 @@ install:
   - export BINDIR=./bin
   - curl -L https://git.io/vp6lP | sh #gometalinter installation
   - export PATH=`pwd`/bin:$PATH
+  - export GO111MODULE=on
 
 script:
   - cd $TRAVIS_BUILD_DIR && make all
