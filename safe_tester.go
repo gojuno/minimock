@@ -24,7 +24,7 @@ func (st *safeTester) Errorf(format string, args ...interface{}) {
 	st.m.Lock()
 	defer st.m.Unlock()
 
-	st.Tester.Fatalf(format, args...)
+	st.Tester.Errorf(format, args...)
 }
 
 // Fatal implements Tester
