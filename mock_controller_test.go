@@ -73,7 +73,7 @@ type unsafeMocker struct {
 }
 
 func (um *unsafeMocker) MinimockWait(time.Duration) {
-	um.tester.FailNow()
+	um.tester.Fatalf("format")
 }
 
 type unsafeTester struct {
@@ -82,6 +82,6 @@ type unsafeTester struct {
 	finished bool
 }
 
-func (u *unsafeTester) FailNow() {
+func (u *unsafeTester) Fatalf(string, ...interface{}) {
 	u.finished = true
 }
