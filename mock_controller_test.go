@@ -10,7 +10,7 @@ import (
 
 func TestNewController(t *testing.T) {
 	c := NewController(t)
-	assert.Equal(t, t, c.Tester)
+	assert.Equal(t, &safeTester{Tester: t}, c.Tester)
 }
 
 func TestController_RegisterMocker(t *testing.T) {
@@ -20,7 +20,6 @@ func TestController_RegisterMocker(t *testing.T) {
 }
 
 type dummyMocker struct {
-	Mocker
 	finishCounter int32
 	waitCounter   int32
 }
@@ -51,4 +50,38 @@ func TestController_Wait(t *testing.T) {
 
 	c.Wait(0)
 	assert.Equal(t, int32(2), atomic.LoadInt32(&dm.waitCounter))
+}
+
+func TestController_WaitConcurrent(t *testing.T) {
+	um1 := &unsafeMocker{}
+	um2 := &unsafeMocker{}
+
+	c := &Controller{
+		Tester:  newSafeTester(&unsafeTester{}),
+		mockers: []Mocker{um1, um2},
+	}
+
+	um1.tester = c
+	um2.tester = c
+
+	c.Wait(0) //shouln't produce data races
+}
+
+type unsafeMocker struct {
+	Mocker
+	tester Tester
+}
+
+func (um *unsafeMocker) MinimockWait(time.Duration) {
+	um.tester.FailNow()
+}
+
+type unsafeTester struct {
+	Tester
+
+	finished bool
+}
+
+func (u *unsafeTester) FailNow() {
+	u.finished = true
 }
