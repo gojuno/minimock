@@ -21,7 +21,7 @@ import (
 	"github.com/gojuno/minimock"
 )
 
-const version = "1.9.1"
+const version = "1.9.2"
 
 type (
 	programOptions struct {
