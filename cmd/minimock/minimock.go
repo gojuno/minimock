@@ -22,6 +22,19 @@ import (
 
 var version = "dev" //do not modify! version var is modified during the build via ldflags option
 
+var helpers = template.FuncMap{
+	"title": strings.Title,
+	"in": func(s string, in ...string) bool {
+		s = strings.Trim(s, " ")
+		for _, i := range in {
+			if s != "" && strings.Contains(i, s) {
+				return true
+			}
+		}
+		return false
+	},
+}
+
 type (
 	options struct {
 		interfaces []interfaceInfo
@@ -87,9 +100,7 @@ func run(opts *options) (err error) {
 				"GenerateInstruction": !opts.noGenerate,
 				"Version":             version,
 			},
-			Funcs: template.FuncMap{
-				"title": strings.Title,
-			},
+			Funcs: helpers,
 		}
 
 		if err := processPackage(gopts, interfaces, in.WriteTo, opts.suffix); err != nil {

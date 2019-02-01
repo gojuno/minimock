@@ -1,8 +1,6 @@
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/heschik/goimports v0.0.0-20181107214206-01b9d28a5b21
-github.com/heschik/goimports/imports
-# github.com/hexdigest/gowrap v1.1.0
+# github.com/hexdigest/gowrap v1.1.1
 github.com/hexdigest/gowrap/generator
 github.com/hexdigest/gowrap/pkg
 github.com/hexdigest/gowrap/printer
@@ -13,10 +11,12 @@ github.com/pmezard/go-difflib/difflib
 # github.com/stretchr/testify v1.2.2
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
-# golang.org/x/tools v0.0.0-20181205014116-22934f0fdb62
+# golang.org/x/tools v0.0.0-20190130014116-16909d206f00
 golang.org/x/tools/go/packages
+golang.org/x/tools/imports
 golang.org/x/tools/go/gcexportdata
 golang.org/x/tools/go/internal/cgo
+golang.org/x/tools/go/internal/packagesdriver
 golang.org/x/tools/internal/gopathwalk
 golang.org/x/tools/internal/semver
 golang.org/x/tools/go/ast/astutil

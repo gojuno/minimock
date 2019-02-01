@@ -11,21 +11,21 @@ const (
 		{{if $.Options.HeaderVars.GenerateInstruction}}
 		//go:generate minimock -i {{$.SourcePackage.PkgPath}}.{{$.Options.InterfaceName}} -o {{$.Options.OutputFile}}
 		{{end}}
+
+		import (
+			"sync/atomic"
+			"time"
+
+			{{range $import := $.Options.Imports}}
+				{{if not (in $import "\"time\"" "\"sync/atomic\"" "\"github.com/gojuno/minimock\"")}}{{$import}}{{end}}
+			{{end}}
+			"github.com/gojuno/minimock"
+		)
 	`
 
 	// BodyTemplate is used to generate mock body
 	BodyTemplate = `
-
-
 		{{ $mock := (title (printf "%sMock" $.Interface.Name)) }}
-
-		import (
-			"reflect"
-			"sync/atomic"
-			"time"
-
-			"github.com/gojuno/minimock"
-		)
 
 		// {{$mock}} implements {{$.Interface.Type}}
 		type {{$mock}} struct {
