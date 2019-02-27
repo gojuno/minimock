@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gojuno/minimock"
+	minimock "github.com/gojuno/minimock/pkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -79,8 +79,8 @@ func TestFormatterMock_ExpectDifferentArguments(t *testing.T) {
 		defer tester.MinimockFinish()
 
 		tester.ErrorfMock.Set(func(s string, args ...interface{}) {
-			assert.Equal(t, "FormatterMock.Format got unexpected parameters, want: %#v, got: %#v%s\n", s)
-			require.Len(t, args, 3)
+			assert.Equal(t, "FormatterMock.Format got unexpected parameters, want: %#v, got: %#v\n", s)
+			require.Len(t, args, 2)
 			assert.Equal(t, FormatterMockFormatParams{s1: "expected"}, args[0])
 			assert.Equal(t, FormatterMockFormatParams{s1: "actual"}, args[1])
 		})

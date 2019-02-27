@@ -17,9 +17,10 @@ const (
 			"time"
 
 			{{range $import := $.Options.Imports}}
-				{{if not (in $import "\"time\"" "\"sync/atomic\"" "\"github.com/gojuno/minimock\"")}}{{$import}}{{end}}
+				{{if not (in $import "\"time\"" "\"sync/atomic\"" "minimock \"github.com/gojuno/minimock/pkg\"")}}{{$import}}{{end}}
 			{{end}}
-			"github.com/gojuno/minimock"
+
+			minimock "github.com/gojuno/minimock/pkg"
 		)
 	`
 
@@ -165,7 +166,7 @@ const (
 						want:= m.{{$method.Name}}Mock.defaultExpectation.params
 						got:= {{$mock}}{{$method.Name}}Params{ {{$method.ParamsNames}} }
 						if want != nil && !minimock.Equal(*want, got) {
-							m.t.Errorf("{{$mock}}.{{$method.Name}} got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+							m.t.Errorf("{{$mock}}.{{$method.Name}} got unexpected parameters, want: %#v, got: %#v\n", *want, got)
 						}
 					{{ end }}
 					{{if $method.HasResults }}

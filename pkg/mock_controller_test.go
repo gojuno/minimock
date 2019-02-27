@@ -4,19 +4,21 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewController(t *testing.T) {
 	c := NewController(t)
-	assert.Equal(t, &safeTester{Tester: t}, c.Tester)
+	if !Equal(&safeTester{Tester: t}, c.Tester) {
+		t.Error()
+	}
 }
 
 func TestController_RegisterMocker(t *testing.T) {
 	c := &Controller{}
 	c.RegisterMocker(nil)
-	assert.Len(t, c.mockers, 1)
+	if len(c.mockers) != 1 {
+		t.Error()
+	}
 }
 
 type dummyMocker struct {
@@ -39,7 +41,9 @@ func TestController_Finish(t *testing.T) {
 	}
 
 	c.Finish()
-	assert.Equal(t, int32(2), atomic.LoadInt32(&dm.finishCounter))
+	if !Equal(int32(2), atomic.LoadInt32(&dm.finishCounter)) {
+		t.Error()
+	}
 }
 
 func TestController_Wait(t *testing.T) {
@@ -49,7 +53,9 @@ func TestController_Wait(t *testing.T) {
 	}
 
 	c.Wait(0)
-	assert.Equal(t, int32(2), atomic.LoadInt32(&dm.waitCounter))
+	if !Equal(int32(2), atomic.LoadInt32(&dm.waitCounter)) {
+		t.Error()
+	}
 }
 
 func TestController_WaitConcurrent(t *testing.T) {

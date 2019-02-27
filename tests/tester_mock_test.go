@@ -3,13 +3,13 @@ package tests
 // DO NOT EDIT!
 // The code below was generated with http://github.com/gojuno/minimock (dev)
 
-//go:generate minimock -i github.com/gojuno/minimock.Tester -o ./tests/tester_mock_test.go
+//go:generate minimock -i github.com/gojuno/minimock/pkg.Tester -o ./tests/tester_mock_test.go
 
 import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gojuno/minimock"
+	minimock "github.com/gojuno/minimock/pkg"
 )
 
 // TesterMock implements minimock.Tester
@@ -140,7 +140,7 @@ func (m *TesterMock) Error(p1 ...interface{}) {
 		want := m.ErrorMock.defaultExpectation.params
 		got := TesterMockErrorParams{p1}
 		if want != nil && !minimock.Equal(*want, got) {
-			m.t.Errorf("TesterMock.Error got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+			m.t.Errorf("TesterMock.Error got unexpected parameters, want: %#v, got: %#v\n", *want, got)
 		}
 
 		return
@@ -286,7 +286,7 @@ func (m *TesterMock) Errorf(format string, args ...interface{}) {
 		want := m.ErrorfMock.defaultExpectation.params
 		got := TesterMockErrorfParams{format, args}
 		if want != nil && !minimock.Equal(*want, got) {
-			m.t.Errorf("TesterMock.Errorf got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+			m.t.Errorf("TesterMock.Errorf got unexpected parameters, want: %#v, got: %#v\n", *want, got)
 		}
 
 		return
@@ -551,7 +551,7 @@ func (m *TesterMock) Fatal(args ...interface{}) {
 		want := m.FatalMock.defaultExpectation.params
 		got := TesterMockFatalParams{args}
 		if want != nil && !minimock.Equal(*want, got) {
-			m.t.Errorf("TesterMock.Fatal got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+			m.t.Errorf("TesterMock.Fatal got unexpected parameters, want: %#v, got: %#v\n", *want, got)
 		}
 
 		return
@@ -697,7 +697,7 @@ func (m *TesterMock) Fatalf(format string, args ...interface{}) {
 		want := m.FatalfMock.defaultExpectation.params
 		got := TesterMockFatalfParams{format, args}
 		if want != nil && !minimock.Equal(*want, got) {
-			m.t.Errorf("TesterMock.Fatalf got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+			m.t.Errorf("TesterMock.Fatalf got unexpected parameters, want: %#v, got: %#v\n", *want, got)
 		}
 
 		return

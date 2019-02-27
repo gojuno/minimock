@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gojuno/minimock"
+	minimock "github.com/gojuno/minimock/pkg"
 )
 
 // FormatterMock implements Formatter
@@ -143,7 +143,7 @@ func (m *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) {
 		want := m.FormatMock.defaultExpectation.params
 		got := FormatterMockFormatParams{s1, p1}
 		if want != nil && !minimock.Equal(*want, got) {
-			m.t.Errorf("FormatterMock.Format got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+			m.t.Errorf("FormatterMock.Format got unexpected parameters, want: %#v, got: %#v\n", *want, got)
 		}
 
 		results := m.FormatMock.defaultExpectation.results
