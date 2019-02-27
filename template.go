@@ -6,7 +6,7 @@ const (
 		package {{$.Package.Name}}
 
 		// DO NOT EDIT!
-		// The code below was generated with http://github.com/gojuno/minimock ({{$.Options.HeaderVars.Version}})
+		// The code below was generated with http://github.com/deff7/minimock ({{$.Options.HeaderVars.Version}})
 
 		{{if $.Options.HeaderVars.GenerateInstruction}}
 		//go:generate minimock -i {{$.SourcePackage.PkgPath}}.{{$.Options.InterfaceName}} -o {{$.Options.OutputFile}}

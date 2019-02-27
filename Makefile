@@ -1,7 +1,7 @@
 all: install test lint clean
 
 generate:
-	go run ./cmd/minimock/minimock.go -i github.com/gojuno/minimock/pkg.Tester -o ./tests
+	go run ./cmd/minimock/minimock.go -i github.com/deff7/minimock/pkg.Tester -o ./tests
 	go run ./cmd/minimock/minimock.go -i ./tests.Formatter -o ./tests/formatter_mock.go
 
 lint:
