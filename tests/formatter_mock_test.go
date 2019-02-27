@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	minimock "github.com/gojuno/minimock/pkg"
+	minimock "github.com/deff7/minimock/pkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

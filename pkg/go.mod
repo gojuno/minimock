@@ -1,1 +1,1 @@
-module github.com/gojuno/minimock/pkg
+module github.com/deff7/minimock/pkg

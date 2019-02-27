@@ -1,4 +1,4 @@
-module github.com/gojuno/minimock
+module github.com/deff7/minimock
 
 require (
 	github.com/hexdigest/gowrap v1.1.1
@@ -7,4 +7,4 @@ require (
 	golang.org/x/tools v0.0.0-20190130014116-16909d206f00
 )
 
-replace github.com/gojuno/minimock/pkg => ./pkg
+replace github.com/deff7/minimock/pkg => ./pkg

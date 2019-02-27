@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	minimock "github.com/gojuno/minimock/pkg"
+	minimock "github.com/deff7/minimock/pkg"
 )
 
 // FormatterMock implements Formatter

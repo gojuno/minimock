@@ -13,7 +13,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/gojuno/minimock"
+	"github.com/deff7/minimock"
 	"github.com/hexdigest/gowrap/generator"
 	"github.com/hexdigest/gowrap/pkg"
 	"github.com/pkg/errors"

@@ -17,10 +17,10 @@ const (
 			"time"
 
 			{{range $import := $.Options.Imports}}
-				{{if not (in $import "\"time\"" "\"sync/atomic\"" "minimock \"github.com/gojuno/minimock/pkg\"")}}{{$import}}{{end}}
+				{{if not (in $import "\"time\"" "\"sync/atomic\"" "minimock \"github.com/deff7/minimock/pkg\"")}}{{$import}}{{end}}
 			{{end}}
 
-			minimock "github.com/gojuno/minimock/pkg"
+			minimock "github.com/deff7/minimock/pkg"
 		)
 	`
 
