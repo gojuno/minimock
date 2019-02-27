@@ -1,9 +1,9 @@
 package tests
 
 // DO NOT EDIT!
-// The code below was generated with http://github.com/gojuno/minimock (dev)
+// The code below was generated with http://github.com/deff7/minimock (dev)
 
-//go:generate minimock -i github.com/gojuno/minimock/pkg.Tester -o ./tests/tester_mock_test.go
+//go:generate minimock -i github.com/deff7/minimock/pkg.Tester -o ./tests/tester_mock_test.go
 
 import (
 	"sync/atomic"
