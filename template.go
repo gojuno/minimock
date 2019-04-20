@@ -13,8 +13,8 @@ const (
 		{{end}}
 
 		import (
-			"sync/atomic"
-			"time"
+			mm_atomic "sync/atomic"
+			mm_time "time"
 
 			{{range $import := $.Options.Imports}}
 				{{if not (in $import "\"time\"" "\"sync/atomic\"" "\"github.com/gojuno/minimock\"")}}{{$import}}{{end}}
@@ -147,20 +147,20 @@ const (
 
 			// {{$method.Name}} implements {{$.Interface.Type}}
 			func (m *{{$mock}}) {{$method.Declaration}} {
-				atomic.AddUint64(&m.before{{$method.Name}}Counter, 1)
-				defer atomic.AddUint64(&m.after{{$method.Name}}Counter, 1)
+				mm_atomic.AddUint64(&m.before{{$method.Name}}Counter, 1)
+				defer mm_atomic.AddUint64(&m.after{{$method.Name}}Counter, 1)
 
 				{{if $method.HasParams}}
 					for _, e := range m.{{$method.Name}}Mock.expectations {
 						if minimock.Equal(*e.params,  {{$mock}}{{$method.Name}}Params{ {{$method.ParamsNames}} }) {
-							atomic.AddUint64(&e.Counter, 1)
+							mm_atomic.AddUint64(&e.Counter, 1)
 							{{$method.ReturnStruct "e.results" -}}
 						}
 					}
 				{{end}}
 
 				if m.{{$method.Name}}Mock.defaultExpectation != nil {
-					atomic.AddUint64(&m.{{$method.Name}}Mock.defaultExpectation.Counter, 1)
+					mm_atomic.AddUint64(&m.{{$method.Name}}Mock.defaultExpectation.Counter, 1)
 					{{- if $method.HasParams }}
 						want:= m.{{$method.Name}}Mock.defaultExpectation.params
 						got:= {{$mock}}{{$method.Name}}Params{ {{$method.ParamsNames}} }
@@ -187,29 +187,29 @@ const (
 
 			// {{$method.Name}}AfterCounter returns a count of finished {{$mock}}.{{$method.Name}} invocations
 			func (m *{{$mock}}) {{$method.Name}}AfterCounter() uint64 {
-				return atomic.LoadUint64(&m.after{{$method.Name}}Counter)
+				return mm_atomic.LoadUint64(&m.after{{$method.Name}}Counter)
 			}
 
 			// {{$method.Name}}BeforeCounter returns a count of {{$mock}}.{{$method.Name}} invocations
 			func (m *{{$mock}}) {{$method.Name}}BeforeCounter() uint64 {
-				return atomic.LoadUint64(&m.before{{$method.Name}}Counter)
+				return mm_atomic.LoadUint64(&m.before{{$method.Name}}Counter)
 			}
 
 			// Minimock{{$method.Name}}Done returns true if the count of the {{$method.Name}} invocations corresponds
 			// the number of defined expectations
 			func (m *{{$mock}}) Minimock{{$method.Name}}Done() bool {
 				for _, e := range m.{{$method.Name}}Mock.expectations {
-					if atomic.LoadUint64(&e.Counter) < 1 {
+					if mm_atomic.LoadUint64(&e.Counter) < 1 {
 						return false
 					}
 				}
 
 				// if default expectation was set then invocations count should be greater than zero
-				if m.{{$method.Name}}Mock.defaultExpectation != nil && atomic.LoadUint64(&m.after{{$method.Name}}Counter) < 1 {
+				if m.{{$method.Name}}Mock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.after{{$method.Name}}Counter) < 1 {
 					return false
 				}
 				// if func was set then invocations count should be greater than zero
-				if m.func{{$method.Name}} != nil && atomic.LoadUint64(&m.after{{$method.Name}}Counter) < 1  {
+				if m.func{{$method.Name}} != nil && mm_atomic.LoadUint64(&m.after{{$method.Name}}Counter) < 1  {
 					return false
 				}
 				return true
@@ -218,7 +218,7 @@ const (
 			// Minimock{{$method.Name}}Inspect logs each unmet expectation
 			func (m *{{$mock}}) Minimock{{$method.Name}}Inspect() {
 				for _, e := range m.{{$method.Name}}Mock.expectations {
-					if atomic.LoadUint64(&e.Counter) < 1 {
+					if mm_atomic.LoadUint64(&e.Counter) < 1 {
 						{{- if $method.HasParams}}
 							m.t.Errorf("Expected call to {{$mock}}.{{$method.Name}} with params: %#v", *e.params)
 						{{else}}
@@ -228,7 +228,7 @@ const (
 				}
 
 				// if default expectation was set then invocations count should be greater than zero
-				if m.{{$method.Name}}Mock.defaultExpectation != nil && atomic.LoadUint64(&m.after{{$method.Name}}Counter) < 1 {
+				if m.{{$method.Name}}Mock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.after{{$method.Name}}Counter) < 1 {
 					{{- if $method.HasParams}}
 						m.t.Errorf("Expected call to {{$mock}}.{{$method.Name}} with params: %#v", *m.{{$method.Name}}Mock.defaultExpectation.params)
 					{{else}}
@@ -236,7 +236,7 @@ const (
 					{{end -}}
 				}
 				// if func was set then invocations count should be greater than zero
-				if m.func{{$method.Name}} != nil && atomic.LoadUint64(&m.after{{$method.Name}}Counter) < 1  {
+				if m.func{{$method.Name}} != nil && mm_atomic.LoadUint64(&m.after{{$method.Name}}Counter) < 1  {
 					m.t.Error("Expected call to {{$mock}}.{{$method.Name}}")
 				}
 			}
@@ -253,8 +253,8 @@ const (
 		}
 
 		// MinimockWait waits for all mocked methods to be called the expected number of times
-		func (m *{{$mock}}) MinimockWait(timeout time.Duration) {
-			timeoutCh := time.After(timeout)
+		func (m *{{$mock}}) MinimockWait(timeout mm_time.Duration) {
+			timeoutCh := mm_time.After(timeout)
 			for {
 				if m.minimockDone() {
 					return
@@ -263,7 +263,7 @@ const (
 				case <-timeoutCh:
 					m.MinimockFinish()
 					return
-				case <-time.After(10 * time.Millisecond):
+				case <-mm_time.After(10 * mm_time.Millisecond):
 				}
 			}
 		}
