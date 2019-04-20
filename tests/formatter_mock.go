@@ -6,8 +6,8 @@ package tests
 //go:generate minimock -i github.com/gojuno/minimock/tests.Formatter -o ./tests/formatter_mock.go
 
 import (
-	"sync/atomic"
-	"time"
+	mm_atomic "sync/atomic"
+	mm_time "time"
 
 	"github.com/gojuno/minimock"
 )
@@ -128,18 +128,18 @@ func (e *FormatterMockFormatExpectation) Then(s2 string) *FormatterMock {
 
 // Format implements Formatter
 func (m *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) {
-	atomic.AddUint64(&m.beforeFormatCounter, 1)
-	defer atomic.AddUint64(&m.afterFormatCounter, 1)
+	mm_atomic.AddUint64(&m.beforeFormatCounter, 1)
+	defer mm_atomic.AddUint64(&m.afterFormatCounter, 1)
 
 	for _, e := range m.FormatMock.expectations {
 		if minimock.Equal(*e.params, FormatterMockFormatParams{s1, p1}) {
-			atomic.AddUint64(&e.Counter, 1)
+			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.s2
 		}
 	}
 
 	if m.FormatMock.defaultExpectation != nil {
-		atomic.AddUint64(&m.FormatMock.defaultExpectation.Counter, 1)
+		mm_atomic.AddUint64(&m.FormatMock.defaultExpectation.Counter, 1)
 		want := m.FormatMock.defaultExpectation.params
 		got := FormatterMockFormatParams{s1, p1}
 		if want != nil && !minimock.Equal(*want, got) {
@@ -161,29 +161,29 @@ func (m *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) {
 
 // FormatAfterCounter returns a count of finished FormatterMock.Format invocations
 func (m *FormatterMock) FormatAfterCounter() uint64 {
-	return atomic.LoadUint64(&m.afterFormatCounter)
+	return mm_atomic.LoadUint64(&m.afterFormatCounter)
 }
 
 // FormatBeforeCounter returns a count of FormatterMock.Format invocations
 func (m *FormatterMock) FormatBeforeCounter() uint64 {
-	return atomic.LoadUint64(&m.beforeFormatCounter)
+	return mm_atomic.LoadUint64(&m.beforeFormatCounter)
 }
 
 // MinimockFormatDone returns true if the count of the Format invocations corresponds
 // the number of defined expectations
 func (m *FormatterMock) MinimockFormatDone() bool {
 	for _, e := range m.FormatMock.expectations {
-		if atomic.LoadUint64(&e.Counter) < 1 {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
 		}
 	}
 
 	// if default expectation was set then invocations count should be greater than zero
-	if m.FormatMock.defaultExpectation != nil && atomic.LoadUint64(&m.afterFormatCounter) < 1 {
+	if m.FormatMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFormatCounter) < 1 {
 		return false
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcFormat != nil && atomic.LoadUint64(&m.afterFormatCounter) < 1 {
+	if m.funcFormat != nil && mm_atomic.LoadUint64(&m.afterFormatCounter) < 1 {
 		return false
 	}
 	return true
@@ -192,17 +192,17 @@ func (m *FormatterMock) MinimockFormatDone() bool {
 // MinimockFormatInspect logs each unmet expectation
 func (m *FormatterMock) MinimockFormatInspect() {
 	for _, e := range m.FormatMock.expectations {
-		if atomic.LoadUint64(&e.Counter) < 1 {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			m.t.Errorf("Expected call to FormatterMock.Format with params: %#v", *e.params)
 		}
 	}
 
 	// if default expectation was set then invocations count should be greater than zero
-	if m.FormatMock.defaultExpectation != nil && atomic.LoadUint64(&m.afterFormatCounter) < 1 {
+	if m.FormatMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFormatCounter) < 1 {
 		m.t.Errorf("Expected call to FormatterMock.Format with params: %#v", *m.FormatMock.defaultExpectation.params)
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcFormat != nil && atomic.LoadUint64(&m.afterFormatCounter) < 1 {
+	if m.funcFormat != nil && mm_atomic.LoadUint64(&m.afterFormatCounter) < 1 {
 		m.t.Error("Expected call to FormatterMock.Format")
 	}
 }
@@ -216,8 +216,8 @@ func (m *FormatterMock) MinimockFinish() {
 }
 
 // MinimockWait waits for all mocked methods to be called the expected number of times
-func (m *FormatterMock) MinimockWait(timeout time.Duration) {
-	timeoutCh := time.After(timeout)
+func (m *FormatterMock) MinimockWait(timeout mm_time.Duration) {
+	timeoutCh := mm_time.After(timeout)
 	for {
 		if m.minimockDone() {
 			return
@@ -226,7 +226,7 @@ func (m *FormatterMock) MinimockWait(timeout time.Duration) {
 		case <-timeoutCh:
 			m.MinimockFinish()
 			return
-		case <-time.After(10 * time.Millisecond):
+		case <-mm_time.After(10 * mm_time.Millisecond):
 		}
 	}
 }
