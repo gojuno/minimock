@@ -93,9 +93,10 @@ func run(opts *options) (err error) {
 		}
 
 		gopts := generator.Options{
-			SourcePackage:  sourcePackage.PkgPath,
-			HeaderTemplate: minimock.HeaderTemplate,
-			BodyTemplate:   minimock.BodyTemplate,
+			SourcePackage:      sourcePackage.PkgPath,
+			SourcePackageAlias: "mm_" + sourcePackage.Name,
+			HeaderTemplate:     minimock.HeaderTemplate,
+			BodyTemplate:       minimock.BodyTemplate,
 			HeaderVars: map[string]interface{}{
 				"GenerateInstruction": !opts.noGenerate,
 				"Version":             version,

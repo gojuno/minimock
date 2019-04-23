@@ -60,6 +60,9 @@ type Options struct {
 	//SourcePackage is an import path or a relative path of the package that contains the source interface
 	SourcePackage string
 
+	//SourcePackageAlias is an import selector defauls is source package name
+	SourcePackageAlias string
+
 	//OutputFile name which is used to detect destination package name and also to fix imports in the resulting source
 	OutputFile string
 
@@ -114,7 +117,7 @@ func NewGenerator(options Options) (*Generator, error) {
 		dstPackagePath = "./" + dstPackagePath
 	}
 
-	dstPackage, err := pkg.Load(dstPackagePath)
+	dstPackage, err := loadDestinationPackage(dstPackagePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load destination package: %s", dstPackagePath)
 	}
@@ -128,6 +131,8 @@ func NewGenerator(options Options) (*Generator, error) {
 	if srcPackage.PkgPath == dstPackage.PkgPath {
 		interfaceType = options.InterfaceName
 		srcPackageAST.Name = ""
+	} else if options.SourcePackageAlias != "" {
+		srcPackageAST.Name = options.SourcePackageAlias
 	}
 
 	methods, imports, err := findInterface(fs, srcPackageAST, options.InterfaceName)
@@ -169,6 +174,29 @@ func makeImports(imports []*ast.ImportSpec) []string {
 	}
 
 	return result
+}
+
+func loadDestinationPackage(path string) (*packages.Package, error) {
+	dstPackage, err := pkg.Load(path)
+	if err != nil {
+		//using directory name as a package name
+		dstPackage, err = makePackage(path)
+	}
+
+	return dstPackage, err
+}
+
+var errNoPackageName = errors.New("failed to determine the destination package name")
+
+func makePackage(path string) (*packages.Package, error) {
+	name := filepath.Base(path)
+	if name == string(filepath.Separator) || name == "." {
+		return nil, errNoPackageName
+	}
+
+	return &packages.Package{
+		Name: name,
+	}, nil
 }
 
 //Generate generates code using header and body templates
