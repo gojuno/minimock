@@ -16,4 +16,6 @@ script:
   - cd tests/
   - go test -c -covermode=count -coverpkg=github.com/gojuno/minimock/tests
   - ./tests.test -test.coverprofile coverage.cov
+
+after_script:
   - $HOME/gopath/bin/goveralls -service=travis-ci -coverprofile=coverage.cov
