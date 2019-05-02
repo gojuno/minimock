@@ -228,7 +228,11 @@ const (
 				// if default expectation was set then invocations count should be greater than zero
 				if m.{{$method.Name}}Mock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.after{{$method.Name}}Counter) < 1 {
 					{{- if $method.HasParams}}
-						m.t.Errorf("Expected call to {{$mock}}.{{$method.Name}} with params: %#v", *m.{{$method.Name}}Mock.defaultExpectation.params)
+						if m.{{$method.Name}}Mock.defaultExpectation.params == nil {
+							m.t.Error("Expected call to {{$mock}}.{{$method.Name}}")
+						} else {
+							m.t.Errorf("Expected call to {{$mock}}.{{$method.Name}} with params: %#v", *m.{{$method.Name}}Mock.defaultExpectation.params)
+						}
 					{{else}}
 						m.t.Error("Expected call to {{$mock}}.{{$method.Name}}")
 					{{end -}}
