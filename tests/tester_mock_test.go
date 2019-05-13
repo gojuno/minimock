@@ -193,7 +193,11 @@ func (m *TesterMock) MinimockErrorInspect() {
 
 	// if default expectation was set then invocations count should be greater than zero
 	if m.ErrorMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterErrorCounter) < 1 {
-		m.t.Errorf("Expected call to TesterMock.Error with params: %#v", *m.ErrorMock.defaultExpectation.params)
+		if m.ErrorMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to TesterMock.Error")
+		} else {
+			m.t.Errorf("Expected call to TesterMock.Error with params: %#v", *m.ErrorMock.defaultExpectation.params)
+		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcError != nil && mm_atomic.LoadUint64(&m.afterErrorCounter) < 1 {
@@ -339,7 +343,11 @@ func (m *TesterMock) MinimockErrorfInspect() {
 
 	// if default expectation was set then invocations count should be greater than zero
 	if m.ErrorfMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterErrorfCounter) < 1 {
-		m.t.Errorf("Expected call to TesterMock.Errorf with params: %#v", *m.ErrorfMock.defaultExpectation.params)
+		if m.ErrorfMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to TesterMock.Errorf")
+		} else {
+			m.t.Errorf("Expected call to TesterMock.Errorf with params: %#v", *m.ErrorfMock.defaultExpectation.params)
+		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcErrorf != nil && mm_atomic.LoadUint64(&m.afterErrorfCounter) < 1 {
@@ -604,7 +612,11 @@ func (m *TesterMock) MinimockFatalInspect() {
 
 	// if default expectation was set then invocations count should be greater than zero
 	if m.FatalMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFatalCounter) < 1 {
-		m.t.Errorf("Expected call to TesterMock.Fatal with params: %#v", *m.FatalMock.defaultExpectation.params)
+		if m.FatalMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to TesterMock.Fatal")
+		} else {
+			m.t.Errorf("Expected call to TesterMock.Fatal with params: %#v", *m.FatalMock.defaultExpectation.params)
+		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcFatal != nil && mm_atomic.LoadUint64(&m.afterFatalCounter) < 1 {
@@ -750,7 +762,11 @@ func (m *TesterMock) MinimockFatalfInspect() {
 
 	// if default expectation was set then invocations count should be greater than zero
 	if m.FatalfMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFatalfCounter) < 1 {
-		m.t.Errorf("Expected call to TesterMock.Fatalf with params: %#v", *m.FatalfMock.defaultExpectation.params)
+		if m.FatalfMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to TesterMock.Fatalf")
+		} else {
+			m.t.Errorf("Expected call to TesterMock.Fatalf with params: %#v", *m.FatalfMock.defaultExpectation.params)
+		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcFatalf != nil && mm_atomic.LoadUint64(&m.afterFatalfCounter) < 1 {
