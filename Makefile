@@ -12,7 +12,15 @@ install:
 	go install ./cmd/minimock
 
 clean:
+	[ -e ./tests/formatter_mock.go.test_origin ] && mv -f ./tests/formatter_mock.go.test_origin ./tests/formatter_mock.go
+	[ -e ./tests/tester_mock_test.go.test_origin ] && mv -f ./tests/tester_mock_test.go.test_origin ./tests/tester_mock_test.go
 	rm -Rf bin/ dist/
 
-test: generate
+test_save_origin:
+	[ -e ./tests/formatter_mock.go.test_origin ] || cp ./tests/formatter_mock.go ./tests/formatter_mock.go.test_origin
+	[ -e ./tests/tester_mock_test.go.test_origin ] || cp ./tests/tester_mock_test.go ./tests/tester_mock_test.go.test_origin
+
+test: test_save_origin generate
+	diff ./tests/formatter_mock.go ./tests/formatter_mock.go.test_origin
+	diff ./tests/tester_mock_test.go ./tests/tester_mock_test.go.test_origin
 	go test -race ./...

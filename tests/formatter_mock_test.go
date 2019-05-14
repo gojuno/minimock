@@ -139,6 +139,20 @@ func TestFormatterMock_ReturnAfterSet(t *testing.T) {
 	formatterMock.FormatMock.Return("Should not work")
 }
 
+func TestFormatterMock_ReturnWithoutExpectForFixedArgsMethod(t *testing.T) {
+	// Test for issue https://github.com/gojuno/minimock/issues/31
+
+	tester := NewTesterMock(t)
+	defer tester.MinimockFinish()
+
+	tester.ErrorMock.Expect("Expected call to FormatterMock.Format")
+	tester.FailNowMock.Expect()
+
+	formatterMock := NewFormatterMock(tester)
+	formatterMock.FormatMock.Return("")
+	formatterMock.MinimockFinish()
+}
+
 func TestFormatterMock_Set(t *testing.T) {
 	tester := NewTesterMock(t)
 

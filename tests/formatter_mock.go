@@ -198,7 +198,11 @@ func (m *FormatterMock) MinimockFormatInspect() {
 
 	// if default expectation was set then invocations count should be greater than zero
 	if m.FormatMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFormatCounter) < 1 {
-		m.t.Errorf("Expected call to FormatterMock.Format with params: %#v", *m.FormatMock.defaultExpectation.params)
+		if m.FormatMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to FormatterMock.Format")
+		} else {
+			m.t.Errorf("Expected call to FormatterMock.Format with params: %#v", *m.FormatMock.defaultExpectation.params)
+		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcFormat != nil && mm_atomic.LoadUint64(&m.afterFormatCounter) < 1 {
