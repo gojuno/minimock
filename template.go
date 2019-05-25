@@ -42,7 +42,9 @@ const (
 			if controller, ok := t.(minimock.MockController); ok {
 				controller.RegisterMocker(m)
 			}
-			{{ range $method := $.Interface.Methods }}m.{{$method.Name}}Mock = m{{$mock}}{{$method.Name}}{mock: m}
+			{{ range $method := $.Interface.Methods }}
+				m.{{$method.Name}}Mock = m{{$mock}}{{$method.Name}}{mock: m}
+				m.{{$method.Name}}Mock.callArgs = []*{{$mock}}{{$method.Name}}Params{}
 			{{ end }}
 			return m
 		}
@@ -52,6 +54,7 @@ const (
 				mock              *{{$mock}}
 				defaultExpectation   *{{$mock}}{{$method.Name}}Expectation
 				expectations []*{{$mock}}{{$method.Name}}Expectation
+				{{ if $method.HasParams }} callArgs []*{{$mock}}{{$method.Name}}Params {{ end }}
 			}
 
 			// {{$mock}}{{$method.Name}}Expectation specifies expectation struct of the {{$.Interface.Name}}.{{$method.Name}}
@@ -149,8 +152,12 @@ const (
 				defer mm_atomic.AddUint64(&m.after{{$method.Name}}Counter, 1)
 
 				{{if $method.HasParams}}
+					// Record call args
+					params := &{{$mock}}{{$method.Name}}Params{ {{$method.ParamsNames}} }
+					m.{{$method.Name}}Mock.callArgs = append(m.{{$method.Name}}Mock.callArgs, params)
+
 					for _, e := range m.{{$method.Name}}Mock.expectations {
-						if minimock.Equal(*e.params,  {{$mock}}{{$method.Name}}Params{ {{$method.ParamsNames}} }) {
+						if minimock.Equal(e.params, params) {
 							mm_atomic.AddUint64(&e.Counter, 1)
 							{{$method.ReturnStruct "e.results" -}}
 						}
@@ -160,8 +167,8 @@ const (
 				if m.{{$method.Name}}Mock.defaultExpectation != nil {
 					mm_atomic.AddUint64(&m.{{$method.Name}}Mock.defaultExpectation.Counter, 1)
 					{{- if $method.HasParams }}
-						want:= m.{{$method.Name}}Mock.defaultExpectation.params
-						got:= {{$mock}}{{$method.Name}}Params{ {{$method.ParamsNames}} }
+						want := m.{{$method.Name}}Mock.defaultExpectation.params
+						got := {{$mock}}{{$method.Name}}Params{ {{$method.ParamsNames}} }
 						if want != nil && !minimock.Equal(*want, got) {
 							m.t.Errorf("{{$mock}}.{{$method.Name}} got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
 						}
@@ -192,6 +199,14 @@ const (
 			func (m *{{$mock}}) {{$method.Name}}BeforeCounter() uint64 {
 				return mm_atomic.LoadUint64(&m.before{{$method.Name}}Counter)
 			}
+
+			{{ if $method.HasParams }}
+				// Calls returns a list of arguments used in each call to {{$mock}}.{{$method.Name}}.
+				// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+				func (m *m{{$mock}}{{$method.Name}}) Calls() []*{{$mock}}{{$method.Name}}Params {
+					return m.callArgs
+				}
+			{{ end }}
 
 			// Minimock{{$method.Name}}Done returns true if the count of the {{$method.Name}} invocations corresponds
 			// the number of defined expectations

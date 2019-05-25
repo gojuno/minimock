@@ -264,6 +264,41 @@ func TestFormatterMock_MinimockWait(t *testing.T) {
 	formatterMock.MinimockWait(time.Millisecond)
 }
 
+// Verifies that Calls() doesn't return nil if no calls were made
+func TestFormatterMock_CallsNotNil(t *testing.T) {
+	tester := NewTesterMock(t)
+	defer tester.MinimockFinish()
+
+	formatterMock := NewFormatterMock(tester)
+	calls := formatterMock.FormatMock.Calls()
+
+	assert.NotNil(t, calls)
+	assert.Empty(t, calls)
+}
+
+// Verifies that Calls() returns the correct call args in the expected order
+func TestFormatterMock_Calls(t *testing.T) {
+	tester := NewTesterMock(t)
+	defer tester.MinimockFinish()
+
+	// Arguments used for each mock call
+	expected := []*FormatterMockFormatParams{
+		{"a1", []interface{}{}},
+		{"b1", []interface{}{"b2"}},
+		{"c1", []interface{}{"c2", "c3"}},
+		{"d1", []interface{}{"d2", "d3", "d4"}},
+	}
+
+	formatterMock := NewFormatterMock(tester)
+
+	for _, p := range expected {
+		formatterMock.FormatMock.Expect(p.s1, p.p1...).Return("")
+		formatterMock.Format(p.s1, p.p1...)
+	}
+
+	assert.Equal(t, expected, formatterMock.FormatMock.Calls())
+}
+
 type dummyFormatter struct {
 	Formatter
 }
