@@ -44,7 +44,7 @@ const (
 			}
 			{{ range $method := $.Interface.Methods }}
 				m.{{$method.Name}}Mock = m{{$mock}}{{$method.Name}}{mock: m}
-				m.{{$method.Name}}Mock.callArgs = []*{{$mock}}{{$method.Name}}Params{}
+				{{ if $method.HasParams }} m.{{$method.Name}}Mock.callArgs = []*{{$mock}}{{$method.Name}}Params{} {{ end }}
 			{{ end }}
 			return m
 		}
