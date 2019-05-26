@@ -54,7 +54,10 @@ const (
 				mock              *{{$mock}}
 				defaultExpectation   *{{$mock}}{{$method.Name}}Expectation
 				expectations []*{{$mock}}{{$method.Name}}Expectation
-				{{ if $method.HasParams }} callArgs []*{{$mock}}{{$method.Name}}Params {{ end }}
+				{{ if $method.HasParams }}
+					callArgs []*{{$mock}}{{$method.Name}}Params
+					mutex sync.RWMutex
+				{{ end }}
 			}
 
 			// {{$mock}}{{$method.Name}}Expectation specifies expectation struct of the {{$.Interface.Name}}.{{$method.Name}}
@@ -152,9 +155,12 @@ const (
 				defer mm_atomic.AddUint64(&m.after{{$method.Name}}Counter, 1)
 
 				{{if $method.HasParams}}
-					// Record call args
 					params := &{{$mock}}{{$method.Name}}Params{ {{$method.ParamsNames}} }
+
+					// Record call args
+					m.{{$method.Name}}Mock.mutex.Lock()
 					m.{{$method.Name}}Mock.callArgs = append(m.{{$method.Name}}Mock.callArgs, params)
+					m.{{$method.Name}}Mock.mutex.Unlock()
 
 					for _, e := range m.{{$method.Name}}Mock.expectations {
 						if minimock.Equal(e.params, params) {
@@ -204,7 +210,14 @@ const (
 				// Calls returns a list of arguments used in each call to {{$mock}}.{{$method.Name}}.
 				// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
 				func (m *m{{$mock}}{{$method.Name}}) Calls() []*{{$mock}}{{$method.Name}}Params {
-					return m.callArgs
+					m.mutex.RLock()
+
+					argCopy := make([]*{{$mock}}{{$method.Name}}Params, len(m.callArgs))
+					copy(argCopy, m.callArgs)
+
+					m.mutex.RUnlock()
+
+					return argCopy
 				}
 			{{ end }}
 

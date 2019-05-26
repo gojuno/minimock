@@ -299,6 +299,32 @@ func TestFormatterMock_Calls(t *testing.T) {
 	assert.Equal(t, expected, formatterMock.FormatMock.Calls())
 }
 
+// Verifies that Calls() returns a new shallow copy of the params list each time
+func TestFormatterMock_CallsReturnsCopy(t *testing.T) {
+	tester := NewTesterMock(t)
+	defer tester.MinimockFinish()
+
+	expected := []*FormatterMockFormatParams{
+		{"a1", []interface{}{"a1"}},
+		{"b1", []interface{}{"b2"}},
+	}
+
+	formatterMock := NewFormatterMock(tester)
+	callHistory := [][]*FormatterMockFormatParams{}
+
+	for _, p := range expected {
+		formatterMock.FormatMock.Expect(p.s1, p.p1...).Return("")
+		formatterMock.Format(p.s1, p.p1...)
+		callHistory = append(callHistory, formatterMock.FormatMock.Calls())
+	}
+
+	assert.Equal(t, len(expected), len(callHistory))
+
+	for i, c := range callHistory {
+		assert.Equal(t, i+1, len(c))
+	}
+}
+
 type dummyFormatter struct {
 	Formatter
 }

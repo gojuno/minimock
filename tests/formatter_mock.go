@@ -5,6 +5,7 @@ package tests
 //go:generate minimock -i github.com/gojuno/minimock/tests.Formatter -o ./tests/formatter_mock.go
 
 import (
+	"sync"
 	mm_atomic "sync/atomic"
 	mm_time "time"
 
@@ -38,7 +39,9 @@ type mFormatterMockFormat struct {
 	mock               *FormatterMock
 	defaultExpectation *FormatterMockFormatExpectation
 	expectations       []*FormatterMockFormatExpectation
-	callArgs           []*FormatterMockFormatParams
+
+	callArgs []*FormatterMockFormatParams
+	mutex    sync.RWMutex
 }
 
 // FormatterMockFormatExpectation specifies expectation struct of the Formatter.Format
@@ -135,7 +138,10 @@ func (m *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) {
 
 	// Record call args
 	params := &FormatterMockFormatParams{s1, p1}
+
+	m.FormatMock.mutex.Lock()
 	m.FormatMock.callArgs = append(m.FormatMock.callArgs, params)
+	m.FormatMock.mutex.Unlock()
 
 	for _, e := range m.FormatMock.expectations {
 		if minimock.Equal(e.params, params) {
@@ -175,10 +181,17 @@ func (m *FormatterMock) FormatBeforeCounter() uint64 {
 	return mm_atomic.LoadUint64(&m.beforeFormatCounter)
 }
 
-// Calls returns a list of arguments used in each call to FormatterMock.Format.
+// Calls returns a shallow copy list of arguments used in each call to FormatterMock.Format.
 // The list is in the same order as the calls were made (i.e. recent calls have a higher index)
 func (m *mFormatterMockFormat) Calls() []*FormatterMockFormatParams {
-	return m.callArgs
+	m.mutex.RLock()
+
+	argCopy := make([]*FormatterMockFormatParams, len(m.callArgs))
+	copy(argCopy, m.callArgs)
+
+	m.mutex.RUnlock()
+
+	return argCopy
 }
 
 // MinimockFormatDone returns true if the count of the Format invocations corresponds
