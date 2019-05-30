@@ -5,6 +5,7 @@ package tests
 //go:generate minimock -i github.com/gojuno/minimock.Tester -o ./tests/tester_mock_test.go
 
 import (
+	"sync"
 	mm_atomic "sync/atomic"
 	mm_time "time"
 
@@ -47,11 +48,20 @@ func NewTesterMock(t minimock.Tester) *TesterMock {
 	if controller, ok := t.(minimock.MockController); ok {
 		controller.RegisterMocker(m)
 	}
+
 	m.ErrorMock = mTesterMockError{mock: m}
+	m.ErrorMock.callArgs = []*TesterMockErrorParams{}
+
 	m.ErrorfMock = mTesterMockErrorf{mock: m}
+	m.ErrorfMock.callArgs = []*TesterMockErrorfParams{}
+
 	m.FailNowMock = mTesterMockFailNow{mock: m}
+
 	m.FatalMock = mTesterMockFatal{mock: m}
+	m.FatalMock.callArgs = []*TesterMockFatalParams{}
+
 	m.FatalfMock = mTesterMockFatalf{mock: m}
+	m.FatalfMock.callArgs = []*TesterMockFatalfParams{}
 
 	return m
 }
@@ -60,6 +70,9 @@ type mTesterMockError struct {
 	mock               *TesterMock
 	defaultExpectation *TesterMockErrorExpectation
 	expectations       []*TesterMockErrorExpectation
+
+	callArgs []*TesterMockErrorParams
+	mutex    sync.RWMutex
 }
 
 // TesterMockErrorExpectation specifies expectation struct of the Tester.Error
@@ -127,8 +140,15 @@ func (m *TesterMock) Error(p1 ...interface{}) {
 	mm_atomic.AddUint64(&m.beforeErrorCounter, 1)
 	defer mm_atomic.AddUint64(&m.afterErrorCounter, 1)
 
+	params := &TesterMockErrorParams{p1}
+
+	// Record call args
+	m.ErrorMock.mutex.Lock()
+	m.ErrorMock.callArgs = append(m.ErrorMock.callArgs, params)
+	m.ErrorMock.mutex.Unlock()
+
 	for _, e := range m.ErrorMock.expectations {
-		if minimock.Equal(*e.params, TesterMockErrorParams{p1}) {
+		if minimock.Equal(e.params, params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}
@@ -161,6 +181,19 @@ func (m *TesterMock) ErrorAfterCounter() uint64 {
 // ErrorBeforeCounter returns a count of TesterMock.Error invocations
 func (m *TesterMock) ErrorBeforeCounter() uint64 {
 	return mm_atomic.LoadUint64(&m.beforeErrorCounter)
+}
+
+// Calls returns a list of arguments used in each call to TesterMock.Error.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (m *mTesterMockError) Calls() []*TesterMockErrorParams {
+	m.mutex.RLock()
+
+	argCopy := make([]*TesterMockErrorParams, len(m.callArgs))
+	copy(argCopy, m.callArgs)
+
+	m.mutex.RUnlock()
+
+	return argCopy
 }
 
 // MinimockErrorDone returns true if the count of the Error invocations corresponds
@@ -209,6 +242,9 @@ type mTesterMockErrorf struct {
 	mock               *TesterMock
 	defaultExpectation *TesterMockErrorfExpectation
 	expectations       []*TesterMockErrorfExpectation
+
+	callArgs []*TesterMockErrorfParams
+	mutex    sync.RWMutex
 }
 
 // TesterMockErrorfExpectation specifies expectation struct of the Tester.Errorf
@@ -277,8 +313,15 @@ func (m *TesterMock) Errorf(format string, args ...interface{}) {
 	mm_atomic.AddUint64(&m.beforeErrorfCounter, 1)
 	defer mm_atomic.AddUint64(&m.afterErrorfCounter, 1)
 
+	params := &TesterMockErrorfParams{format, args}
+
+	// Record call args
+	m.ErrorfMock.mutex.Lock()
+	m.ErrorfMock.callArgs = append(m.ErrorfMock.callArgs, params)
+	m.ErrorfMock.mutex.Unlock()
+
 	for _, e := range m.ErrorfMock.expectations {
-		if minimock.Equal(*e.params, TesterMockErrorfParams{format, args}) {
+		if minimock.Equal(e.params, params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}
@@ -311,6 +354,19 @@ func (m *TesterMock) ErrorfAfterCounter() uint64 {
 // ErrorfBeforeCounter returns a count of TesterMock.Errorf invocations
 func (m *TesterMock) ErrorfBeforeCounter() uint64 {
 	return mm_atomic.LoadUint64(&m.beforeErrorfCounter)
+}
+
+// Calls returns a list of arguments used in each call to TesterMock.Errorf.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (m *mTesterMockErrorf) Calls() []*TesterMockErrorfParams {
+	m.mutex.RLock()
+
+	argCopy := make([]*TesterMockErrorfParams, len(m.callArgs))
+	copy(argCopy, m.callArgs)
+
+	m.mutex.RUnlock()
+
+	return argCopy
 }
 
 // MinimockErrorfDone returns true if the count of the Errorf invocations corresponds
@@ -479,6 +535,9 @@ type mTesterMockFatal struct {
 	mock               *TesterMock
 	defaultExpectation *TesterMockFatalExpectation
 	expectations       []*TesterMockFatalExpectation
+
+	callArgs []*TesterMockFatalParams
+	mutex    sync.RWMutex
 }
 
 // TesterMockFatalExpectation specifies expectation struct of the Tester.Fatal
@@ -546,8 +605,15 @@ func (m *TesterMock) Fatal(args ...interface{}) {
 	mm_atomic.AddUint64(&m.beforeFatalCounter, 1)
 	defer mm_atomic.AddUint64(&m.afterFatalCounter, 1)
 
+	params := &TesterMockFatalParams{args}
+
+	// Record call args
+	m.FatalMock.mutex.Lock()
+	m.FatalMock.callArgs = append(m.FatalMock.callArgs, params)
+	m.FatalMock.mutex.Unlock()
+
 	for _, e := range m.FatalMock.expectations {
-		if minimock.Equal(*e.params, TesterMockFatalParams{args}) {
+		if minimock.Equal(e.params, params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}
@@ -580,6 +646,19 @@ func (m *TesterMock) FatalAfterCounter() uint64 {
 // FatalBeforeCounter returns a count of TesterMock.Fatal invocations
 func (m *TesterMock) FatalBeforeCounter() uint64 {
 	return mm_atomic.LoadUint64(&m.beforeFatalCounter)
+}
+
+// Calls returns a list of arguments used in each call to TesterMock.Fatal.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (m *mTesterMockFatal) Calls() []*TesterMockFatalParams {
+	m.mutex.RLock()
+
+	argCopy := make([]*TesterMockFatalParams, len(m.callArgs))
+	copy(argCopy, m.callArgs)
+
+	m.mutex.RUnlock()
+
+	return argCopy
 }
 
 // MinimockFatalDone returns true if the count of the Fatal invocations corresponds
@@ -628,6 +707,9 @@ type mTesterMockFatalf struct {
 	mock               *TesterMock
 	defaultExpectation *TesterMockFatalfExpectation
 	expectations       []*TesterMockFatalfExpectation
+
+	callArgs []*TesterMockFatalfParams
+	mutex    sync.RWMutex
 }
 
 // TesterMockFatalfExpectation specifies expectation struct of the Tester.Fatalf
@@ -696,8 +778,15 @@ func (m *TesterMock) Fatalf(format string, args ...interface{}) {
 	mm_atomic.AddUint64(&m.beforeFatalfCounter, 1)
 	defer mm_atomic.AddUint64(&m.afterFatalfCounter, 1)
 
+	params := &TesterMockFatalfParams{format, args}
+
+	// Record call args
+	m.FatalfMock.mutex.Lock()
+	m.FatalfMock.callArgs = append(m.FatalfMock.callArgs, params)
+	m.FatalfMock.mutex.Unlock()
+
 	for _, e := range m.FatalfMock.expectations {
-		if minimock.Equal(*e.params, TesterMockFatalfParams{format, args}) {
+		if minimock.Equal(e.params, params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}
@@ -730,6 +819,19 @@ func (m *TesterMock) FatalfAfterCounter() uint64 {
 // FatalfBeforeCounter returns a count of TesterMock.Fatalf invocations
 func (m *TesterMock) FatalfBeforeCounter() uint64 {
 	return mm_atomic.LoadUint64(&m.beforeFatalfCounter)
+}
+
+// Calls returns a list of arguments used in each call to TesterMock.Fatalf.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (m *mTesterMockFatalf) Calls() []*TesterMockFatalfParams {
+	m.mutex.RLock()
+
+	argCopy := make([]*TesterMockFatalfParams, len(m.callArgs))
+	copy(argCopy, m.callArgs)
+
+	m.mutex.RUnlock()
+
+	return argCopy
 }
 
 // MinimockFatalfDone returns true if the count of the Fatalf invocations corresponds

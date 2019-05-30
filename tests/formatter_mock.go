@@ -136,9 +136,9 @@ func (m *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) {
 	mm_atomic.AddUint64(&m.beforeFormatCounter, 1)
 	defer mm_atomic.AddUint64(&m.afterFormatCounter, 1)
 
-	// Record call args
 	params := &FormatterMockFormatParams{s1, p1}
 
+	// Record call args
 	m.FormatMock.mutex.Lock()
 	m.FormatMock.callArgs = append(m.FormatMock.callArgs, params)
 	m.FormatMock.mutex.Unlock()
@@ -181,7 +181,7 @@ func (m *FormatterMock) FormatBeforeCounter() uint64 {
 	return mm_atomic.LoadUint64(&m.beforeFormatCounter)
 }
 
-// Calls returns a shallow copy list of arguments used in each call to FormatterMock.Format.
+// Calls returns a list of arguments used in each call to FormatterMock.Format.
 // The list is in the same order as the calls were made (i.e. recent calls have a higher index)
 func (m *mFormatterMockFormat) Calls() []*FormatterMockFormatParams {
 	m.mutex.RLock()
