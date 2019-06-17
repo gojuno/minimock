@@ -64,64 +64,64 @@ type FormatterMockFormatResults struct {
 }
 
 // Expect sets up expected params for Formatter.Format
-func (m *mFormatterMockFormat) Expect(s1 string, p1 ...interface{}) *mFormatterMockFormat {
-	if m.mock.funcFormat != nil {
-		m.mock.t.Fatalf("FormatterMock.Format mock is already set by Set")
+func (mmFormat *mFormatterMockFormat) Expect(s1 string, p1 ...interface{}) *mFormatterMockFormat {
+	if mmFormat.mock.funcFormat != nil {
+		mmFormat.mock.t.Fatalf("FormatterMock.Format mock is already set by Set")
 	}
 
-	if m.defaultExpectation == nil {
-		m.defaultExpectation = &FormatterMockFormatExpectation{}
+	if mmFormat.defaultExpectation == nil {
+		mmFormat.defaultExpectation = &FormatterMockFormatExpectation{}
 	}
 
-	m.defaultExpectation.params = &FormatterMockFormatParams{s1, p1}
-	for _, e := range m.expectations {
-		if minimock.Equal(e.params, m.defaultExpectation.params) {
-			m.mock.t.Fatalf("Expectation set by When has same params: %#v", *m.defaultExpectation.params)
+	mmFormat.defaultExpectation.params = &FormatterMockFormatParams{s1, p1}
+	for _, e := range mmFormat.expectations {
+		if minimock.Equal(e.params, mmFormat.defaultExpectation.params) {
+			mmFormat.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmFormat.defaultExpectation.params)
 		}
 	}
 
-	return m
+	return mmFormat
 }
 
 // Return sets up results that will be returned by Formatter.Format
-func (m *mFormatterMockFormat) Return(s2 string) *FormatterMock {
-	if m.mock.funcFormat != nil {
-		m.mock.t.Fatalf("FormatterMock.Format mock is already set by Set")
+func (mmFormat *mFormatterMockFormat) Return(s2 string) *FormatterMock {
+	if mmFormat.mock.funcFormat != nil {
+		mmFormat.mock.t.Fatalf("FormatterMock.Format mock is already set by Set")
 	}
 
-	if m.defaultExpectation == nil {
-		m.defaultExpectation = &FormatterMockFormatExpectation{mock: m.mock}
+	if mmFormat.defaultExpectation == nil {
+		mmFormat.defaultExpectation = &FormatterMockFormatExpectation{mock: mmFormat.mock}
 	}
-	m.defaultExpectation.results = &FormatterMockFormatResults{s2}
-	return m.mock
+	mmFormat.defaultExpectation.results = &FormatterMockFormatResults{s2}
+	return mmFormat.mock
 }
 
 //Set uses given function f to mock the Formatter.Format method
-func (m *mFormatterMockFormat) Set(f func(s1 string, p1 ...interface{}) (s2 string)) *FormatterMock {
-	if m.defaultExpectation != nil {
-		m.mock.t.Fatalf("Default expectation is already set for the Formatter.Format method")
+func (mmFormat *mFormatterMockFormat) Set(f func(s1 string, p1 ...interface{}) (s2 string)) *FormatterMock {
+	if mmFormat.defaultExpectation != nil {
+		mmFormat.mock.t.Fatalf("Default expectation is already set for the Formatter.Format method")
 	}
 
-	if len(m.expectations) > 0 {
-		m.mock.t.Fatalf("Some expectations are already set for the Formatter.Format method")
+	if len(mmFormat.expectations) > 0 {
+		mmFormat.mock.t.Fatalf("Some expectations are already set for the Formatter.Format method")
 	}
 
-	m.mock.funcFormat = f
-	return m.mock
+	mmFormat.mock.funcFormat = f
+	return mmFormat.mock
 }
 
 // When sets expectation for the Formatter.Format which will trigger the result defined by the following
 // Then helper
-func (m *mFormatterMockFormat) When(s1 string, p1 ...interface{}) *FormatterMockFormatExpectation {
-	if m.mock.funcFormat != nil {
-		m.mock.t.Fatalf("FormatterMock.Format mock is already set by Set")
+func (mmFormat *mFormatterMockFormat) When(s1 string, p1 ...interface{}) *FormatterMockFormatExpectation {
+	if mmFormat.mock.funcFormat != nil {
+		mmFormat.mock.t.Fatalf("FormatterMock.Format mock is already set by Set")
 	}
 
 	expectation := &FormatterMockFormatExpectation{
-		mock:   m.mock,
+		mock:   mmFormat.mock,
 		params: &FormatterMockFormatParams{s1, p1},
 	}
-	m.expectations = append(m.expectations, expectation)
+	mmFormat.expectations = append(mmFormat.expectations, expectation)
 	return expectation
 }
 
@@ -132,64 +132,64 @@ func (e *FormatterMockFormatExpectation) Then(s2 string) *FormatterMock {
 }
 
 // Format implements Formatter
-func (m *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) {
-	mm_atomic.AddUint64(&m.beforeFormatCounter, 1)
-	defer mm_atomic.AddUint64(&m.afterFormatCounter, 1)
+func (mmFormat *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) {
+	mm_atomic.AddUint64(&mmFormat.beforeFormatCounter, 1)
+	defer mm_atomic.AddUint64(&mmFormat.afterFormatCounter, 1)
 
 	params := &FormatterMockFormatParams{s1, p1}
 
 	// Record call args
-	m.FormatMock.mutex.Lock()
-	m.FormatMock.callArgs = append(m.FormatMock.callArgs, params)
-	m.FormatMock.mutex.Unlock()
+	mmFormat.FormatMock.mutex.Lock()
+	mmFormat.FormatMock.callArgs = append(mmFormat.FormatMock.callArgs, params)
+	mmFormat.FormatMock.mutex.Unlock()
 
-	for _, e := range m.FormatMock.expectations {
+	for _, e := range mmFormat.FormatMock.expectations {
 		if minimock.Equal(e.params, params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.s2
 		}
 	}
 
-	if m.FormatMock.defaultExpectation != nil {
-		mm_atomic.AddUint64(&m.FormatMock.defaultExpectation.Counter, 1)
-		want := m.FormatMock.defaultExpectation.params
+	if mmFormat.FormatMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmFormat.FormatMock.defaultExpectation.Counter, 1)
+		want := mmFormat.FormatMock.defaultExpectation.params
 		got := FormatterMockFormatParams{s1, p1}
 		if want != nil && !minimock.Equal(*want, got) {
-			m.t.Errorf("FormatterMock.Format got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+			mmFormat.t.Errorf("FormatterMock.Format got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
 		}
 
-		results := m.FormatMock.defaultExpectation.results
+		results := mmFormat.FormatMock.defaultExpectation.results
 		if results == nil {
-			m.t.Fatal("No results are set for the FormatterMock.Format")
+			mmFormat.t.Fatal("No results are set for the FormatterMock.Format")
 		}
 		return (*results).s2
 	}
-	if m.funcFormat != nil {
-		return m.funcFormat(s1, p1...)
+	if mmFormat.funcFormat != nil {
+		return mmFormat.funcFormat(s1, p1...)
 	}
-	m.t.Fatalf("Unexpected call to FormatterMock.Format. %v %v", s1, p1)
+	mmFormat.t.Fatalf("Unexpected call to FormatterMock.Format. %v %v", s1, p1)
 	return
 }
 
 // FormatAfterCounter returns a count of finished FormatterMock.Format invocations
-func (m *FormatterMock) FormatAfterCounter() uint64 {
-	return mm_atomic.LoadUint64(&m.afterFormatCounter)
+func (mmFormat *FormatterMock) FormatAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmFormat.afterFormatCounter)
 }
 
 // FormatBeforeCounter returns a count of FormatterMock.Format invocations
-func (m *FormatterMock) FormatBeforeCounter() uint64 {
-	return mm_atomic.LoadUint64(&m.beforeFormatCounter)
+func (mmFormat *FormatterMock) FormatBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmFormat.beforeFormatCounter)
 }
 
 // Calls returns a list of arguments used in each call to FormatterMock.Format.
 // The list is in the same order as the calls were made (i.e. recent calls have a higher index)
-func (m *mFormatterMockFormat) Calls() []*FormatterMockFormatParams {
-	m.mutex.RLock()
+func (mmFormat *mFormatterMockFormat) Calls() []*FormatterMockFormatParams {
+	mmFormat.mutex.RLock()
 
-	argCopy := make([]*FormatterMockFormatParams, len(m.callArgs))
-	copy(argCopy, m.callArgs)
+	argCopy := make([]*FormatterMockFormatParams, len(mmFormat.callArgs))
+	copy(argCopy, mmFormat.callArgs)
 
-	m.mutex.RUnlock()
+	mmFormat.mutex.RUnlock()
 
 	return argCopy
 }

@@ -6,5 +6,5 @@ require (
 	github.com/pkg/errors v0.8.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/stretchr/testify v1.2.2
-	golang.org/x/tools v0.0.0-20190130014116-16909d206f00
+	golang.org/x/tools v0.0.0-20190614205625-5aca471b1d59
 )

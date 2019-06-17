@@ -50,6 +50,8 @@ const (
 		}
 
 		{{ range $method := $.Interface.Methods }}
+			{{ $m := (printf "mm%s" $method.Name) }}
+
 			type m{{$mock}}{{$method.Name}} struct {
 				mock              *{{$mock}}
 				defaultExpectation   *{{$mock}}{{$method.Name}}Expectation
@@ -79,66 +81,66 @@ const (
 			{{end}}
 
 			// Expect sets up expected params for {{$.Interface.Name}}.{{$method.Name}}
-			func (m *m{{$mock}}{{$method.Name}}) Expect({{$method.Params}}) *m{{$mock}}{{$method.Name}} {
-				if m.mock.func{{$method.Name}} != nil {
-					m.mock.t.Fatalf("{{$mock}}.{{$method.Name}} mock is already set by Set")
+			func ({{$m}} *m{{$mock}}{{$method.Name}}) Expect({{$method.Params}}) *m{{$mock}}{{$method.Name}} {
+				if {{$m}}.mock.func{{$method.Name}} != nil {
+					{{$m}}.mock.t.Fatalf("{{$mock}}.{{$method.Name}} mock is already set by Set")
 				}
 
-				if m.defaultExpectation == nil {
-					m.defaultExpectation = &{{$mock}}{{$method.Name}}Expectation{}
+				if {{$m}}.defaultExpectation == nil {
+					{{$m}}.defaultExpectation = &{{$mock}}{{$method.Name}}Expectation{}
 				}
 
 				{{if $method.HasParams }}
-					m.defaultExpectation.params = &{{$mock}}{{$method.Name}}Params{ {{ $method.ParamsNames }} }
-					for _, e := range m.expectations {
-						if minimock.Equal(e.params, m.defaultExpectation.params) {
-							m.mock.t.Fatalf("Expectation set by When has same params: %#v", *m.defaultExpectation.params)
+					{{$m}}.defaultExpectation.params = &{{$mock}}{{$method.Name}}Params{ {{ $method.ParamsNames }} }
+					for _, e := range {{$m}}.expectations {
+						if minimock.Equal(e.params, {{$m}}.defaultExpectation.params) {
+							{{$m}}.mock.t.Fatalf("Expectation set by When has same params: %#v", *{{$m}}.defaultExpectation.params)
 						}
 					}
 				{{end}}
-				return m
+				return {{$m}}
 			}
 
 			// Return sets up results that will be returned by {{$.Interface.Name}}.{{$method.Name}}
-			func (m *m{{$mock}}{{$method.Name}}) Return({{$method.Results}}) *{{$mock}} {
-				if m.mock.func{{$method.Name}} != nil {
-					m.mock.t.Fatalf("{{$mock}}.{{$method.Name}} mock is already set by Set")
+			func ({{$m}} *m{{$mock}}{{$method.Name}}) Return({{$method.Results}}) *{{$mock}} {
+				if {{$m}}.mock.func{{$method.Name}} != nil {
+					{{$m}}.mock.t.Fatalf("{{$mock}}.{{$method.Name}} mock is already set by Set")
 				}
 
-				if m.defaultExpectation == nil {
-					m.defaultExpectation = &{{$mock}}{{$method.Name}}Expectation{mock: m.mock}
+				if {{$m}}.defaultExpectation == nil {
+					{{$m}}.defaultExpectation = &{{$mock}}{{$method.Name}}Expectation{mock: {{$m}}.mock}
 				}
-				{{if $method.HasResults }} m.defaultExpectation.results = &{{$mock}}{{$method.Name}}Results{ {{ $method.ResultsNames }} } {{end}}
-				return m.mock
+				{{if $method.HasResults }} {{$m}}.defaultExpectation.results = &{{$mock}}{{$method.Name}}Results{ {{ $method.ResultsNames }} } {{end}}
+				return {{$m}}.mock
 			}
 
 			//Set uses given function f to mock the {{$.Interface.Name}}.{{$method.Name}} method
-			func (m *m{{$mock}}{{$method.Name}}) Set(f func{{$method.Signature}}) *{{$mock}}{
-				if m.defaultExpectation != nil {
-					m.mock.t.Fatalf("Default expectation is already set for the {{$.Interface.Name}}.{{$method.Name}} method")
+			func ({{$m}} *m{{$mock}}{{$method.Name}}) Set(f func{{$method.Signature}}) *{{$mock}}{
+				if {{$m}}.defaultExpectation != nil {
+					{{$m}}.mock.t.Fatalf("Default expectation is already set for the {{$.Interface.Name}}.{{$method.Name}} method")
 				}
 
-				if len(m.expectations) > 0 {
-					m.mock.t.Fatalf("Some expectations are already set for the {{$.Interface.Name}}.{{$method.Name}} method")
+				if len({{$m}}.expectations) > 0 {
+					{{$m}}.mock.t.Fatalf("Some expectations are already set for the {{$.Interface.Name}}.{{$method.Name}} method")
 				}
 
-				m.mock.func{{$method.Name}}= f
-				return m.mock
+				{{$m}}.mock.func{{$method.Name}}= f
+				return {{$m}}.mock
 			}
 
 			{{if (and $method.HasParams $method.HasResults)}}
 				// When sets expectation for the {{$.Interface.Name}}.{{$method.Name}} which will trigger the result defined by the following
 				// Then helper
-				func (m *m{{$mock}}{{$method.Name}}) When({{$method.Params}}) *{{$mock}}{{$method.Name}}Expectation {
-					if m.mock.func{{$method.Name}} != nil {
-						m.mock.t.Fatalf("{{$mock}}.{{$method.Name}} mock is already set by Set")
+				func ({{$m}} *m{{$mock}}{{$method.Name}}) When({{$method.Params}}) *{{$mock}}{{$method.Name}}Expectation {
+					if {{$m}}.mock.func{{$method.Name}} != nil {
+						{{$m}}.mock.t.Fatalf("{{$mock}}.{{$method.Name}} mock is already set by Set")
 					}
 
 					expectation := &{{$mock}}{{$method.Name}}Expectation{
-						mock: m.mock,
+						mock: {{$m}}.mock,
 						params: &{{$mock}}{{$method.Name}}Params{ {{ $method.ParamsNames }} },
 					}
-					m.expectations = append(m.expectations, expectation)
+					{{$m}}.expectations = append({{$m}}.expectations, expectation)
 					return expectation
 				}
 
@@ -150,19 +152,19 @@ const (
 			{{end}}
 
 			// {{$method.Name}} implements {{$.Interface.Type}}
-			func (m *{{$mock}}) {{$method.Declaration}} {
-				mm_atomic.AddUint64(&m.before{{$method.Name}}Counter, 1)
-				defer mm_atomic.AddUint64(&m.after{{$method.Name}}Counter, 1)
+			func ({{$m}} *{{$mock}}) {{$method.Declaration}} {
+				mm_atomic.AddUint64(&{{$m}}.before{{$method.Name}}Counter, 1)
+				defer mm_atomic.AddUint64(&{{$m}}.after{{$method.Name}}Counter, 1)
 
 				{{if $method.HasParams}}
 					params := &{{$mock}}{{$method.Name}}Params{ {{$method.ParamsNames}} }
 
 					// Record call args
-					m.{{$method.Name}}Mock.mutex.Lock()
-					m.{{$method.Name}}Mock.callArgs = append(m.{{$method.Name}}Mock.callArgs, params)
-					m.{{$method.Name}}Mock.mutex.Unlock()
+					{{$m}}.{{$method.Name}}Mock.mutex.Lock()
+				{{$m}}	.{{$method.Name}}Mock.callArgs = append({{$m}}.{{$method.Name}}Mock.callArgs, params)
+					{{$m}}.{{$method.Name}}Mock.mutex.Unlock()
 
-					for _, e := range m.{{$method.Name}}Mock.expectations {
+					for _, e := range {{$m}}.{{$method.Name}}Mock.expectations {
 						if minimock.Equal(e.params, params) {
 							mm_atomic.AddUint64(&e.Counter, 1)
 							{{$method.ReturnStruct "e.results" -}}
@@ -170,52 +172,52 @@ const (
 					}
 				{{end}}
 
-				if m.{{$method.Name}}Mock.defaultExpectation != nil {
-					mm_atomic.AddUint64(&m.{{$method.Name}}Mock.defaultExpectation.Counter, 1)
+				if {{$m}}.{{$method.Name}}Mock.defaultExpectation != nil {
+					mm_atomic.AddUint64(&{{$m}}.{{$method.Name}}Mock.defaultExpectation.Counter, 1)
 					{{- if $method.HasParams }}
-						want := m.{{$method.Name}}Mock.defaultExpectation.params
+						want := {{$m}}.{{$method.Name}}Mock.defaultExpectation.params
 						got := {{$mock}}{{$method.Name}}Params{ {{$method.ParamsNames}} }
 						if want != nil && !minimock.Equal(*want, got) {
-							m.t.Errorf("{{$mock}}.{{$method.Name}} got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+							{{$m}}.t.Errorf("{{$mock}}.{{$method.Name}} got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
 						}
 					{{ end }}
 					{{if $method.HasResults }}
-						results := m.{{$method.Name}}Mock.defaultExpectation.results
+						results := {{$m}}.{{$method.Name}}Mock.defaultExpectation.results
 						if results == nil {
-							m.t.Fatal("No results are set for the {{$mock}}.{{$method.Name}}")
+							{{$m}}.t.Fatal("No results are set for the {{$mock}}.{{$method.Name}}")
 						}
 						{{$method.ReturnStruct "(*results)" -}}
 					{{else}}
 						return
 					{{ end }}
 				}
-				if m.func{{$method.Name}} != nil {
-					{{$method.Pass "m.func"}}
+				if {{$m}}.func{{$method.Name}} != nil {
+					{{$method.Pass (printf "%s.func" $m)}}
 				}
-				m.t.Fatalf("Unexpected call to {{$mock}}.{{$method.Name}}.{{range $method.Params}} %v{{end}}", {{ $method.ParamsNames }} )
+				{{$m}}.t.Fatalf("Unexpected call to {{$mock}}.{{$method.Name}}.{{range $method.Params}} %v{{end}}", {{ $method.ParamsNames }} )
 				{{if $method.HasResults}}return{{end}}
 			}
 
 			// {{$method.Name}}AfterCounter returns a count of finished {{$mock}}.{{$method.Name}} invocations
-			func (m *{{$mock}}) {{$method.Name}}AfterCounter() uint64 {
-				return mm_atomic.LoadUint64(&m.after{{$method.Name}}Counter)
+			func ({{$m}} *{{$mock}}) {{$method.Name}}AfterCounter() uint64 {
+				return mm_atomic.LoadUint64(&{{$m}}.after{{$method.Name}}Counter)
 			}
 
 			// {{$method.Name}}BeforeCounter returns a count of {{$mock}}.{{$method.Name}} invocations
-			func (m *{{$mock}}) {{$method.Name}}BeforeCounter() uint64 {
-				return mm_atomic.LoadUint64(&m.before{{$method.Name}}Counter)
+			func ({{$m}} *{{$mock}}) {{$method.Name}}BeforeCounter() uint64 {
+				return mm_atomic.LoadUint64(&{{$m}}.before{{$method.Name}}Counter)
 			}
 
 			{{ if $method.HasParams }}
 				// Calls returns a list of arguments used in each call to {{$mock}}.{{$method.Name}}.
 				// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
-				func (m *m{{$mock}}{{$method.Name}}) Calls() []*{{$mock}}{{$method.Name}}Params {
-					m.mutex.RLock()
+				func ({{$m}} *m{{$mock}}{{$method.Name}}) Calls() []*{{$mock}}{{$method.Name}}Params {
+					{{$m}}.mutex.RLock()
 
-					argCopy := make([]*{{$mock}}{{$method.Name}}Params, len(m.callArgs))
-					copy(argCopy, m.callArgs)
+					argCopy := make([]*{{$mock}}{{$method.Name}}Params, len({{$m}}.callArgs))
+					copy(argCopy, {{$m}}.callArgs)
 
-					m.mutex.RUnlock()
+					{{$m}}.mutex.RUnlock()
 
 					return argCopy
 				}

@@ -89,109 +89,109 @@ type TesterMockErrorParams struct {
 }
 
 // Expect sets up expected params for Tester.Error
-func (m *mTesterMockError) Expect(p1 ...interface{}) *mTesterMockError {
-	if m.mock.funcError != nil {
-		m.mock.t.Fatalf("TesterMock.Error mock is already set by Set")
+func (mmError *mTesterMockError) Expect(p1 ...interface{}) *mTesterMockError {
+	if mmError.mock.funcError != nil {
+		mmError.mock.t.Fatalf("TesterMock.Error mock is already set by Set")
 	}
 
-	if m.defaultExpectation == nil {
-		m.defaultExpectation = &TesterMockErrorExpectation{}
+	if mmError.defaultExpectation == nil {
+		mmError.defaultExpectation = &TesterMockErrorExpectation{}
 	}
 
-	m.defaultExpectation.params = &TesterMockErrorParams{p1}
-	for _, e := range m.expectations {
-		if minimock.Equal(e.params, m.defaultExpectation.params) {
-			m.mock.t.Fatalf("Expectation set by When has same params: %#v", *m.defaultExpectation.params)
+	mmError.defaultExpectation.params = &TesterMockErrorParams{p1}
+	for _, e := range mmError.expectations {
+		if minimock.Equal(e.params, mmError.defaultExpectation.params) {
+			mmError.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmError.defaultExpectation.params)
 		}
 	}
 
-	return m
+	return mmError
 }
 
 // Return sets up results that will be returned by Tester.Error
-func (m *mTesterMockError) Return() *TesterMock {
-	if m.mock.funcError != nil {
-		m.mock.t.Fatalf("TesterMock.Error mock is already set by Set")
+func (mmError *mTesterMockError) Return() *TesterMock {
+	if mmError.mock.funcError != nil {
+		mmError.mock.t.Fatalf("TesterMock.Error mock is already set by Set")
 	}
 
-	if m.defaultExpectation == nil {
-		m.defaultExpectation = &TesterMockErrorExpectation{mock: m.mock}
+	if mmError.defaultExpectation == nil {
+		mmError.defaultExpectation = &TesterMockErrorExpectation{mock: mmError.mock}
 	}
 
-	return m.mock
+	return mmError.mock
 }
 
 //Set uses given function f to mock the Tester.Error method
-func (m *mTesterMockError) Set(f func(p1 ...interface{})) *TesterMock {
-	if m.defaultExpectation != nil {
-		m.mock.t.Fatalf("Default expectation is already set for the Tester.Error method")
+func (mmError *mTesterMockError) Set(f func(p1 ...interface{})) *TesterMock {
+	if mmError.defaultExpectation != nil {
+		mmError.mock.t.Fatalf("Default expectation is already set for the Tester.Error method")
 	}
 
-	if len(m.expectations) > 0 {
-		m.mock.t.Fatalf("Some expectations are already set for the Tester.Error method")
+	if len(mmError.expectations) > 0 {
+		mmError.mock.t.Fatalf("Some expectations are already set for the Tester.Error method")
 	}
 
-	m.mock.funcError = f
-	return m.mock
+	mmError.mock.funcError = f
+	return mmError.mock
 }
 
 // Error implements minimock.Tester
-func (m *TesterMock) Error(p1 ...interface{}) {
-	mm_atomic.AddUint64(&m.beforeErrorCounter, 1)
-	defer mm_atomic.AddUint64(&m.afterErrorCounter, 1)
+func (mmError *TesterMock) Error(p1 ...interface{}) {
+	mm_atomic.AddUint64(&mmError.beforeErrorCounter, 1)
+	defer mm_atomic.AddUint64(&mmError.afterErrorCounter, 1)
 
 	params := &TesterMockErrorParams{p1}
 
 	// Record call args
-	m.ErrorMock.mutex.Lock()
-	m.ErrorMock.callArgs = append(m.ErrorMock.callArgs, params)
-	m.ErrorMock.mutex.Unlock()
+	mmError.ErrorMock.mutex.Lock()
+	mmError.ErrorMock.callArgs = append(mmError.ErrorMock.callArgs, params)
+	mmError.ErrorMock.mutex.Unlock()
 
-	for _, e := range m.ErrorMock.expectations {
+	for _, e := range mmError.ErrorMock.expectations {
 		if minimock.Equal(e.params, params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}
 	}
 
-	if m.ErrorMock.defaultExpectation != nil {
-		mm_atomic.AddUint64(&m.ErrorMock.defaultExpectation.Counter, 1)
-		want := m.ErrorMock.defaultExpectation.params
+	if mmError.ErrorMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmError.ErrorMock.defaultExpectation.Counter, 1)
+		want := mmError.ErrorMock.defaultExpectation.params
 		got := TesterMockErrorParams{p1}
 		if want != nil && !minimock.Equal(*want, got) {
-			m.t.Errorf("TesterMock.Error got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+			mmError.t.Errorf("TesterMock.Error got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
 		}
 
 		return
 
 	}
-	if m.funcError != nil {
-		m.funcError(p1...)
+	if mmError.funcError != nil {
+		mmError.funcError(p1...)
 		return
 	}
-	m.t.Fatalf("Unexpected call to TesterMock.Error. %v", p1)
+	mmError.t.Fatalf("Unexpected call to TesterMock.Error. %v", p1)
 
 }
 
 // ErrorAfterCounter returns a count of finished TesterMock.Error invocations
-func (m *TesterMock) ErrorAfterCounter() uint64 {
-	return mm_atomic.LoadUint64(&m.afterErrorCounter)
+func (mmError *TesterMock) ErrorAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmError.afterErrorCounter)
 }
 
 // ErrorBeforeCounter returns a count of TesterMock.Error invocations
-func (m *TesterMock) ErrorBeforeCounter() uint64 {
-	return mm_atomic.LoadUint64(&m.beforeErrorCounter)
+func (mmError *TesterMock) ErrorBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmError.beforeErrorCounter)
 }
 
 // Calls returns a list of arguments used in each call to TesterMock.Error.
 // The list is in the same order as the calls were made (i.e. recent calls have a higher index)
-func (m *mTesterMockError) Calls() []*TesterMockErrorParams {
-	m.mutex.RLock()
+func (mmError *mTesterMockError) Calls() []*TesterMockErrorParams {
+	mmError.mutex.RLock()
 
-	argCopy := make([]*TesterMockErrorParams, len(m.callArgs))
-	copy(argCopy, m.callArgs)
+	argCopy := make([]*TesterMockErrorParams, len(mmError.callArgs))
+	copy(argCopy, mmError.callArgs)
 
-	m.mutex.RUnlock()
+	mmError.mutex.RUnlock()
 
 	return argCopy
 }
@@ -262,109 +262,109 @@ type TesterMockErrorfParams struct {
 }
 
 // Expect sets up expected params for Tester.Errorf
-func (m *mTesterMockErrorf) Expect(format string, args ...interface{}) *mTesterMockErrorf {
-	if m.mock.funcErrorf != nil {
-		m.mock.t.Fatalf("TesterMock.Errorf mock is already set by Set")
+func (mmErrorf *mTesterMockErrorf) Expect(format string, args ...interface{}) *mTesterMockErrorf {
+	if mmErrorf.mock.funcErrorf != nil {
+		mmErrorf.mock.t.Fatalf("TesterMock.Errorf mock is already set by Set")
 	}
 
-	if m.defaultExpectation == nil {
-		m.defaultExpectation = &TesterMockErrorfExpectation{}
+	if mmErrorf.defaultExpectation == nil {
+		mmErrorf.defaultExpectation = &TesterMockErrorfExpectation{}
 	}
 
-	m.defaultExpectation.params = &TesterMockErrorfParams{format, args}
-	for _, e := range m.expectations {
-		if minimock.Equal(e.params, m.defaultExpectation.params) {
-			m.mock.t.Fatalf("Expectation set by When has same params: %#v", *m.defaultExpectation.params)
+	mmErrorf.defaultExpectation.params = &TesterMockErrorfParams{format, args}
+	for _, e := range mmErrorf.expectations {
+		if minimock.Equal(e.params, mmErrorf.defaultExpectation.params) {
+			mmErrorf.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmErrorf.defaultExpectation.params)
 		}
 	}
 
-	return m
+	return mmErrorf
 }
 
 // Return sets up results that will be returned by Tester.Errorf
-func (m *mTesterMockErrorf) Return() *TesterMock {
-	if m.mock.funcErrorf != nil {
-		m.mock.t.Fatalf("TesterMock.Errorf mock is already set by Set")
+func (mmErrorf *mTesterMockErrorf) Return() *TesterMock {
+	if mmErrorf.mock.funcErrorf != nil {
+		mmErrorf.mock.t.Fatalf("TesterMock.Errorf mock is already set by Set")
 	}
 
-	if m.defaultExpectation == nil {
-		m.defaultExpectation = &TesterMockErrorfExpectation{mock: m.mock}
+	if mmErrorf.defaultExpectation == nil {
+		mmErrorf.defaultExpectation = &TesterMockErrorfExpectation{mock: mmErrorf.mock}
 	}
 
-	return m.mock
+	return mmErrorf.mock
 }
 
 //Set uses given function f to mock the Tester.Errorf method
-func (m *mTesterMockErrorf) Set(f func(format string, args ...interface{})) *TesterMock {
-	if m.defaultExpectation != nil {
-		m.mock.t.Fatalf("Default expectation is already set for the Tester.Errorf method")
+func (mmErrorf *mTesterMockErrorf) Set(f func(format string, args ...interface{})) *TesterMock {
+	if mmErrorf.defaultExpectation != nil {
+		mmErrorf.mock.t.Fatalf("Default expectation is already set for the Tester.Errorf method")
 	}
 
-	if len(m.expectations) > 0 {
-		m.mock.t.Fatalf("Some expectations are already set for the Tester.Errorf method")
+	if len(mmErrorf.expectations) > 0 {
+		mmErrorf.mock.t.Fatalf("Some expectations are already set for the Tester.Errorf method")
 	}
 
-	m.mock.funcErrorf = f
-	return m.mock
+	mmErrorf.mock.funcErrorf = f
+	return mmErrorf.mock
 }
 
 // Errorf implements minimock.Tester
-func (m *TesterMock) Errorf(format string, args ...interface{}) {
-	mm_atomic.AddUint64(&m.beforeErrorfCounter, 1)
-	defer mm_atomic.AddUint64(&m.afterErrorfCounter, 1)
+func (mmErrorf *TesterMock) Errorf(format string, args ...interface{}) {
+	mm_atomic.AddUint64(&mmErrorf.beforeErrorfCounter, 1)
+	defer mm_atomic.AddUint64(&mmErrorf.afterErrorfCounter, 1)
 
 	params := &TesterMockErrorfParams{format, args}
 
 	// Record call args
-	m.ErrorfMock.mutex.Lock()
-	m.ErrorfMock.callArgs = append(m.ErrorfMock.callArgs, params)
-	m.ErrorfMock.mutex.Unlock()
+	mmErrorf.ErrorfMock.mutex.Lock()
+	mmErrorf.ErrorfMock.callArgs = append(mmErrorf.ErrorfMock.callArgs, params)
+	mmErrorf.ErrorfMock.mutex.Unlock()
 
-	for _, e := range m.ErrorfMock.expectations {
+	for _, e := range mmErrorf.ErrorfMock.expectations {
 		if minimock.Equal(e.params, params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}
 	}
 
-	if m.ErrorfMock.defaultExpectation != nil {
-		mm_atomic.AddUint64(&m.ErrorfMock.defaultExpectation.Counter, 1)
-		want := m.ErrorfMock.defaultExpectation.params
+	if mmErrorf.ErrorfMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmErrorf.ErrorfMock.defaultExpectation.Counter, 1)
+		want := mmErrorf.ErrorfMock.defaultExpectation.params
 		got := TesterMockErrorfParams{format, args}
 		if want != nil && !minimock.Equal(*want, got) {
-			m.t.Errorf("TesterMock.Errorf got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+			mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
 		}
 
 		return
 
 	}
-	if m.funcErrorf != nil {
-		m.funcErrorf(format, args...)
+	if mmErrorf.funcErrorf != nil {
+		mmErrorf.funcErrorf(format, args...)
 		return
 	}
-	m.t.Fatalf("Unexpected call to TesterMock.Errorf. %v %v", format, args)
+	mmErrorf.t.Fatalf("Unexpected call to TesterMock.Errorf. %v %v", format, args)
 
 }
 
 // ErrorfAfterCounter returns a count of finished TesterMock.Errorf invocations
-func (m *TesterMock) ErrorfAfterCounter() uint64 {
-	return mm_atomic.LoadUint64(&m.afterErrorfCounter)
+func (mmErrorf *TesterMock) ErrorfAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmErrorf.afterErrorfCounter)
 }
 
 // ErrorfBeforeCounter returns a count of TesterMock.Errorf invocations
-func (m *TesterMock) ErrorfBeforeCounter() uint64 {
-	return mm_atomic.LoadUint64(&m.beforeErrorfCounter)
+func (mmErrorf *TesterMock) ErrorfBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmErrorf.beforeErrorfCounter)
 }
 
 // Calls returns a list of arguments used in each call to TesterMock.Errorf.
 // The list is in the same order as the calls were made (i.e. recent calls have a higher index)
-func (m *mTesterMockErrorf) Calls() []*TesterMockErrorfParams {
-	m.mutex.RLock()
+func (mmErrorf *mTesterMockErrorf) Calls() []*TesterMockErrorfParams {
+	mmErrorf.mutex.RLock()
 
-	argCopy := make([]*TesterMockErrorfParams, len(m.callArgs))
-	copy(argCopy, m.callArgs)
+	argCopy := make([]*TesterMockErrorfParams, len(mmErrorf.callArgs))
+	copy(argCopy, mmErrorf.callArgs)
 
-	m.mutex.RUnlock()
+	mmErrorf.mutex.RUnlock()
 
 	return argCopy
 }
@@ -425,72 +425,72 @@ type TesterMockFailNowExpectation struct {
 }
 
 // Expect sets up expected params for Tester.FailNow
-func (m *mTesterMockFailNow) Expect() *mTesterMockFailNow {
-	if m.mock.funcFailNow != nil {
-		m.mock.t.Fatalf("TesterMock.FailNow mock is already set by Set")
+func (mmFailNow *mTesterMockFailNow) Expect() *mTesterMockFailNow {
+	if mmFailNow.mock.funcFailNow != nil {
+		mmFailNow.mock.t.Fatalf("TesterMock.FailNow mock is already set by Set")
 	}
 
-	if m.defaultExpectation == nil {
-		m.defaultExpectation = &TesterMockFailNowExpectation{}
+	if mmFailNow.defaultExpectation == nil {
+		mmFailNow.defaultExpectation = &TesterMockFailNowExpectation{}
 	}
 
-	return m
+	return mmFailNow
 }
 
 // Return sets up results that will be returned by Tester.FailNow
-func (m *mTesterMockFailNow) Return() *TesterMock {
-	if m.mock.funcFailNow != nil {
-		m.mock.t.Fatalf("TesterMock.FailNow mock is already set by Set")
+func (mmFailNow *mTesterMockFailNow) Return() *TesterMock {
+	if mmFailNow.mock.funcFailNow != nil {
+		mmFailNow.mock.t.Fatalf("TesterMock.FailNow mock is already set by Set")
 	}
 
-	if m.defaultExpectation == nil {
-		m.defaultExpectation = &TesterMockFailNowExpectation{mock: m.mock}
+	if mmFailNow.defaultExpectation == nil {
+		mmFailNow.defaultExpectation = &TesterMockFailNowExpectation{mock: mmFailNow.mock}
 	}
 
-	return m.mock
+	return mmFailNow.mock
 }
 
 //Set uses given function f to mock the Tester.FailNow method
-func (m *mTesterMockFailNow) Set(f func()) *TesterMock {
-	if m.defaultExpectation != nil {
-		m.mock.t.Fatalf("Default expectation is already set for the Tester.FailNow method")
+func (mmFailNow *mTesterMockFailNow) Set(f func()) *TesterMock {
+	if mmFailNow.defaultExpectation != nil {
+		mmFailNow.mock.t.Fatalf("Default expectation is already set for the Tester.FailNow method")
 	}
 
-	if len(m.expectations) > 0 {
-		m.mock.t.Fatalf("Some expectations are already set for the Tester.FailNow method")
+	if len(mmFailNow.expectations) > 0 {
+		mmFailNow.mock.t.Fatalf("Some expectations are already set for the Tester.FailNow method")
 	}
 
-	m.mock.funcFailNow = f
-	return m.mock
+	mmFailNow.mock.funcFailNow = f
+	return mmFailNow.mock
 }
 
 // FailNow implements minimock.Tester
-func (m *TesterMock) FailNow() {
-	mm_atomic.AddUint64(&m.beforeFailNowCounter, 1)
-	defer mm_atomic.AddUint64(&m.afterFailNowCounter, 1)
+func (mmFailNow *TesterMock) FailNow() {
+	mm_atomic.AddUint64(&mmFailNow.beforeFailNowCounter, 1)
+	defer mm_atomic.AddUint64(&mmFailNow.afterFailNowCounter, 1)
 
-	if m.FailNowMock.defaultExpectation != nil {
-		mm_atomic.AddUint64(&m.FailNowMock.defaultExpectation.Counter, 1)
+	if mmFailNow.FailNowMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmFailNow.FailNowMock.defaultExpectation.Counter, 1)
 
 		return
 
 	}
-	if m.funcFailNow != nil {
-		m.funcFailNow()
+	if mmFailNow.funcFailNow != nil {
+		mmFailNow.funcFailNow()
 		return
 	}
-	m.t.Fatalf("Unexpected call to TesterMock.FailNow.")
+	mmFailNow.t.Fatalf("Unexpected call to TesterMock.FailNow.")
 
 }
 
 // FailNowAfterCounter returns a count of finished TesterMock.FailNow invocations
-func (m *TesterMock) FailNowAfterCounter() uint64 {
-	return mm_atomic.LoadUint64(&m.afterFailNowCounter)
+func (mmFailNow *TesterMock) FailNowAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmFailNow.afterFailNowCounter)
 }
 
 // FailNowBeforeCounter returns a count of TesterMock.FailNow invocations
-func (m *TesterMock) FailNowBeforeCounter() uint64 {
-	return mm_atomic.LoadUint64(&m.beforeFailNowCounter)
+func (mmFailNow *TesterMock) FailNowBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmFailNow.beforeFailNowCounter)
 }
 
 // MinimockFailNowDone returns true if the count of the FailNow invocations corresponds
@@ -554,109 +554,109 @@ type TesterMockFatalParams struct {
 }
 
 // Expect sets up expected params for Tester.Fatal
-func (m *mTesterMockFatal) Expect(args ...interface{}) *mTesterMockFatal {
-	if m.mock.funcFatal != nil {
-		m.mock.t.Fatalf("TesterMock.Fatal mock is already set by Set")
+func (mmFatal *mTesterMockFatal) Expect(args ...interface{}) *mTesterMockFatal {
+	if mmFatal.mock.funcFatal != nil {
+		mmFatal.mock.t.Fatalf("TesterMock.Fatal mock is already set by Set")
 	}
 
-	if m.defaultExpectation == nil {
-		m.defaultExpectation = &TesterMockFatalExpectation{}
+	if mmFatal.defaultExpectation == nil {
+		mmFatal.defaultExpectation = &TesterMockFatalExpectation{}
 	}
 
-	m.defaultExpectation.params = &TesterMockFatalParams{args}
-	for _, e := range m.expectations {
-		if minimock.Equal(e.params, m.defaultExpectation.params) {
-			m.mock.t.Fatalf("Expectation set by When has same params: %#v", *m.defaultExpectation.params)
+	mmFatal.defaultExpectation.params = &TesterMockFatalParams{args}
+	for _, e := range mmFatal.expectations {
+		if minimock.Equal(e.params, mmFatal.defaultExpectation.params) {
+			mmFatal.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmFatal.defaultExpectation.params)
 		}
 	}
 
-	return m
+	return mmFatal
 }
 
 // Return sets up results that will be returned by Tester.Fatal
-func (m *mTesterMockFatal) Return() *TesterMock {
-	if m.mock.funcFatal != nil {
-		m.mock.t.Fatalf("TesterMock.Fatal mock is already set by Set")
+func (mmFatal *mTesterMockFatal) Return() *TesterMock {
+	if mmFatal.mock.funcFatal != nil {
+		mmFatal.mock.t.Fatalf("TesterMock.Fatal mock is already set by Set")
 	}
 
-	if m.defaultExpectation == nil {
-		m.defaultExpectation = &TesterMockFatalExpectation{mock: m.mock}
+	if mmFatal.defaultExpectation == nil {
+		mmFatal.defaultExpectation = &TesterMockFatalExpectation{mock: mmFatal.mock}
 	}
 
-	return m.mock
+	return mmFatal.mock
 }
 
 //Set uses given function f to mock the Tester.Fatal method
-func (m *mTesterMockFatal) Set(f func(args ...interface{})) *TesterMock {
-	if m.defaultExpectation != nil {
-		m.mock.t.Fatalf("Default expectation is already set for the Tester.Fatal method")
+func (mmFatal *mTesterMockFatal) Set(f func(args ...interface{})) *TesterMock {
+	if mmFatal.defaultExpectation != nil {
+		mmFatal.mock.t.Fatalf("Default expectation is already set for the Tester.Fatal method")
 	}
 
-	if len(m.expectations) > 0 {
-		m.mock.t.Fatalf("Some expectations are already set for the Tester.Fatal method")
+	if len(mmFatal.expectations) > 0 {
+		mmFatal.mock.t.Fatalf("Some expectations are already set for the Tester.Fatal method")
 	}
 
-	m.mock.funcFatal = f
-	return m.mock
+	mmFatal.mock.funcFatal = f
+	return mmFatal.mock
 }
 
 // Fatal implements minimock.Tester
-func (m *TesterMock) Fatal(args ...interface{}) {
-	mm_atomic.AddUint64(&m.beforeFatalCounter, 1)
-	defer mm_atomic.AddUint64(&m.afterFatalCounter, 1)
+func (mmFatal *TesterMock) Fatal(args ...interface{}) {
+	mm_atomic.AddUint64(&mmFatal.beforeFatalCounter, 1)
+	defer mm_atomic.AddUint64(&mmFatal.afterFatalCounter, 1)
 
 	params := &TesterMockFatalParams{args}
 
 	// Record call args
-	m.FatalMock.mutex.Lock()
-	m.FatalMock.callArgs = append(m.FatalMock.callArgs, params)
-	m.FatalMock.mutex.Unlock()
+	mmFatal.FatalMock.mutex.Lock()
+	mmFatal.FatalMock.callArgs = append(mmFatal.FatalMock.callArgs, params)
+	mmFatal.FatalMock.mutex.Unlock()
 
-	for _, e := range m.FatalMock.expectations {
+	for _, e := range mmFatal.FatalMock.expectations {
 		if minimock.Equal(e.params, params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}
 	}
 
-	if m.FatalMock.defaultExpectation != nil {
-		mm_atomic.AddUint64(&m.FatalMock.defaultExpectation.Counter, 1)
-		want := m.FatalMock.defaultExpectation.params
+	if mmFatal.FatalMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmFatal.FatalMock.defaultExpectation.Counter, 1)
+		want := mmFatal.FatalMock.defaultExpectation.params
 		got := TesterMockFatalParams{args}
 		if want != nil && !minimock.Equal(*want, got) {
-			m.t.Errorf("TesterMock.Fatal got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+			mmFatal.t.Errorf("TesterMock.Fatal got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
 		}
 
 		return
 
 	}
-	if m.funcFatal != nil {
-		m.funcFatal(args...)
+	if mmFatal.funcFatal != nil {
+		mmFatal.funcFatal(args...)
 		return
 	}
-	m.t.Fatalf("Unexpected call to TesterMock.Fatal. %v", args)
+	mmFatal.t.Fatalf("Unexpected call to TesterMock.Fatal. %v", args)
 
 }
 
 // FatalAfterCounter returns a count of finished TesterMock.Fatal invocations
-func (m *TesterMock) FatalAfterCounter() uint64 {
-	return mm_atomic.LoadUint64(&m.afterFatalCounter)
+func (mmFatal *TesterMock) FatalAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmFatal.afterFatalCounter)
 }
 
 // FatalBeforeCounter returns a count of TesterMock.Fatal invocations
-func (m *TesterMock) FatalBeforeCounter() uint64 {
-	return mm_atomic.LoadUint64(&m.beforeFatalCounter)
+func (mmFatal *TesterMock) FatalBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmFatal.beforeFatalCounter)
 }
 
 // Calls returns a list of arguments used in each call to TesterMock.Fatal.
 // The list is in the same order as the calls were made (i.e. recent calls have a higher index)
-func (m *mTesterMockFatal) Calls() []*TesterMockFatalParams {
-	m.mutex.RLock()
+func (mmFatal *mTesterMockFatal) Calls() []*TesterMockFatalParams {
+	mmFatal.mutex.RLock()
 
-	argCopy := make([]*TesterMockFatalParams, len(m.callArgs))
-	copy(argCopy, m.callArgs)
+	argCopy := make([]*TesterMockFatalParams, len(mmFatal.callArgs))
+	copy(argCopy, mmFatal.callArgs)
 
-	m.mutex.RUnlock()
+	mmFatal.mutex.RUnlock()
 
 	return argCopy
 }
@@ -727,109 +727,109 @@ type TesterMockFatalfParams struct {
 }
 
 // Expect sets up expected params for Tester.Fatalf
-func (m *mTesterMockFatalf) Expect(format string, args ...interface{}) *mTesterMockFatalf {
-	if m.mock.funcFatalf != nil {
-		m.mock.t.Fatalf("TesterMock.Fatalf mock is already set by Set")
+func (mmFatalf *mTesterMockFatalf) Expect(format string, args ...interface{}) *mTesterMockFatalf {
+	if mmFatalf.mock.funcFatalf != nil {
+		mmFatalf.mock.t.Fatalf("TesterMock.Fatalf mock is already set by Set")
 	}
 
-	if m.defaultExpectation == nil {
-		m.defaultExpectation = &TesterMockFatalfExpectation{}
+	if mmFatalf.defaultExpectation == nil {
+		mmFatalf.defaultExpectation = &TesterMockFatalfExpectation{}
 	}
 
-	m.defaultExpectation.params = &TesterMockFatalfParams{format, args}
-	for _, e := range m.expectations {
-		if minimock.Equal(e.params, m.defaultExpectation.params) {
-			m.mock.t.Fatalf("Expectation set by When has same params: %#v", *m.defaultExpectation.params)
+	mmFatalf.defaultExpectation.params = &TesterMockFatalfParams{format, args}
+	for _, e := range mmFatalf.expectations {
+		if minimock.Equal(e.params, mmFatalf.defaultExpectation.params) {
+			mmFatalf.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmFatalf.defaultExpectation.params)
 		}
 	}
 
-	return m
+	return mmFatalf
 }
 
 // Return sets up results that will be returned by Tester.Fatalf
-func (m *mTesterMockFatalf) Return() *TesterMock {
-	if m.mock.funcFatalf != nil {
-		m.mock.t.Fatalf("TesterMock.Fatalf mock is already set by Set")
+func (mmFatalf *mTesterMockFatalf) Return() *TesterMock {
+	if mmFatalf.mock.funcFatalf != nil {
+		mmFatalf.mock.t.Fatalf("TesterMock.Fatalf mock is already set by Set")
 	}
 
-	if m.defaultExpectation == nil {
-		m.defaultExpectation = &TesterMockFatalfExpectation{mock: m.mock}
+	if mmFatalf.defaultExpectation == nil {
+		mmFatalf.defaultExpectation = &TesterMockFatalfExpectation{mock: mmFatalf.mock}
 	}
 
-	return m.mock
+	return mmFatalf.mock
 }
 
 //Set uses given function f to mock the Tester.Fatalf method
-func (m *mTesterMockFatalf) Set(f func(format string, args ...interface{})) *TesterMock {
-	if m.defaultExpectation != nil {
-		m.mock.t.Fatalf("Default expectation is already set for the Tester.Fatalf method")
+func (mmFatalf *mTesterMockFatalf) Set(f func(format string, args ...interface{})) *TesterMock {
+	if mmFatalf.defaultExpectation != nil {
+		mmFatalf.mock.t.Fatalf("Default expectation is already set for the Tester.Fatalf method")
 	}
 
-	if len(m.expectations) > 0 {
-		m.mock.t.Fatalf("Some expectations are already set for the Tester.Fatalf method")
+	if len(mmFatalf.expectations) > 0 {
+		mmFatalf.mock.t.Fatalf("Some expectations are already set for the Tester.Fatalf method")
 	}
 
-	m.mock.funcFatalf = f
-	return m.mock
+	mmFatalf.mock.funcFatalf = f
+	return mmFatalf.mock
 }
 
 // Fatalf implements minimock.Tester
-func (m *TesterMock) Fatalf(format string, args ...interface{}) {
-	mm_atomic.AddUint64(&m.beforeFatalfCounter, 1)
-	defer mm_atomic.AddUint64(&m.afterFatalfCounter, 1)
+func (mmFatalf *TesterMock) Fatalf(format string, args ...interface{}) {
+	mm_atomic.AddUint64(&mmFatalf.beforeFatalfCounter, 1)
+	defer mm_atomic.AddUint64(&mmFatalf.afterFatalfCounter, 1)
 
 	params := &TesterMockFatalfParams{format, args}
 
 	// Record call args
-	m.FatalfMock.mutex.Lock()
-	m.FatalfMock.callArgs = append(m.FatalfMock.callArgs, params)
-	m.FatalfMock.mutex.Unlock()
+	mmFatalf.FatalfMock.mutex.Lock()
+	mmFatalf.FatalfMock.callArgs = append(mmFatalf.FatalfMock.callArgs, params)
+	mmFatalf.FatalfMock.mutex.Unlock()
 
-	for _, e := range m.FatalfMock.expectations {
+	for _, e := range mmFatalf.FatalfMock.expectations {
 		if minimock.Equal(e.params, params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}
 	}
 
-	if m.FatalfMock.defaultExpectation != nil {
-		mm_atomic.AddUint64(&m.FatalfMock.defaultExpectation.Counter, 1)
-		want := m.FatalfMock.defaultExpectation.params
+	if mmFatalf.FatalfMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmFatalf.FatalfMock.defaultExpectation.Counter, 1)
+		want := mmFatalf.FatalfMock.defaultExpectation.params
 		got := TesterMockFatalfParams{format, args}
 		if want != nil && !minimock.Equal(*want, got) {
-			m.t.Errorf("TesterMock.Fatalf got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+			mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
 		}
 
 		return
 
 	}
-	if m.funcFatalf != nil {
-		m.funcFatalf(format, args...)
+	if mmFatalf.funcFatalf != nil {
+		mmFatalf.funcFatalf(format, args...)
 		return
 	}
-	m.t.Fatalf("Unexpected call to TesterMock.Fatalf. %v %v", format, args)
+	mmFatalf.t.Fatalf("Unexpected call to TesterMock.Fatalf. %v %v", format, args)
 
 }
 
 // FatalfAfterCounter returns a count of finished TesterMock.Fatalf invocations
-func (m *TesterMock) FatalfAfterCounter() uint64 {
-	return mm_atomic.LoadUint64(&m.afterFatalfCounter)
+func (mmFatalf *TesterMock) FatalfAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmFatalf.afterFatalfCounter)
 }
 
 // FatalfBeforeCounter returns a count of TesterMock.Fatalf invocations
-func (m *TesterMock) FatalfBeforeCounter() uint64 {
-	return mm_atomic.LoadUint64(&m.beforeFatalfCounter)
+func (mmFatalf *TesterMock) FatalfBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmFatalf.beforeFatalfCounter)
 }
 
 // Calls returns a list of arguments used in each call to TesterMock.Fatalf.
 // The list is in the same order as the calls were made (i.e. recent calls have a higher index)
-func (m *mTesterMockFatalf) Calls() []*TesterMockFatalfParams {
-	m.mutex.RLock()
+func (mmFatalf *mTesterMockFatalf) Calls() []*TesterMockFatalfParams {
+	mmFatalf.mutex.RLock()
 
-	argCopy := make([]*TesterMockFatalfParams, len(m.callArgs))
-	copy(argCopy, m.callArgs)
+	argCopy := make([]*TesterMockFatalfParams, len(mmFatalf.callArgs))
+	copy(argCopy, mmFatalf.callArgs)
 
-	m.mutex.RUnlock()
+	mmFatalf.mutex.RUnlock()
 
 	return argCopy
 }
