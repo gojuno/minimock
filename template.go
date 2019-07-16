@@ -12,12 +12,12 @@ const (
 		{{end}}
 
 		import (
-			{{range $import := $.Options.Imports}}{{- if not (in $import "\"time\"" "\"sync/atomic\"" "\"github.com/gojuno/minimock\"")}}
+			{{range $import := $.Options.Imports}}{{- if not (in $import "\"time\"" "\"sync/atomic\"" "\"github.com/gojuno/minimock/v3\"")}}
 				{{$import}}{{end}}{{end}}
 			{{$.Options.SourcePackageAlias}} "{{$.SourcePackage.PkgPath}}"
 			mm_atomic "sync/atomic"
 			mm_time "time"
-			"github.com/gojuno/minimock"
+			"github.com/gojuno/minimock/v3"
 		)
 	`
 

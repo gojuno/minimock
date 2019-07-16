@@ -8,6 +8,7 @@ github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
 github.com/gogo/protobuf v1.1.1/go.mod h1:r8qH/GZQm5c6nD/R0oafs1akxWv10x8SbQlK7atdtwQ=
 github.com/gojuno/generator v0.0.0-20180725114326-487ec858da35/go.mod h1:4IWfQdtkCP4cdnSO6aQTW1nS7jK6xGuhbZveVkPPFRg=
+github.com/gojuno/minimock v0.0.0-20190130082935-96af809257c4 h1:sDmyYk2M0e6YHRH8AjbpnzSzxWK0cIey2Wd3dy2RAgY=
 github.com/gojuno/minimock v0.0.0-20190130082935-96af809257c4/go.mod h1:iOiCj/XdRZn6P5/TzsbuF4SR+wPrvHs+nxZoFXuykfk=
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/hexdigest/gowrap v1.1.4 h1:+Y0aez3jHyxgeo1iwpSydfyt4ajq9ZE2eDysIBN8ExE=
