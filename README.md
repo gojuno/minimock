@@ -105,6 +105,17 @@ mc := minimock.NewController(t)
 readCloserMock := NewReadCloserMock(mc).ReadMock.Expect([]byte(1,2,3)).Return(3, nil).CloseMock.Return(nil)
 ```
 
+But what if we don't want to check all arguments of the read method?
+Let's say we just want to check that the second element of the given slice "p" is 2.
+This is where "Inspect" helper comes into play:
+```go
+mc := minimock.NewController(t)
+readCloserMock := NewReadCloserMock(mc).ReadMock.Inspect(func(p []byte){
+  assert.Equal(mc, 2, p[1])
+}).Return(3, nil).CloseMock.Return(nil)
+
+```
+
 ### Setting up a mock using When/Then helpers:
 ```go
 mc := minimock.NewController(t)

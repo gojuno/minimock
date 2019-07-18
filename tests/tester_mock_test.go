@@ -17,26 +17,31 @@ type TesterMock struct {
 	t minimock.Tester
 
 	funcError          func(p1 ...interface{})
+	inspectFuncError   func(p1 ...interface{})
 	afterErrorCounter  uint64
 	beforeErrorCounter uint64
 	ErrorMock          mTesterMockError
 
 	funcErrorf          func(format string, args ...interface{})
+	inspectFuncErrorf   func(format string, args ...interface{})
 	afterErrorfCounter  uint64
 	beforeErrorfCounter uint64
 	ErrorfMock          mTesterMockErrorf
 
 	funcFailNow          func()
+	inspectFuncFailNow   func()
 	afterFailNowCounter  uint64
 	beforeFailNowCounter uint64
 	FailNowMock          mTesterMockFailNow
 
 	funcFatal          func(args ...interface{})
+	inspectFuncFatal   func(args ...interface{})
 	afterFatalCounter  uint64
 	beforeFatalCounter uint64
 	FatalMock          mTesterMockFatal
 
 	funcFatalf          func(format string, args ...interface{})
+	inspectFuncFatalf   func(format string, args ...interface{})
 	afterFatalfCounter  uint64
 	beforeFatalfCounter uint64
 	FatalfMock          mTesterMockFatalf
@@ -108,6 +113,17 @@ func (mmError *mTesterMockError) Expect(p1 ...interface{}) *mTesterMockError {
 	return mmError
 }
 
+// Inspect accepts an inspector function that has same arguments as the Tester.Error
+func (mmError *mTesterMockError) Inspect(f func(p1 ...interface{})) *mTesterMockError {
+	if mmError.mock.inspectFuncError != nil {
+		mmError.mock.t.Fatalf("Inspect function is already set for TesterMock.Error")
+	}
+
+	mmError.mock.inspectFuncError = f
+
+	return mmError
+}
+
 // Return sets up results that will be returned by Tester.Error
 func (mmError *mTesterMockError) Return() *TesterMock {
 	if mmError.mock.funcError != nil {
@@ -139,6 +155,10 @@ func (mmError *mTesterMockError) Set(f func(p1 ...interface{})) *TesterMock {
 func (mmError *TesterMock) Error(p1 ...interface{}) {
 	mm_atomic.AddUint64(&mmError.beforeErrorCounter, 1)
 	defer mm_atomic.AddUint64(&mmError.afterErrorCounter, 1)
+
+	if mmError.inspectFuncError != nil {
+		mmError.inspectFuncError(p1...)
+	}
 
 	params := &TesterMockErrorParams{p1}
 
@@ -281,6 +301,17 @@ func (mmErrorf *mTesterMockErrorf) Expect(format string, args ...interface{}) *m
 	return mmErrorf
 }
 
+// Inspect accepts an inspector function that has same arguments as the Tester.Errorf
+func (mmErrorf *mTesterMockErrorf) Inspect(f func(format string, args ...interface{})) *mTesterMockErrorf {
+	if mmErrorf.mock.inspectFuncErrorf != nil {
+		mmErrorf.mock.t.Fatalf("Inspect function is already set for TesterMock.Errorf")
+	}
+
+	mmErrorf.mock.inspectFuncErrorf = f
+
+	return mmErrorf
+}
+
 // Return sets up results that will be returned by Tester.Errorf
 func (mmErrorf *mTesterMockErrorf) Return() *TesterMock {
 	if mmErrorf.mock.funcErrorf != nil {
@@ -312,6 +343,10 @@ func (mmErrorf *mTesterMockErrorf) Set(f func(format string, args ...interface{}
 func (mmErrorf *TesterMock) Errorf(format string, args ...interface{}) {
 	mm_atomic.AddUint64(&mmErrorf.beforeErrorfCounter, 1)
 	defer mm_atomic.AddUint64(&mmErrorf.afterErrorfCounter, 1)
+
+	if mmErrorf.inspectFuncErrorf != nil {
+		mmErrorf.inspectFuncErrorf(format, args...)
+	}
 
 	params := &TesterMockErrorfParams{format, args}
 
@@ -437,6 +472,17 @@ func (mmFailNow *mTesterMockFailNow) Expect() *mTesterMockFailNow {
 	return mmFailNow
 }
 
+// Inspect accepts an inspector function that has same arguments as the Tester.FailNow
+func (mmFailNow *mTesterMockFailNow) Inspect(f func()) *mTesterMockFailNow {
+	if mmFailNow.mock.inspectFuncFailNow != nil {
+		mmFailNow.mock.t.Fatalf("Inspect function is already set for TesterMock.FailNow")
+	}
+
+	mmFailNow.mock.inspectFuncFailNow = f
+
+	return mmFailNow
+}
+
 // Return sets up results that will be returned by Tester.FailNow
 func (mmFailNow *mTesterMockFailNow) Return() *TesterMock {
 	if mmFailNow.mock.funcFailNow != nil {
@@ -468,6 +514,10 @@ func (mmFailNow *mTesterMockFailNow) Set(f func()) *TesterMock {
 func (mmFailNow *TesterMock) FailNow() {
 	mm_atomic.AddUint64(&mmFailNow.beforeFailNowCounter, 1)
 	defer mm_atomic.AddUint64(&mmFailNow.afterFailNowCounter, 1)
+
+	if mmFailNow.inspectFuncFailNow != nil {
+		mmFailNow.inspectFuncFailNow()
+	}
 
 	if mmFailNow.FailNowMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmFailNow.FailNowMock.defaultExpectation.Counter, 1)
@@ -573,6 +623,17 @@ func (mmFatal *mTesterMockFatal) Expect(args ...interface{}) *mTesterMockFatal {
 	return mmFatal
 }
 
+// Inspect accepts an inspector function that has same arguments as the Tester.Fatal
+func (mmFatal *mTesterMockFatal) Inspect(f func(args ...interface{})) *mTesterMockFatal {
+	if mmFatal.mock.inspectFuncFatal != nil {
+		mmFatal.mock.t.Fatalf("Inspect function is already set for TesterMock.Fatal")
+	}
+
+	mmFatal.mock.inspectFuncFatal = f
+
+	return mmFatal
+}
+
 // Return sets up results that will be returned by Tester.Fatal
 func (mmFatal *mTesterMockFatal) Return() *TesterMock {
 	if mmFatal.mock.funcFatal != nil {
@@ -604,6 +665,10 @@ func (mmFatal *mTesterMockFatal) Set(f func(args ...interface{})) *TesterMock {
 func (mmFatal *TesterMock) Fatal(args ...interface{}) {
 	mm_atomic.AddUint64(&mmFatal.beforeFatalCounter, 1)
 	defer mm_atomic.AddUint64(&mmFatal.afterFatalCounter, 1)
+
+	if mmFatal.inspectFuncFatal != nil {
+		mmFatal.inspectFuncFatal(args...)
+	}
 
 	params := &TesterMockFatalParams{args}
 
@@ -746,6 +811,17 @@ func (mmFatalf *mTesterMockFatalf) Expect(format string, args ...interface{}) *m
 	return mmFatalf
 }
 
+// Inspect accepts an inspector function that has same arguments as the Tester.Fatalf
+func (mmFatalf *mTesterMockFatalf) Inspect(f func(format string, args ...interface{})) *mTesterMockFatalf {
+	if mmFatalf.mock.inspectFuncFatalf != nil {
+		mmFatalf.mock.t.Fatalf("Inspect function is already set for TesterMock.Fatalf")
+	}
+
+	mmFatalf.mock.inspectFuncFatalf = f
+
+	return mmFatalf
+}
+
 // Return sets up results that will be returned by Tester.Fatalf
 func (mmFatalf *mTesterMockFatalf) Return() *TesterMock {
 	if mmFatalf.mock.funcFatalf != nil {
@@ -777,6 +853,10 @@ func (mmFatalf *mTesterMockFatalf) Set(f func(format string, args ...interface{}
 func (mmFatalf *TesterMock) Fatalf(format string, args ...interface{}) {
 	mm_atomic.AddUint64(&mmFatalf.beforeFatalfCounter, 1)
 	defer mm_atomic.AddUint64(&mmFatalf.afterFatalfCounter, 1)
+
+	if mmFatalf.inspectFuncFatalf != nil {
+		mmFatalf.inspectFuncFatalf(format, args...)
+	}
 
 	params := &TesterMockFatalfParams{format, args}
 

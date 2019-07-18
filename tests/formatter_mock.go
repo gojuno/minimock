@@ -17,6 +17,7 @@ type FormatterMock struct {
 	t minimock.Tester
 
 	funcFormat          func(s1 string, p1 ...interface{}) (s2 string)
+	inspectFuncFormat   func(s1 string, p1 ...interface{})
 	afterFormatCounter  uint64
 	beforeFormatCounter uint64
 	FormatMock          mFormatterMockFormat
@@ -83,6 +84,17 @@ func (mmFormat *mFormatterMockFormat) Expect(s1 string, p1 ...interface{}) *mFor
 	return mmFormat
 }
 
+// Inspect accepts an inspector function that has same arguments as the Formatter.Format
+func (mmFormat *mFormatterMockFormat) Inspect(f func(s1 string, p1 ...interface{})) *mFormatterMockFormat {
+	if mmFormat.mock.inspectFuncFormat != nil {
+		mmFormat.mock.t.Fatalf("Inspect function is already set for FormatterMock.Format")
+	}
+
+	mmFormat.mock.inspectFuncFormat = f
+
+	return mmFormat
+}
+
 // Return sets up results that will be returned by Formatter.Format
 func (mmFormat *mFormatterMockFormat) Return(s2 string) *FormatterMock {
 	if mmFormat.mock.funcFormat != nil {
@@ -135,6 +147,10 @@ func (e *FormatterMockFormatExpectation) Then(s2 string) *FormatterMock {
 func (mmFormat *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) {
 	mm_atomic.AddUint64(&mmFormat.beforeFormatCounter, 1)
 	defer mm_atomic.AddUint64(&mmFormat.afterFormatCounter, 1)
+
+	if mmFormat.inspectFuncFormat != nil {
+		mmFormat.inspectFuncFormat(s1, p1...)
+	}
 
 	params := &FormatterMockFormatParams{s1, p1}
 

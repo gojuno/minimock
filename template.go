@@ -30,6 +30,7 @@ const (
 			t minimock.Tester
 			{{ range $method := $.Interface.Methods }}
 				func{{$method.Name}} func{{ $method.Signature }}
+				inspectFunc{{$method.Name}} func({{ $method.Params}})
 				after{{$method.Name}}Counter uint64
 				before{{$method.Name}}Counter uint64
 				{{$method.Name}}Mock m{{$mock}}{{$method.Name}}
@@ -101,6 +102,17 @@ const (
 				return {{$m}}
 			}
 
+			// Inspect accepts an inspector function that has same arguments as the {{$.Interface.Name}}.{{$method.Name}}
+			func ({{$m}} *m{{$mock}}{{$method.Name}}) Inspect(f func({{$method.Params}})) *m{{$mock}}{{$method.Name}} {
+				if {{$m}}.mock.inspectFunc{{$method.Name}} != nil {
+					{{$m}}.mock.t.Fatalf("Inspect function is already set for {{$mock}}.{{$method.Name}}")
+				}
+
+				{{$m}}.mock.inspectFunc{{$method.Name}} = f
+
+				return {{$m}}
+			}
+
 			// Return sets up results that will be returned by {{$.Interface.Name}}.{{$method.Name}}
 			func ({{$m}} *m{{$mock}}{{$method.Name}}) Return({{$method.Results}}) *{{$mock}} {
 				if {{$m}}.mock.func{{$method.Name}} != nil {
@@ -156,12 +168,16 @@ const (
 				mm_atomic.AddUint64(&{{$m}}.before{{$method.Name}}Counter, 1)
 				defer mm_atomic.AddUint64(&{{$m}}.after{{$method.Name}}Counter, 1)
 
+				if {{$m}}.inspectFunc{{$method.Name}} != nil {
+					{{$m}}.inspectFunc{{$method.Name}}({{$method.Params.Pass}})
+				}
+
 				{{if $method.HasParams}}
 					params := &{{$mock}}{{$method.Name}}Params{ {{$method.ParamsNames}} }
 
 					// Record call args
 					{{$m}}.{{$method.Name}}Mock.mutex.Lock()
-				{{$m}}	.{{$method.Name}}Mock.callArgs = append({{$m}}.{{$method.Name}}Mock.callArgs, params)
+					{{$m}}.{{$method.Name}}Mock.callArgs = append({{$m}}.{{$method.Name}}Mock.callArgs, params)
 					{{$m}}.{{$method.Name}}Mock.mutex.Unlock()
 
 					for _, e := range {{$m}}.{{$method.Name}}Mock.expectations {
