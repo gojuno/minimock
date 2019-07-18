@@ -26,9 +26,14 @@ The main features of minimock are:
 
 ## Installation
 
+If you use go modules please download the [latest binary](https://github.com/gojuno/minimock/releases/latest)
+or install minimock from source:
 ```
-go get github.com/gojuno/minimock/cmd/minimock
+go install github.com/gojuno/minimock/v3/cmd/minimock
 ```
+
+If you don't use go modules please find the latest v2.x binary [here](https://github.com/gojuno/minimock/releases)
+or install minimock using [v2 branch](https://github.com/gojuno/minimock/tree/v2)
 
 ## Usage
 
