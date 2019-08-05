@@ -173,15 +173,15 @@ const (
 				}
 
 				{{if $method.HasParams}}
-					params := &{{$mock}}{{$method.Name}}Params{ {{$method.ParamsNames}} }
+					mm_params := &{{$mock}}{{$method.Name}}Params{ {{$method.ParamsNames}} }
 
 					// Record call args
 					{{$m}}.{{$method.Name}}Mock.mutex.Lock()
-					{{$m}}.{{$method.Name}}Mock.callArgs = append({{$m}}.{{$method.Name}}Mock.callArgs, params)
+					{{$m}}.{{$method.Name}}Mock.callArgs = append({{$m}}.{{$method.Name}}Mock.callArgs, mm_params)
 					{{$m}}.{{$method.Name}}Mock.mutex.Unlock()
 
 					for _, e := range {{$m}}.{{$method.Name}}Mock.expectations {
-						if minimock.Equal(e.params, params) {
+						if minimock.Equal(e.params, mm_params) {
 							mm_atomic.AddUint64(&e.Counter, 1)
 							{{$method.ReturnStruct "e.results" -}}
 						}
@@ -191,18 +191,18 @@ const (
 				if {{$m}}.{{$method.Name}}Mock.defaultExpectation != nil {
 					mm_atomic.AddUint64(&{{$m}}.{{$method.Name}}Mock.defaultExpectation.Counter, 1)
 					{{- if $method.HasParams }}
-						want := {{$m}}.{{$method.Name}}Mock.defaultExpectation.params
-						got := {{$mock}}{{$method.Name}}Params{ {{$method.ParamsNames}} }
-						if want != nil && !minimock.Equal(*want, got) {
-							{{$m}}.t.Errorf("{{$mock}}.{{$method.Name}} got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+						mm_want := {{$m}}.{{$method.Name}}Mock.defaultExpectation.params
+						mm_got := {{$mock}}{{$method.Name}}Params{ {{$method.ParamsNames}} }
+						if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+							{{$m}}.t.Errorf("{{$mock}}.{{$method.Name}} got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 						}
 					{{ end }}
 					{{if $method.HasResults }}
-						results := {{$m}}.{{$method.Name}}Mock.defaultExpectation.results
-						if results == nil {
+						mm_results := {{$m}}.{{$method.Name}}Mock.defaultExpectation.results
+						if mm_results == nil {
 							{{$m}}.t.Fatal("No results are set for the {{$mock}}.{{$method.Name}}")
 						}
-						{{$method.ReturnStruct "(*results)" -}}
+						{{$method.ReturnStruct "(*mm_results)" -}}
 					{{else}}
 						return
 					{{ end }}
