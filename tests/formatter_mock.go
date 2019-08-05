@@ -152,15 +152,15 @@ func (mmFormat *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) 
 		mmFormat.inspectFuncFormat(s1, p1...)
 	}
 
-	params := &FormatterMockFormatParams{s1, p1}
+	mm_params := &FormatterMockFormatParams{s1, p1}
 
 	// Record call args
 	mmFormat.FormatMock.mutex.Lock()
-	mmFormat.FormatMock.callArgs = append(mmFormat.FormatMock.callArgs, params)
+	mmFormat.FormatMock.callArgs = append(mmFormat.FormatMock.callArgs, mm_params)
 	mmFormat.FormatMock.mutex.Unlock()
 
 	for _, e := range mmFormat.FormatMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.s2
 		}
@@ -168,17 +168,17 @@ func (mmFormat *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) 
 
 	if mmFormat.FormatMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmFormat.FormatMock.defaultExpectation.Counter, 1)
-		want := mmFormat.FormatMock.defaultExpectation.params
-		got := FormatterMockFormatParams{s1, p1}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmFormat.t.Errorf("FormatterMock.Format got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmFormat.FormatMock.defaultExpectation.params
+		mm_got := FormatterMockFormatParams{s1, p1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmFormat.t.Errorf("FormatterMock.Format got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmFormat.FormatMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmFormat.FormatMock.defaultExpectation.results
+		if mm_results == nil {
 			mmFormat.t.Fatal("No results are set for the FormatterMock.Format")
 		}
-		return (*results).s2
+		return (*mm_results).s2
 	}
 	if mmFormat.funcFormat != nil {
 		return mmFormat.funcFormat(s1, p1...)

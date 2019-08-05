@@ -160,15 +160,15 @@ func (mmError *TesterMock) Error(p1 ...interface{}) {
 		mmError.inspectFuncError(p1...)
 	}
 
-	params := &TesterMockErrorParams{p1}
+	mm_params := &TesterMockErrorParams{p1}
 
 	// Record call args
 	mmError.ErrorMock.mutex.Lock()
-	mmError.ErrorMock.callArgs = append(mmError.ErrorMock.callArgs, params)
+	mmError.ErrorMock.callArgs = append(mmError.ErrorMock.callArgs, mm_params)
 	mmError.ErrorMock.mutex.Unlock()
 
 	for _, e := range mmError.ErrorMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}
@@ -176,10 +176,10 @@ func (mmError *TesterMock) Error(p1 ...interface{}) {
 
 	if mmError.ErrorMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmError.ErrorMock.defaultExpectation.Counter, 1)
-		want := mmError.ErrorMock.defaultExpectation.params
-		got := TesterMockErrorParams{p1}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmError.t.Errorf("TesterMock.Error got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmError.ErrorMock.defaultExpectation.params
+		mm_got := TesterMockErrorParams{p1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmError.t.Errorf("TesterMock.Error got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
@@ -348,15 +348,15 @@ func (mmErrorf *TesterMock) Errorf(format string, args ...interface{}) {
 		mmErrorf.inspectFuncErrorf(format, args...)
 	}
 
-	params := &TesterMockErrorfParams{format, args}
+	mm_params := &TesterMockErrorfParams{format, args}
 
 	// Record call args
 	mmErrorf.ErrorfMock.mutex.Lock()
-	mmErrorf.ErrorfMock.callArgs = append(mmErrorf.ErrorfMock.callArgs, params)
+	mmErrorf.ErrorfMock.callArgs = append(mmErrorf.ErrorfMock.callArgs, mm_params)
 	mmErrorf.ErrorfMock.mutex.Unlock()
 
 	for _, e := range mmErrorf.ErrorfMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}
@@ -364,10 +364,10 @@ func (mmErrorf *TesterMock) Errorf(format string, args ...interface{}) {
 
 	if mmErrorf.ErrorfMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmErrorf.ErrorfMock.defaultExpectation.Counter, 1)
-		want := mmErrorf.ErrorfMock.defaultExpectation.params
-		got := TesterMockErrorfParams{format, args}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmErrorf.ErrorfMock.defaultExpectation.params
+		mm_got := TesterMockErrorfParams{format, args}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
@@ -670,15 +670,15 @@ func (mmFatal *TesterMock) Fatal(args ...interface{}) {
 		mmFatal.inspectFuncFatal(args...)
 	}
 
-	params := &TesterMockFatalParams{args}
+	mm_params := &TesterMockFatalParams{args}
 
 	// Record call args
 	mmFatal.FatalMock.mutex.Lock()
-	mmFatal.FatalMock.callArgs = append(mmFatal.FatalMock.callArgs, params)
+	mmFatal.FatalMock.callArgs = append(mmFatal.FatalMock.callArgs, mm_params)
 	mmFatal.FatalMock.mutex.Unlock()
 
 	for _, e := range mmFatal.FatalMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}
@@ -686,10 +686,10 @@ func (mmFatal *TesterMock) Fatal(args ...interface{}) {
 
 	if mmFatal.FatalMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmFatal.FatalMock.defaultExpectation.Counter, 1)
-		want := mmFatal.FatalMock.defaultExpectation.params
-		got := TesterMockFatalParams{args}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmFatal.t.Errorf("TesterMock.Fatal got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmFatal.FatalMock.defaultExpectation.params
+		mm_got := TesterMockFatalParams{args}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmFatal.t.Errorf("TesterMock.Fatal got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
@@ -858,15 +858,15 @@ func (mmFatalf *TesterMock) Fatalf(format string, args ...interface{}) {
 		mmFatalf.inspectFuncFatalf(format, args...)
 	}
 
-	params := &TesterMockFatalfParams{format, args}
+	mm_params := &TesterMockFatalfParams{format, args}
 
 	// Record call args
 	mmFatalf.FatalfMock.mutex.Lock()
-	mmFatalf.FatalfMock.callArgs = append(mmFatalf.FatalfMock.callArgs, params)
+	mmFatalf.FatalfMock.callArgs = append(mmFatalf.FatalfMock.callArgs, mm_params)
 	mmFatalf.FatalfMock.mutex.Unlock()
 
 	for _, e := range mmFatalf.FatalfMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}
@@ -874,10 +874,10 @@ func (mmFatalf *TesterMock) Fatalf(format string, args ...interface{}) {
 
 	if mmFatalf.FatalfMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmFatalf.FatalfMock.defaultExpectation.Counter, 1)
-		want := mmFatalf.FatalfMock.defaultExpectation.params
-		got := TesterMockFatalfParams{format, args}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmFatalf.FatalfMock.defaultExpectation.params
+		mm_got := TesterMockFatalfParams{format, args}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
