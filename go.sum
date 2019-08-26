@@ -11,8 +11,8 @@ github.com/gojuno/generator v0.0.0-20180725114326-487ec858da35/go.mod h1:4IWfQdt
 github.com/gojuno/minimock v0.0.0-20190130082935-96af809257c4 h1:sDmyYk2M0e6YHRH8AjbpnzSzxWK0cIey2Wd3dy2RAgY=
 github.com/gojuno/minimock v0.0.0-20190130082935-96af809257c4/go.mod h1:iOiCj/XdRZn6P5/TzsbuF4SR+wPrvHs+nxZoFXuykfk=
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
-github.com/hexdigest/gowrap v1.1.4 h1:+Y0aez3jHyxgeo1iwpSydfyt4ajq9ZE2eDysIBN8ExE=
-github.com/hexdigest/gowrap v1.1.4/go.mod h1:BJ3dVLFoWfoXxzpVf+q8UxFtPBz2j0RYwuELxA8qYOg=
+github.com/hexdigest/gowrap v1.1.5 h1:AxsYgMiFQuS/2QJF60pr1wEhVw2Uh3AGZpuVkCYkU+4=
+github.com/hexdigest/gowrap v1.1.5/go.mod h1:BJ3dVLFoWfoXxzpVf+q8UxFtPBz2j0RYwuELxA8qYOg=
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515/go.mod h1:+0opPa2QZZtGFBFZlji/RkVcI2GknAs/DXo4wKdlNEc=
