@@ -5,7 +5,7 @@ generate:
 	go run ./cmd/minimock/minimock.go -i ./tests.Formatter -o ./tests/formatter_mock.go
 
 lint:
-	gometalinter ./... -I minimock -e gopathwalk --disable=gotype --deadline=2m
+	gometalinter ./tests/ -I minimock -e gopathwalk --disable=gotype --deadline=2m
 
 install:
 	go mod download
