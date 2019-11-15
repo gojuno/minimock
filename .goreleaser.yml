@@ -14,7 +14,7 @@ builds:
     - windows
 
   ldflags:
-    - -X main.version={{.Version}}
+    - -X main.version={{.Version}} -X main.commit={{.FullCommit}} -X main.buildDate={{.Date}}
 archive:
   replacements:
     darwin: Darwin

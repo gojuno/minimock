@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 
 	minimock "github.com/gojuno/minimock/v3"
 	"github.com/hexdigest/gowrap/generator"
@@ -20,7 +21,13 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-var version = "dev" //do not modify! version var is modified during the build via ldflags option
+var (
+	//do not modify the following vars
+	//the values are being injected at the compile time by goreleaser
+	version   = "dev"
+	commit    = "dev"
+	buildDate = time.Now().Format(time.RFC3339)
+)
 
 var helpers = template.FuncMap{
 	"title": strings.Title,
@@ -246,6 +253,27 @@ For more information please visit https://github.com/gojuno/minimock
 	}
 }
 
+func showVersion(w io.Writer) {
+	const versionTemplate = `MiniMock version {{bold .Version}}
+Git commit: {{bold .Commit}}
+Build date: {{bold .BuildDate}}
+`
+
+	t := template.Must(template.New("version").Funcs(template.FuncMap{
+		"bold": func(s string) string { return "\033[1m" + s + "\033[0m" },
+	}).Parse(versionTemplate))
+
+	versionInfo := struct {
+		Version   string
+		Commit    string
+		BuildDate string
+	}{version, commit, buildDate}
+
+	if err := t.Execute(w, versionInfo); err != nil {
+		panic(err) //something went completely wrong, i.e. OOM, closed pipe, etc
+	}
+}
+
 var errInvalidArguments = errors.New("invalid arguments")
 
 func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
@@ -259,11 +287,17 @@ func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
 	input := fs.String("i", "*", "comma-separated names of the interfaces to mock, i.e fmt.Stringer,io.Reader\nuse io.* notation to generate mocks for all interfaces in the \"io\" package")
 	output := fs.String("o", "", "comma-separated destination file names or packages to put the generated mocks in,\nby default the generated mock is placed in the source package directory")
 	help := fs.Bool("h", false, "show this help message")
+	version := fs.Bool("version", false, "display version information and exit")
 
 	fs.Usage = func() { usage(fs, stderr) }
 
 	if err := fs.Parse(args); err != nil {
 		return nil, errInvalidArguments
+	}
+
+	if *version {
+		showVersion(stdout)
+		return nil, nil
 	}
 
 	if *help {
