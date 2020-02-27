@@ -147,9 +147,9 @@ You can also use invocation counters in your mocks and tests:
 ```go
 mc := minimock.NewController(t)
 formatterMock := NewFormatterMock(mc)
-formatterMock.FormatFunc = func(string, ...interface{}) string {
+formatterMock.FormatMock.Set(func(string, ...interface{}) string {
   return fmt.Sprintf("minimock: %d", formatterMock.BeforeFormatCounter())
-}
+})
 ```
 
 ### Make sure that your mocks are being used 
