@@ -190,6 +190,32 @@ func TestSomething(t *testing.T) {
 }
 ```
 
+### Change value of mocked function argument
+It's common case when mocked function change argument value by its reference (i.e. from xorm lib ```engine.Find(&users)```) so the method returns only error. 
+Here is how you can change the value by using reflection:
+
+```go
+func TestSomething(t *testing.T) {
+  user := model.User{
+    Id: 1,
+    Login: "login",
+  }
+
+  mc := minimock.NewController(t)
+  defer mc.Finish()
+  xormMock := NewXormEngineInterfaceMock(mc)
+
+  xormMock.FindMock.Inspect(func(p1 interface{}, _ ...interface{}) {
+			// Trick to return new value of argument p1 by its ref
+			ptr := reflect.ValueOf(p1).Elem().Addr().Interface().(*[]model.User)
+			*ptr = []model.User{
+				user,
+			}
+		}).Return(nil)
+  ...
+}
+```
+
 ## Using GoUnit with minimock
 
 Writing test is not only mocking the dependencies. Often the test itself contains a lot of boilerplate code.
