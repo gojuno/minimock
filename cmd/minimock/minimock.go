@@ -127,6 +127,8 @@ func processPackage(opts generator.Options, interfaces []string, writeTo, suffix
 			return errors.Wrapf(err, "failed to generate mock for %s", name)
 		}
 
+		opts.HeaderVars["OutputFileName"] = filepath.Base(opts.OutputFile)
+
 		if err := generate(opts); err != nil {
 			return err
 		}
