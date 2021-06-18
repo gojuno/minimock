@@ -47,6 +47,7 @@ type (
 		interfaces []interfaceInfo
 		noGenerate bool
 		suffix     string
+		mockNames  []string
 	}
 
 	interfaceInfo struct {
@@ -108,10 +109,15 @@ func run(opts *options) (err error) {
 				"GenerateInstruction": !opts.noGenerate,
 				"Version":             version,
 			},
+			Vars: map[string]interface{}{},
 			Funcs: helpers,
 		}
 
-		if err := processPackage(gopts, interfaces, in.WriteTo, opts.suffix); err != nil {
+		mockName := ""
+		if len(opts.interfaces) == len(opts.mockNames) {
+			mockName = opts.mockNames[i]
+		}
+		if err := processPackage(gopts, interfaces, in.WriteTo, opts.suffix, mockName); err != nil {
 			return err
 		}
 	}
@@ -119,12 +125,18 @@ func run(opts *options) (err error) {
 	return nil
 }
 
-func processPackage(opts generator.Options, interfaces []string, writeTo, suffix string) (err error) {
+func processPackage(opts generator.Options, interfaces []string, writeTo, suffix, mockName string) (err error) {
 	for _, name := range interfaces {
 		opts.InterfaceName = name
+
 		opts.OutputFile, err = destinationFile(name, writeTo, suffix)
 		if err != nil {
 			return errors.Wrapf(err, "failed to generate mock for %s", name)
+		}
+
+		opts.Vars["MockName"] = fmt.Sprintf("%sMock", opts.InterfaceName)
+		if mockName != "" {
+			opts.Vars["MockName"] = mockName
 		}
 
 		if err := generate(opts); err != nil {
@@ -286,6 +298,7 @@ func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
 
 	input := fs.String("i", "*", "comma-separated names of the interfaces to mock, i.e fmt.Stringer,io.Reader\nuse io.* notation to generate mocks for all interfaces in the \"io\" package")
 	output := fs.String("o", "", "comma-separated destination file names or packages to put the generated mocks in,\nby default the generated mock is placed in the source package directory")
+	aliases := fs.String("n", "", "comma-separated mock names,\nby default the generated mock names append `Mock` to the given interface name")
 	help := fs.Bool("h", false, "show this help message")
 	version := fs.Bool("version", false, "display version information and exit")
 
@@ -306,6 +319,19 @@ func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
 	}
 
 	interfaces := strings.Split(*input, ",")
+
+	var mockNames []string
+	if *aliases != "" {
+		mockNames = strings.Split(*aliases, ",")
+	}
+	if len(mockNames) != 0 && len(mockNames) != len(interfaces) {
+		return nil, errors.Errorf("count of the source interfaces doesn't match the mock names count")
+	}
+	if len(mockNames) != 0 && strings.Contains(*input, "*") {
+		return nil, errors.Errorf("wildcards * can't be used with -n argument")
+	}
+
+	opts.mockNames = mockNames
 
 	var writeTo = make([]string, len(interfaces))
 	if *output != "" {
