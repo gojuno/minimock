@@ -17,6 +17,9 @@ builds:
   ldflags:
     - -X main.version={{.Version}} -X main.commit={{.FullCommit}} -X main.buildDate={{.Date}}
 
+env_files:
+  github_token: .gh_token
+
 checksum:
   name_template: 'checksums.txt'
 snapshot:

@@ -28,3 +28,4 @@ _testmain.go
 /minimock
 /dist
 /bin
+/.gh_token
