@@ -1,11 +1,28 @@
+export GOBIN := $(PWD)/bin
+export PATH := $(GOBIN):$(PATH)
+export GOFLAGS := -mod=mod
+
 all: install test lint clean
 
 generate:
 	go run ./cmd/minimock/minimock.go -i github.com/gojuno/minimock/v3.Tester -o ./tests
 	go run ./cmd/minimock/minimock.go -i ./tests.Formatter -o ./tests/formatter_mock.go
 
-lint:
-	gometalinter ./tests/ -I minimock -e gopathwalk --disable=gotype --deadline=2m
+#lint:
+#	gometalinter ./tests/ -I minimock -e gopathwalk --disable=gotype --deadline=2m
+#
+
+./bin:
+	mkdir ./bin
+
+./bin/golangci-lint: ./bin
+	go get github.com/golangci/golangci-lint/cmd/golangci-lint
+
+./bin/goreleaser:
+	go install github.com/goreleaser/goreleaser
+
+lint: ./bin/golangci-lint
+	./bin/golangci-lint run --enable=goimports --disable=unused --exclude=S1023,"Error return value" ./tests/...
 
 install:
 	go mod download
@@ -24,3 +41,9 @@ test: test_save_origin generate
 	diff ./tests/formatter_mock.go ./tests/formatter_mock.go.test_origin
 	diff ./tests/tester_mock_test.go ./tests/tester_mock_test.go.test_origin
 	go test -race ./...
+
+release: ./bin/goreleaser
+	goreleaser release
+
+build: ./bin/goreleaser
+	goreleaser build --snapshot --rm-dist
