@@ -1,6 +1,6 @@
 module github.com/gojuno/minimock/tools
 
-go 1.16
+go 1.13
 
 require (
 	github.com/gojuno/minimock/v3 v3.0.9
