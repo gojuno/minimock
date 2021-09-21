@@ -15,18 +15,16 @@ generate:
 ./bin:
 	mkdir ./bin
 
-./bin/golangci-lint: ./bin
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint
-
-./bin/goreleaser:
-	go install github.com/goreleaser/goreleaser
-
-lint: ./bin/golangci-lint
+lint: install-tools
 	./bin/golangci-lint run --enable=goimports --disable=unused --exclude=S1023,"Error return value" ./tests/...
 
 install:
 	go mod download
 	go install ./cmd/minimock
+
+# iterate over requirements from tools/tools.go and install them to ./bin
+install-tools: ./bin
+	@cd tools && go list -f '{{range .Imports}}{{.}} {{end}}' tools.go | xargs go install
 
 clean:
 	[ -e ./tests/formatter_mock.go.test_origin ] && mv -f ./tests/formatter_mock.go.test_origin ./tests/formatter_mock.go
@@ -42,8 +40,8 @@ test: test_save_origin generate
 	diff ./tests/tester_mock_test.go ./tests/tester_mock_test.go.test_origin
 	go test -race ./...
 
-release: ./bin/goreleaser
-	goreleaser release
+release: install-tools
+	./bin/goreleaser release
 
-build: ./bin/goreleaser
-	goreleaser build --snapshot --rm-dist
+build: install-tools
+	./bin/goreleaser build --snapshot --rm-dist
