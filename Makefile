@@ -8,23 +8,24 @@ generate:
 	go run ./cmd/minimock/minimock.go -i github.com/gojuno/minimock/v3.Tester -o ./tests
 	go run ./cmd/minimock/minimock.go -i ./tests.Formatter -o ./tests/formatter_mock.go
 
-#lint:
-#	gometalinter ./tests/ -I minimock -e gopathwalk --disable=gotype --deadline=2m
-#
-
 ./bin:
 	mkdir ./bin
 
-lint: install-tools
+lint: ./bin/golangci-lint
 	./bin/golangci-lint run --enable=goimports --disable=unused --exclude=S1023,"Error return value" ./tests/...
 
 install:
 	go mod download
 	go install ./cmd/minimock
 
-# iterate over requirements from tools/tools.go and install them to ./bin
-install-tools: ./bin
-	@cd tools && go list -f '{{range .Imports}}{{.}} {{end}}' tools.go | xargs go install
+./bin/golangci-lint: ./bin
+	@cd tools && go get github.com/golangci/golangci-lint/cmd/golangci-lint
+
+./bin/goreleaser: ./bin
+	@cd tools && go install github.com/goreleaser/goreleaser
+
+./bin/minimock:
+	go build ./cmd/minimock -o ./bin/minimock
 
 clean:
 	[ -e ./tests/formatter_mock.go.test_origin ] && mv -f ./tests/formatter_mock.go.test_origin ./tests/formatter_mock.go
@@ -40,8 +41,8 @@ test: test_save_origin generate
 	diff ./tests/tester_mock_test.go ./tests/tester_mock_test.go.test_origin
 	go test -race ./...
 
-release: install-tools
+release: ./bin/goreleaser
 	./bin/goreleaser release
 
-build: install-tools
+build: ./bin/goreleaser
 	./bin/goreleaser build --snapshot --rm-dist

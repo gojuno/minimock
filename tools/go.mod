@@ -4,6 +4,6 @@ go 1.13
 
 require (
 	github.com/gojuno/minimock/v3 v3.0.9
-	github.com/golangci/golangci-lint v1.42.0
+	github.com/golangci/golangci-lint v1.42.1
 	github.com/goreleaser/goreleaser v0.177.0
 )
