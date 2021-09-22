@@ -8,18 +8,8 @@ generate:
 	go run ./cmd/minimock/minimock.go -i github.com/gojuno/minimock/v3.Tester -o ./tests
 	go run ./cmd/minimock/minimock.go -i ./tests.Formatter -o ./tests/formatter_mock.go
 
-#lint:
-#	gometalinter ./tests/ -I minimock -e gopathwalk --disable=gotype --deadline=2m
-#
-
 ./bin:
 	mkdir ./bin
-
-./bin/golangci-lint: ./bin
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint
-
-./bin/goreleaser:
-	go install github.com/goreleaser/goreleaser
 
 lint: ./bin/golangci-lint
 	./bin/golangci-lint run --enable=goimports --disable=unused --exclude=S1023,"Error return value" ./tests/...
@@ -27,6 +17,15 @@ lint: ./bin/golangci-lint
 install:
 	go mod download
 	go install ./cmd/minimock
+
+./bin/golangci-lint: ./bin
+	@cd tools && go get github.com/golangci/golangci-lint/cmd/golangci-lint
+
+./bin/goreleaser: ./bin
+	@cd tools && go install github.com/goreleaser/goreleaser
+
+./bin/minimock:
+	go build ./cmd/minimock -o ./bin/minimock
 
 clean:
 	[ -e ./tests/formatter_mock.go.test_origin ] && mv -f ./tests/formatter_mock.go.test_origin ./tests/formatter_mock.go
@@ -43,7 +42,7 @@ test: test_save_origin generate
 	go test -race ./...
 
 release: ./bin/goreleaser
-	goreleaser release
+	./bin/goreleaser release
 
 build: ./bin/goreleaser
-	goreleaser build --snapshot --rm-dist
+	./bin/goreleaser build --snapshot --rm-dist
