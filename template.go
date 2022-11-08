@@ -126,7 +126,7 @@ const (
 				return {{$m}}.mock
 			}
 
-			//Set uses given function f to mock the {{$.Interface.Name}}.{{$method.Name}} method
+			// Set uses given function f to mock the {{$.Interface.Name}}.{{$method.Name}} method
 			func ({{$m}} *m{{$mock}}{{$method.Name}}) Set(f func{{$method.Signature}}) *{{$mock}}{
 				if {{$m}}.defaultExpectation != nil {
 					{{$m}}.mock.t.Fatalf("Default expectation is already set for the {{$.Interface.Name}}.{{$method.Name}} method")
