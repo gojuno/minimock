@@ -22,10 +22,10 @@ install:
 	go install ./cmd/minimock
 
 ./bin/golangci-lint: ./bin
-	@cd tools && go get github.com/golangci/golangci-lint/cmd/golangci-lint
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./bin v1.51.1
 
 ./bin/goreleaser: ./bin
-	@cd tools && go install github.com/goreleaser/goreleaser
+	go install -modfile tools/go.mod github.com/goreleaser/goreleaser
 
 ./bin/minimock:
 	go build ./cmd/minimock -o ./bin/minimock
