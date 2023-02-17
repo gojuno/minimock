@@ -137,7 +137,7 @@ func (mmError *mTesterMockError) Return() *TesterMock {
 	return mmError.mock
 }
 
-//Set uses given function f to mock the Tester.Error method
+// Set uses given function f to mock the Tester.Error method
 func (mmError *mTesterMockError) Set(f func(p1 ...interface{})) *TesterMock {
 	if mmError.defaultExpectation != nil {
 		mmError.mock.t.Fatalf("Default expectation is already set for the Tester.Error method")
@@ -325,7 +325,7 @@ func (mmErrorf *mTesterMockErrorf) Return() *TesterMock {
 	return mmErrorf.mock
 }
 
-//Set uses given function f to mock the Tester.Errorf method
+// Set uses given function f to mock the Tester.Errorf method
 func (mmErrorf *mTesterMockErrorf) Set(f func(format string, args ...interface{})) *TesterMock {
 	if mmErrorf.defaultExpectation != nil {
 		mmErrorf.mock.t.Fatalf("Default expectation is already set for the Tester.Errorf method")
@@ -496,7 +496,7 @@ func (mmFailNow *mTesterMockFailNow) Return() *TesterMock {
 	return mmFailNow.mock
 }
 
-//Set uses given function f to mock the Tester.FailNow method
+// Set uses given function f to mock the Tester.FailNow method
 func (mmFailNow *mTesterMockFailNow) Set(f func()) *TesterMock {
 	if mmFailNow.defaultExpectation != nil {
 		mmFailNow.mock.t.Fatalf("Default expectation is already set for the Tester.FailNow method")
@@ -647,7 +647,7 @@ func (mmFatal *mTesterMockFatal) Return() *TesterMock {
 	return mmFatal.mock
 }
 
-//Set uses given function f to mock the Tester.Fatal method
+// Set uses given function f to mock the Tester.Fatal method
 func (mmFatal *mTesterMockFatal) Set(f func(args ...interface{})) *TesterMock {
 	if mmFatal.defaultExpectation != nil {
 		mmFatal.mock.t.Fatalf("Default expectation is already set for the Tester.Fatal method")
@@ -835,7 +835,7 @@ func (mmFatalf *mTesterMockFatalf) Return() *TesterMock {
 	return mmFatalf.mock
 }
 
-//Set uses given function f to mock the Tester.Fatalf method
+// Set uses given function f to mock the Tester.Fatalf method
 func (mmFatalf *mTesterMockFatalf) Set(f func(format string, args ...interface{})) *TesterMock {
 	if mmFatalf.defaultExpectation != nil {
 		mmFatalf.mock.t.Fatalf("Default expectation is already set for the Tester.Fatalf method")

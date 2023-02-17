@@ -1,4 +1,4 @@
-//Package tests contains tests for minimock tool and demonstrates minimock features
+// Package tests contains tests for minimock tool and demonstrates minimock features
 package tests
 
 type (
@@ -9,5 +9,18 @@ type (
 
 	formatter interface {
 		Format(string, ...interface{}) string //to check if variadic functions are supported
+	}
+
+	// these generic types provide all possible cases of type params declarations
+	// This produces invalid Go code when used with minimock v3.0.10 and below
+	genericInout[T any] interface {
+		Name(T) T
+	}
+	genericOut[T any] interface {
+		Name() T
+	}
+
+	genericIn[T any] interface {
+		Name(T)
 	}
 )

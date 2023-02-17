@@ -108,7 +108,7 @@ func (mmFormat *mFormatterMockFormat) Return(s2 string) *FormatterMock {
 	return mmFormat.mock
 }
 
-//Set uses given function f to mock the Formatter.Format method
+// Set uses given function f to mock the Formatter.Format method
 func (mmFormat *mFormatterMockFormat) Set(f func(s1 string, p1 ...interface{}) (s2 string)) *FormatterMock {
 	if mmFormat.defaultExpectation != nil {
 		mmFormat.mock.t.Fatalf("Default expectation is already set for the Formatter.Format method")
