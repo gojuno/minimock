@@ -109,7 +109,7 @@ func run(opts *options) (err error) {
 				"GenerateInstruction": !opts.noGenerate,
 				"Version":             version,
 			},
-			Vars: map[string]interface{}{},
+			Vars:  map[string]interface{}{},
 			Funcs: helpers,
 		}
 
@@ -125,18 +125,95 @@ func run(opts *options) (err error) {
 	return nil
 }
 
-func processPackage(opts generator.Options, interfaces []string, writeTo, suffix, mockName string) (err error) {
-	for _, name := range interfaces {
-		opts.InterfaceName = name
+func getTypeParams(typeSpec *ast.TypeSpec) []interfaceSpecificationParam {
+	params := []interfaceSpecificationParam{}
 
-		opts.OutputFile, err = destinationFile(name, writeTo, suffix)
+	// Check whether node has any type params at all
+	if typeSpec == nil || typeSpec.TypeParams == nil {
+		return nil
+	}
+
+	// If node has any type params - store them in slice and return as a spec
+	for _, param := range typeSpec.TypeParams.List {
+		names := []string{}
+		for _, name := range param.Names {
+			names = append(names, name.Name)
+		}
+
+		paramType := ""
+
+		if ident, ok := param.Type.(*ast.Ident); ok {
+			paramType = ident.Name
+		}
+
+		params = append(params, interfaceSpecificationParam{
+			paramNames: names,
+			paramType:  paramType,
+		})
+	}
+
+	return params
+}
+
+// interfaceSpecification represents abstraction over interface type. It contains all the metadata
+// required to render a mock for given interface. One could deduce whether interface is generic
+// by looking for type params
+type interfaceSpecification struct {
+	interfaceName   string
+	interfaceParams []interfaceSpecificationParam
+}
+
+// interfaceSpecificationParam represents a group of type param variables and their type
+// I.e. [T,K any] would result in names "T","K" and type "any"
+type interfaceSpecificationParam struct {
+	paramNames []string
+	paramType  string
+}
+
+func processPackage(opts generator.Options, interfaces []interfaceSpecification, writeTo, suffix, mockName string) (err error) {
+	for _, iface := range interfaces {
+		opts.InterfaceName = iface.interfaceName
+
+		params := ""
+		paramsReferences := ""
+
+		for _, param := range iface.interfaceParams {
+			names := strings.Join(param.paramNames, ",")
+			params += fmt.Sprintf("%s %s", names, param.paramType)
+			if paramsReferences == "" {
+				paramsReferences = names
+			} else {
+				paramsReferences = strings.Join([]string{paramsReferences, names}, ",")
+			}
+		}
+
+		opts.OutputFile, err = destinationFile(iface.interfaceName, writeTo, suffix)
 		if err != nil {
-			return errors.Wrapf(err, "failed to generate mock for %s", name)
+			return errors.Wrapf(err, "failed to generate mock for %s", iface.interfaceName)
 		}
 
 		opts.Vars["MockName"] = fmt.Sprintf("%sMock", opts.InterfaceName)
 		if mockName != "" {
 			opts.Vars["MockName"] = mockName
+		}
+
+		// Due to limitations of the generator, type params render is done by additional functions
+		// params generates tokens for type param declarations, i.e. for declaring a generic function
+		opts.Funcs["params"] = func() string {
+			if params != "" {
+				return "[" + params + "]"
+			}
+			return ""
+		}
+
+		// Due to limitations of the generator, type params render is done by additional functions
+		// paramsRef generates cases when only a reference is needed, i.e. for instantiation
+		opts.Funcs["paramsRef"] = func() string {
+			if paramsReferences != "" {
+				return "[" + paramsReferences + "]"
+			}
+
+			return ""
 		}
 
 		if err := generate(opts); err != nil {
@@ -207,15 +284,19 @@ func generate(o generator.Options) (err error) {
 	return ioutil.WriteFile(o.OutputFile, buf.Bytes(), 0644)
 }
 
-func findInterfaces(p *ast.Package, pattern string) ([]string, error) {
-	var names []string
+func findInterfaces(p *ast.Package, pattern string) ([]interfaceSpecification, error) {
+	var interfaceSpecifications []interfaceSpecification
+
 	for _, f := range p.Files {
 		for _, d := range f.Decls {
 			if gd, ok := d.(*ast.GenDecl); ok && gd.Tok == token.TYPE {
 				for _, spec := range gd.Specs {
 					if ts, ok := spec.(*ast.TypeSpec); ok {
 						if _, ok := ts.Type.(*ast.InterfaceType); ok && match(ts.Name.Name, pattern) {
-							names = append(names, ts.Name.Name)
+							interfaceSpecifications = append(interfaceSpecifications, interfaceSpecification{
+								interfaceName:   ts.Name.Name,
+								interfaceParams: getTypeParams(ts),
+							})
 						}
 					}
 				}
@@ -223,11 +304,11 @@ func findInterfaces(p *ast.Package, pattern string) ([]string, error) {
 		}
 	}
 
-	if len(names) == 0 {
+	if len(interfaceSpecifications) == 0 {
 		return nil, errors.Errorf("failed to find any interfaces matching %s in %s", pattern, p.Name)
 	}
 
-	return names, nil
+	return interfaceSpecifications, nil
 }
 
 func match(s, pattern string) bool {
