@@ -49,6 +49,7 @@ or install minimock using [v2 branch](https://github.com/gojuno/minimock/tree/v2
     	by default the generated mock is placed in the source package directory
   -s string
     	mock file suffix (default "_mock_test.go")
+  -t    generate test files with "_test" suffix package name
 ```
 
 Let's say we have the following interface declaration in github.com/gojuno/minimock/tests package:
