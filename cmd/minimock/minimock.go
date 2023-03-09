@@ -44,10 +44,11 @@ var helpers = template.FuncMap{
 
 type (
 	options struct {
-		interfaces []interfaceInfo
-		noGenerate bool
-		suffix     string
-		mockNames  []string
+		interfaces      []interfaceInfo
+		noGenerate      bool
+		suffix          string
+		testPackageName bool
+		mockNames       []string
 	}
 
 	interfaceInfo struct {
@@ -106,8 +107,9 @@ func run(opts *options) (err error) {
 			HeaderTemplate:     minimock.HeaderTemplate,
 			BodyTemplate:       minimock.BodyTemplate,
 			HeaderVars: map[string]interface{}{
-				"GenerateInstruction": !opts.noGenerate,
-				"Version":             version,
+				"GenerateInstruction":   !opts.noGenerate,
+				"Version":               version,
+				"TestSuffixPackageName": opts.testPackageName,
 			},
 			Vars:  map[string]interface{}{},
 			Funcs: helpers,
@@ -117,7 +119,7 @@ func run(opts *options) (err error) {
 		if len(opts.interfaces) == len(opts.mockNames) {
 			mockName = opts.mockNames[i]
 		}
-		if err := processPackage(gopts, interfaces, in.WriteTo, opts.suffix, mockName); err != nil {
+		if err := processPackage(gopts, interfaces, in.WriteTo, opts.suffix, mockName, opts.testPackageName); err != nil {
 			return err
 		}
 	}
@@ -170,7 +172,7 @@ type interfaceSpecificationParam struct {
 	paramType  string
 }
 
-func processPackage(opts generator.Options, interfaces []interfaceSpecification, writeTo, suffix, mockName string) (err error) {
+func processPackage(opts generator.Options, interfaces []interfaceSpecification, writeTo, suffix, mockName string, needToBeTestFile bool) (err error) {
 	for _, iface := range interfaces {
 		opts.InterfaceName = iface.interfaceName
 
@@ -187,7 +189,7 @@ func processPackage(opts generator.Options, interfaces []interfaceSpecification,
 			}
 		}
 
-		opts.OutputFile, err = destinationFile(iface.interfaceName, writeTo, suffix)
+		opts.OutputFile, err = destinationFile(iface.interfaceName, writeTo, suffix, needToBeTestFile)
 		if err != nil {
 			return errors.Wrapf(err, "failed to generate mock for %s", iface.interfaceName)
 		}
@@ -248,7 +250,20 @@ func isGoFile(path string) (bool, error) {
 	return strings.HasSuffix(path, ".go") && !stat.IsDir(), nil
 }
 
-func destinationFile(interfaceName, writeTo, suffix string) (string, error) {
+func correctPath(file string, needToBeTestFile bool) string {
+	if !needToBeTestFile {
+		return file
+	}
+	// cut .go suffix
+	name := file[:len(file)-3]
+	if strings.HasSuffix(name, "_test") {
+		return file
+	}
+
+	return name + "_test.go"
+}
+
+func destinationFile(interfaceName, writeTo, suffix string, needToBeTestFile bool) (string, error) {
 	ok, err := isGoFile(writeTo)
 	if err != nil {
 		return "", err
@@ -257,7 +272,7 @@ func destinationFile(interfaceName, writeTo, suffix string) (string, error) {
 	var path string
 
 	if ok {
-		path = writeTo
+		path = correctPath(writeTo, needToBeTestFile)
 	} else {
 		path = filepath.Join(writeTo, minimock.CamelToSnake(interfaceName)+suffix)
 	}
@@ -374,6 +389,7 @@ func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
 
 	fs := flag.NewFlagSet("", flag.ContinueOnError)
 
+	fs.BoolVar(&opts.testPackageName, "t", false, "generate test files with \"_test\" suffix package name")
 	fs.BoolVar(&opts.noGenerate, "g", false, "don't put go:generate instruction into the generated code")
 	fs.StringVar(&opts.suffix, "s", "_mock_test.go", "mock file suffix")
 
