@@ -15,6 +15,7 @@ import (
 	"time"
 
 	minimock "github.com/gojuno/minimock/v3"
+	"github.com/gojuno/minimock/v3/internal/types"
 	"github.com/hexdigest/gowrap/generator"
 	"github.com/hexdigest/gowrap/pkg"
 	"github.com/pkg/errors"
@@ -95,10 +96,7 @@ func run(opts *options) (err error) {
 			}
 		}
 
-		interfaces, err := findInterfaces(astPackage, in.Type)
-		if err != nil {
-			return err
-		}
+		interfaces := types.FindAllInterfaces(astPackage, in.Type)
 
 		gopts := generator.Options{
 			SourcePackage:      sourcePackage.PkgPath,
@@ -125,61 +123,16 @@ func run(opts *options) (err error) {
 	return nil
 }
 
-func getTypeParams(typeSpec *ast.TypeSpec) []interfaceSpecificationParam {
-	params := []interfaceSpecificationParam{}
-
-	// Check whether node has any type params at all
-	if typeSpec == nil || typeSpec.TypeParams == nil {
-		return nil
-	}
-
-	// If node has any type params - store them in slice and return as a spec
-	for _, param := range typeSpec.TypeParams.List {
-		names := []string{}
-		for _, name := range param.Names {
-			names = append(names, name.Name)
-		}
-
-		paramType := ""
-
-		if ident, ok := param.Type.(*ast.Ident); ok {
-			paramType = ident.Name
-		}
-
-		params = append(params, interfaceSpecificationParam{
-			paramNames: names,
-			paramType:  paramType,
-		})
-	}
-
-	return params
-}
-
-// interfaceSpecification represents abstraction over interface type. It contains all the metadata
-// required to render a mock for given interface. One could deduce whether interface is generic
-// by looking for type params
-type interfaceSpecification struct {
-	interfaceName   string
-	interfaceParams []interfaceSpecificationParam
-}
-
-// interfaceSpecificationParam represents a group of type param variables and their type
-// I.e. [T,K any] would result in names "T","K" and type "any"
-type interfaceSpecificationParam struct {
-	paramNames []string
-	paramType  string
-}
-
-func processPackage(opts generator.Options, interfaces []interfaceSpecification, writeTo, suffix, mockName string) (err error) {
+func processPackage(opts generator.Options, interfaces []types.InterfaceSpecification, writeTo, suffix, mockName string) (err error) {
 	for _, iface := range interfaces {
-		opts.InterfaceName = iface.interfaceName
+		opts.InterfaceName = iface.InterfaceName
 
 		params := ""
 		paramsReferences := ""
 
-		for _, param := range iface.interfaceParams {
-			names := strings.Join(param.paramNames, ",")
-			params += fmt.Sprintf("%s %s", names, param.paramType)
+		for _, param := range iface.InterfaceParams {
+			names := strings.Join(param.ParamNames, ",")
+			params += fmt.Sprintf("%s %s", names, param.ParamType)
 			if paramsReferences == "" {
 				paramsReferences = names
 			} else {
@@ -187,9 +140,9 @@ func processPackage(opts generator.Options, interfaces []interfaceSpecification,
 			}
 		}
 
-		opts.OutputFile, err = destinationFile(iface.interfaceName, writeTo, suffix)
+		opts.OutputFile, err = destinationFile(iface.InterfaceName, writeTo, suffix)
 		if err != nil {
-			return errors.Wrapf(err, "failed to generate mock for %s", iface.interfaceName)
+			return errors.Wrapf(err, "failed to generate mock for %s", iface.InterfaceName)
 		}
 
 		opts.Vars["MockName"] = fmt.Sprintf("%sMock", opts.InterfaceName)
@@ -282,33 +235,6 @@ func generate(o generator.Options) (err error) {
 	}
 
 	return ioutil.WriteFile(o.OutputFile, buf.Bytes(), 0644)
-}
-
-func findInterfaces(p *ast.Package, pattern string) ([]interfaceSpecification, error) {
-	var interfaceSpecifications []interfaceSpecification
-
-	for _, f := range p.Files {
-		for _, d := range f.Decls {
-			if gd, ok := d.(*ast.GenDecl); ok && gd.Tok == token.TYPE {
-				for _, spec := range gd.Specs {
-					if ts, ok := spec.(*ast.TypeSpec); ok {
-						if _, ok := ts.Type.(*ast.InterfaceType); ok && match(ts.Name.Name, pattern) {
-							interfaceSpecifications = append(interfaceSpecifications, interfaceSpecification{
-								interfaceName:   ts.Name.Name,
-								interfaceParams: getTypeParams(ts),
-							})
-						}
-					}
-				}
-			}
-		}
-	}
-
-	if len(interfaceSpecifications) == 0 {
-		return nil, errors.Errorf("failed to find any interfaces matching %s in %s", pattern, p.Name)
-	}
-
-	return interfaceSpecifications, nil
 }
 
 func match(s, pattern string) bool {

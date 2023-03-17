@@ -7,6 +7,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/tools v0.1.3
+	google.golang.org/protobuf v1.30.0
 )
 
 require (

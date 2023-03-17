@@ -10,6 +10,10 @@ generate:
 	go run ./cmd/minimock/minimock.go -i ./tests.genericInout -o ./tests/generic/generic_inout.go
 	go run ./cmd/minimock/minimock.go -i ./tests.genericOut -o ./tests/generic/generic_out.go
 	go run ./cmd/minimock/minimock.go -i ./tests.genericIn -o ./tests/generic/generic_in.go
+	go run ./cmd/minimock/minimock.go -i ./tests.genericSpecific -o ./tests/generic/generic_specific.go
+	go run ./cmd/minimock/minimock.go -i ./tests.genericSimpleUnion -o ./tests/generic/generic_simple_union.go
+	go run ./cmd/minimock/minimock.go -i ./tests.genericComplexUnion -o ./tests/generic/generic_complex_union.go
+	go run ./cmd/minimock/minimock.go -i ./tests.genericInlineUnion -o ./tests/generic/generic_inline_union.go
 
 ./bin:
 	mkdir ./bin
