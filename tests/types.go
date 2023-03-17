@@ -55,4 +55,8 @@ type (
 	genericInlineUnion[T int | float64] interface {
 		Name(T)
 	}
+
+	genericInlineUnionWithManyTypes[T int | float64 | string] interface {
+		Name(T)
+	}
 )

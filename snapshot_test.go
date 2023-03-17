@@ -118,6 +118,12 @@ func TestSnapshot(t *testing.T) {
 			outputFile:         "./tests/generic_inline_union.go",
 			expectedOutputFile: "./tests/generic_inline_union.go",
 		},
+		{
+			name:               "generics with complex inline union with many types",
+			inputInterface:     "./tests.genericInlineUnionWithManyTypes",
+			outputFile:         "./tests/generic_inline_with_many_options.go",
+			expectedOutputFile: "./tests/generic_inline_with_many_options.go",
+		},
 	}
 
 	for _, testCase := range testCases {

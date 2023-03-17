@@ -1,7 +1,9 @@
 package types
 
 import (
+	"bytes"
 	"go/ast"
+	"go/printer"
 	"go/token"
 )
 
@@ -105,29 +107,10 @@ func getTypeParams(typeSpec *ast.TypeSpec) []InterfaceSpecificationParam {
 			names = append(names, name.Name)
 		}
 
-		paramType := ""
+		var out bytes.Buffer
+		printer.Fprint(&out, token.NewFileSet(), param.Type)
 
-		ast.Print(token.NewFileSet(), param.Type)
-
-		switch node := param.Type.(type) {
-		// Direct declarations in form of
-		// [T int] or [T any]
-		case *ast.Ident:
-			paramType = node.Name
-		// Reference to a type, i.e.
-		// proto.Message
-
-		// we can reference those without worrying about external imports
-		// due to Go tooling being able to deduce missing imports from
-		// the surrounding context (files and existing references to types).
-		// i.e. user already referenced the type in the nearby file.
-		case *ast.SelectorExpr:
-			paramType = node.X.(*ast.Ident).Name + "." + node.Sel.Name
-		// Inline reference, i.e.
-		// int | float64
-		case *ast.BinaryExpr:
-			paramType = node.X.(*ast.Ident).Name + " | " + node.Y.(*ast.Ident).Name
-		}
+		paramType := out.String()
 
 		params = append(params, InterfaceSpecificationParam{
 			ParamNames: names,
