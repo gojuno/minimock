@@ -1,6 +1,7 @@
 module github.com/gojuno/minimock/v3
 
 require (
+	github.com/bradleyjkemp/cupaloy v2.3.0+incompatible
 	github.com/davecgh/go-spew v1.1.1
 	github.com/hexdigest/gowrap v1.1.8
 	github.com/pkg/errors v0.9.1
@@ -11,7 +12,6 @@ require (
 )
 
 require (
-	github.com/bradleyjkemp/cupaloy v2.3.0+incompatible // indirect
 	github.com/kr/text v0.2.0 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/sys v0.1.0 // indirect
