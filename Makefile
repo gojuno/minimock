@@ -2,7 +2,7 @@ export GOBIN := $(PWD)/bin
 export PATH := $(GOBIN):$(PATH)
 export GOFLAGS := -mod=mod
 
-all: install test lint clean
+all: install test lint
 
 generate:
 	go run ./cmd/minimock/minimock.go -i github.com/gojuno/minimock/v3.Tester -o ./tests
