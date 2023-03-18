@@ -15,6 +15,7 @@ The main features of minimock are:
 * It generates statically typed mocks and helpers. There's no need for type assertions when you use minimock.
 * It's fully integrated with the standard Go "testing" package.
 * It's ready for Go modules.
+* It supports generics.
 * It works well with [table driven tests](https://dave.cheney.net/2013/06/09/writing-table-driven-tests-in-go) because you can set up mocks for several methods in one line of code using the builder pattern.
 * It can generate several mocks in one run.
 * It generates code that passes [gometalinter](https://github.com/alecthomas/gometalinter) checks.
