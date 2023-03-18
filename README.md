@@ -15,6 +15,7 @@ The main features of minimock are:
 * It generates statically typed mocks and helpers. There's no need for type assertions when you use minimock.
 * It's fully integrated with the standard Go "testing" package.
 * It's ready for Go modules.
+* It supports generics.
 * It works well with [table driven tests](https://dave.cheney.net/2013/06/09/writing-table-driven-tests-in-go) because you can set up mocks for several methods in one line of code using the builder pattern.
 * It can generate several mocks in one run.
 * It generates code that passes [gometalinter](https://github.com/alecthomas/gometalinter) checks.
@@ -47,9 +48,11 @@ or install minimock using [v2 branch](https://github.com/gojuno/minimock/tree/v2
   -o string
     	comma-separated destination file names or packages to put the generated mocks in,
     	by default the generated mock is placed in the source package directory
+  -p string 
+        comma-separated package names,
+        by default the generated package names are taken from the destination directory names
   -s string
     	mock file suffix (default "_mock_test.go")
-  -t    generate test files with "_test" suffix package name
 ```
 
 Let's say we have the following interface declaration in github.com/gojuno/minimock/tests package:

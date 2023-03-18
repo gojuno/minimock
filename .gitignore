@@ -29,3 +29,5 @@ _testmain.go
 /dist
 /bin
 /.gh_token
+
+.idea

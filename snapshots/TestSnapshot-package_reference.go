@@ -997,3 +997,4 @@ func (m *TesterMock) minimockDone() bool {
 		m.MinimockFatalDone() &&
 		m.MinimockFatalfDone()
 }
+

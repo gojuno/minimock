@@ -15,6 +15,7 @@ import (
 	"time"
 
 	minimock "github.com/gojuno/minimock/v3"
+	"github.com/gojuno/minimock/v3/internal/types"
 	"github.com/hexdigest/gowrap/generator"
 	"github.com/hexdigest/gowrap/pkg"
 	"github.com/pkg/errors"
@@ -44,11 +45,11 @@ var helpers = template.FuncMap{
 
 type (
 	options struct {
-		interfaces      []interfaceInfo
-		noGenerate      bool
-		suffix          string
-		testPackageName bool
-		mockNames       []string
+		interfaces   []interfaceInfo
+		noGenerate   bool
+		suffix       string
+		mockNames    []string
+		packageNames []string
 	}
 
 	interfaceInfo struct {
@@ -96,9 +97,11 @@ func run(opts *options) (err error) {
 			}
 		}
 
-		interfaces, err := findInterfaces(astPackage, in.Type)
-		if err != nil {
-			return err
+		interfaces := types.FindAllInterfaces(astPackage, in.Type)
+
+		packageName := ""
+		if len(opts.interfaces) == len(opts.packageNames) {
+			packageName = opts.packageNames[i]
 		}
 
 		gopts := generator.Options{
@@ -107,9 +110,9 @@ func run(opts *options) (err error) {
 			HeaderTemplate:     minimock.HeaderTemplate,
 			BodyTemplate:       minimock.BodyTemplate,
 			HeaderVars: map[string]interface{}{
-				"GenerateInstruction":   !opts.noGenerate,
-				"Version":               version,
-				"TestSuffixPackageName": opts.testPackageName,
+				"GenerateInstruction": !opts.noGenerate,
+				"Version":             version,
+				"PackageName":         packageName,
 			},
 			Vars:  map[string]interface{}{},
 			Funcs: helpers,
@@ -119,7 +122,7 @@ func run(opts *options) (err error) {
 		if len(opts.interfaces) == len(opts.mockNames) {
 			mockName = opts.mockNames[i]
 		}
-		if err := processPackage(gopts, interfaces, in.WriteTo, opts.suffix, mockName, opts.testPackageName); err != nil {
+		if err := processPackage(gopts, interfaces, in.WriteTo, opts.suffix, mockName); err != nil {
 			return err
 		}
 	}
@@ -127,61 +130,16 @@ func run(opts *options) (err error) {
 	return nil
 }
 
-func getTypeParams(typeSpec *ast.TypeSpec) []interfaceSpecificationParam {
-	params := []interfaceSpecificationParam{}
-
-	// Check whether node has any type params at all
-	if typeSpec == nil || typeSpec.TypeParams == nil {
-		return nil
-	}
-
-	// If node has any type params - store them in slice and return as a spec
-	for _, param := range typeSpec.TypeParams.List {
-		names := []string{}
-		for _, name := range param.Names {
-			names = append(names, name.Name)
-		}
-
-		paramType := ""
-
-		if ident, ok := param.Type.(*ast.Ident); ok {
-			paramType = ident.Name
-		}
-
-		params = append(params, interfaceSpecificationParam{
-			paramNames: names,
-			paramType:  paramType,
-		})
-	}
-
-	return params
-}
-
-// interfaceSpecification represents abstraction over interface type. It contains all the metadata
-// required to render a mock for given interface. One could deduce whether interface is generic
-// by looking for type params
-type interfaceSpecification struct {
-	interfaceName   string
-	interfaceParams []interfaceSpecificationParam
-}
-
-// interfaceSpecificationParam represents a group of type param variables and their type
-// I.e. [T,K any] would result in names "T","K" and type "any"
-type interfaceSpecificationParam struct {
-	paramNames []string
-	paramType  string
-}
-
-func processPackage(opts generator.Options, interfaces []interfaceSpecification, writeTo, suffix, mockName string, needToBeTestFile bool) (err error) {
+func processPackage(opts generator.Options, interfaces []types.InterfaceSpecification, writeTo, suffix, mockName string) (err error) {
 	for _, iface := range interfaces {
-		opts.InterfaceName = iface.interfaceName
+		opts.InterfaceName = iface.InterfaceName
 
 		params := ""
 		paramsReferences := ""
 
-		for _, param := range iface.interfaceParams {
-			names := strings.Join(param.paramNames, ",")
-			params += fmt.Sprintf("%s %s", names, param.paramType)
+		for _, param := range iface.InterfaceParams {
+			names := strings.Join(param.ParamNames, ",")
+			params += fmt.Sprintf("%s %s", names, param.ParamType)
 			if paramsReferences == "" {
 				paramsReferences = names
 			} else {
@@ -189,9 +147,9 @@ func processPackage(opts generator.Options, interfaces []interfaceSpecification,
 			}
 		}
 
-		opts.OutputFile, err = destinationFile(iface.interfaceName, writeTo, suffix, needToBeTestFile)
+		opts.OutputFile, err = destinationFile(iface.InterfaceName, writeTo, suffix)
 		if err != nil {
-			return errors.Wrapf(err, "failed to generate mock for %s", iface.interfaceName)
+			return errors.Wrapf(err, "failed to generate mock for %s", iface.InterfaceName)
 		}
 
 		opts.Vars["MockName"] = fmt.Sprintf("%sMock", opts.InterfaceName)
@@ -250,20 +208,7 @@ func isGoFile(path string) (bool, error) {
 	return strings.HasSuffix(path, ".go") && !stat.IsDir(), nil
 }
 
-func correctPath(file string, needToBeTestFile bool) string {
-	if !needToBeTestFile {
-		return file
-	}
-	// cut .go suffix
-	name := file[:len(file)-3]
-	if strings.HasSuffix(name, "_test") {
-		return file
-	}
-
-	return name + "_test.go"
-}
-
-func destinationFile(interfaceName, writeTo, suffix string, needToBeTestFile bool) (string, error) {
+func destinationFile(interfaceName, writeTo, suffix string) (string, error) {
 	ok, err := isGoFile(writeTo)
 	if err != nil {
 		return "", err
@@ -272,7 +217,7 @@ func destinationFile(interfaceName, writeTo, suffix string, needToBeTestFile boo
 	var path string
 
 	if ok {
-		path = correctPath(writeTo, needToBeTestFile)
+		path = writeTo
 	} else {
 		path = filepath.Join(writeTo, minimock.CamelToSnake(interfaceName)+suffix)
 	}
@@ -297,33 +242,6 @@ func generate(o generator.Options) (err error) {
 	}
 
 	return ioutil.WriteFile(o.OutputFile, buf.Bytes(), 0644)
-}
-
-func findInterfaces(p *ast.Package, pattern string) ([]interfaceSpecification, error) {
-	var interfaceSpecifications []interfaceSpecification
-
-	for _, f := range p.Files {
-		for _, d := range f.Decls {
-			if gd, ok := d.(*ast.GenDecl); ok && gd.Tok == token.TYPE {
-				for _, spec := range gd.Specs {
-					if ts, ok := spec.(*ast.TypeSpec); ok {
-						if _, ok := ts.Type.(*ast.InterfaceType); ok && match(ts.Name.Name, pattern) {
-							interfaceSpecifications = append(interfaceSpecifications, interfaceSpecification{
-								interfaceName:   ts.Name.Name,
-								interfaceParams: getTypeParams(ts),
-							})
-						}
-					}
-				}
-			}
-		}
-	}
-
-	if len(interfaceSpecifications) == 0 {
-		return nil, errors.Errorf("failed to find any interfaces matching %s in %s", pattern, p.Name)
-	}
-
-	return interfaceSpecifications, nil
 }
 
 func match(s, pattern string) bool {
@@ -382,6 +300,22 @@ Build date: {{bold .BuildDate}}
 	}
 }
 
+func processNames(names string, interfacesNum int, isInterfaceWildeCarded bool) ([]string, error) {
+	if names == "" {
+		return nil, nil
+	}
+
+	namesSplitted := strings.Split(names, ",")
+	if len(namesSplitted) != 0 && len(namesSplitted) != interfacesNum {
+		return nil, errors.Errorf("count of the source interfaces doesn't match the names count")
+	}
+	if len(namesSplitted) != 0 && isInterfaceWildeCarded {
+		return nil, errors.Errorf("wildcards * can't be used with naming argument")
+	}
+
+	return namesSplitted, nil
+}
+
 var errInvalidArguments = errors.New("invalid arguments")
 
 func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
@@ -389,13 +323,13 @@ func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
 
 	fs := flag.NewFlagSet("", flag.ContinueOnError)
 
-	fs.BoolVar(&opts.testPackageName, "t", false, "generate test files with \"_test\" suffix package name")
 	fs.BoolVar(&opts.noGenerate, "g", false, "don't put go:generate instruction into the generated code")
 	fs.StringVar(&opts.suffix, "s", "_mock_test.go", "mock file suffix")
 
 	input := fs.String("i", "*", "comma-separated names of the interfaces to mock, i.e fmt.Stringer,io.Reader\nuse io.* notation to generate mocks for all interfaces in the \"io\" package")
 	output := fs.String("o", "", "comma-separated destination file names or packages to put the generated mocks in,\nby default the generated mock is placed in the source package directory")
 	aliases := fs.String("n", "", "comma-separated mock names,\nby default the generated mock names append `Mock` to the given interface name")
+	packageNames := fs.String("p", "", "comma-separated package names,\nby default the generated package names are taken from the destination directory names")
 	help := fs.Bool("h", false, "show this help message")
 	version := fs.Bool("version", false, "display version information and exit")
 
@@ -416,19 +350,20 @@ func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
 	}
 
 	interfaces := strings.Split(*input, ",")
+	interfacesLen := len(interfaces)
+	isWildecarded := strings.Contains(*input, "*")
 
-	var mockNames []string
-	if *aliases != "" {
-		mockNames = strings.Split(*aliases, ",")
+	mockNames, err := processNames(*aliases, interfacesLen, isWildecarded)
+	if err != nil {
+		return nil, fmt.Errorf("processing -n flag arguments: %w", err)
 	}
-	if len(mockNames) != 0 && len(mockNames) != len(interfaces) {
-		return nil, errors.Errorf("count of the source interfaces doesn't match the mock names count")
-	}
-	if len(mockNames) != 0 && strings.Contains(*input, "*") {
-		return nil, errors.Errorf("wildcards * can't be used with -n argument")
-	}
-
 	opts.mockNames = mockNames
+
+	parsedPackages, err := processNames(*packageNames, interfacesLen, isWildecarded)
+	if err != nil {
+		return nil, fmt.Errorf("processing -p flag arguments: %w", err)
+	}
+	opts.packageNames = parsedPackages
 
 	var writeTo = make([]string, len(interfaces))
 	if *output != "" {
