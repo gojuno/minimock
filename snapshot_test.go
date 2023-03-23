@@ -124,6 +124,12 @@ func TestSnapshot(t *testing.T) {
 			outputFile:         "./tests/generic_inline_with_many_options.go",
 			expectedOutputFile: "./tests/generic_inline_with_many_options.go",
 		},
+		{
+			name:               "2 generic arguments with different types",
+			inputInterface:     "./tests.genericMultipleTypes",
+			outputFile:         "./tests/generic_multiple_args_with_different_types.go",
+			expectedOutputFile: "./tests/generic_multiple_args_with_different_types.go",
+		},
 	}
 
 	for _, testCase := range testCases {
