@@ -59,4 +59,8 @@ type (
 	genericInlineUnionWithManyTypes[T int | float64 | string] interface {
 		Name(T)
 	}
+
+	genericMultipleTypes[T proto.Message, K any] interface {
+		Name(T, K)
+	}
 )
