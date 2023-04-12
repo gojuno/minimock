@@ -134,18 +134,21 @@ func processPackage(opts generator.Options, interfaces []types.InterfaceSpecific
 	for _, iface := range interfaces {
 		opts.InterfaceName = iface.InterfaceName
 
-		params := ""
+		params := []string{}
 		paramsReferences := ""
 
 		for _, param := range iface.InterfaceParams {
 			names := strings.Join(param.ParamNames, ",")
-			params += fmt.Sprintf("%s %s", names, param.ParamType)
+
+			params = append(params, fmt.Sprintf("%s %s", names, param.ParamType))
 			if paramsReferences == "" {
 				paramsReferences = names
 			} else {
 				paramsReferences = strings.Join([]string{paramsReferences, names}, ",")
 			}
 		}
+
+		paramsString := strings.Join(params, ",")
 
 		opts.OutputFile, err = destinationFile(iface.InterfaceName, writeTo, suffix)
 		if err != nil {
@@ -160,8 +163,8 @@ func processPackage(opts generator.Options, interfaces []types.InterfaceSpecific
 		// Due to limitations of the generator, type params render is done by additional functions
 		// params generates tokens for type param declarations, i.e. for declaring a generic function
 		opts.Funcs["params"] = func() string {
-			if params != "" {
-				return "[" + params + "]"
+			if paramsString != "" {
+				return "[" + paramsString + "]"
 			}
 			return ""
 		}

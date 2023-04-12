@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"fmt"
 	"go/ast"
 	"go/printer"
 	"go/token"
@@ -54,6 +55,7 @@ func FindAllInterfaces(p *ast.Package, pattern string) []InterfaceSpecification 
 		})
 	}
 
+	fmt.Printf("interfaceSpecifications: %+v\n", interfaceSpecifications)
 	return interfaceSpecifications
 }
 

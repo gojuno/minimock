@@ -131,6 +131,11 @@ func TestSnapshot(t *testing.T) {
 			args:    []string{"-o", "./tests/package_name_specified_test.go", "-i", "./tests.*", "-p", "tests_test"},
 			wantErr: true,
 		},
+		{
+			name:               "2 generic arguments with different types",
+			args:               []string{"-o", "./tests/generic_multiple_args_with_different_types.go", "-i", "./tests.genericMultipleTypes"},
+			expectedOutputFile: "./tests/generic_multiple_args_with_different_types.go",
+		},
 	}
 
 	for _, testCase := range testCases {
