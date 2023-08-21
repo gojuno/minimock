@@ -29,3 +29,6 @@ _testmain.go
 /dist
 /bin
 /.gh_token
+
+# Goland
+.idea
