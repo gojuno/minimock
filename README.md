@@ -30,7 +30,7 @@ The main features of minimock are:
 If you use go modules please download the [latest binary](https://github.com/gojuno/minimock/releases/latest)
 or install minimock from source:
 ```
-go install github.com/gojuno/minimock/v3/cmd/minimock
+go install github.com/gojuno/minimock/v3/cmd/minimock@latest
 ```
 
 If you don't use go modules please find the latest v2.x binary [here](https://github.com/gojuno/minimock/releases)
