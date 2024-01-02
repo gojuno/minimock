@@ -155,6 +155,8 @@ func processPackage(opts generator.Options, interfaces []types.InterfaceSpecific
 			return errors.Wrapf(err, "failed to generate mock for %s", iface.InterfaceName)
 		}
 
+		opts.HeaderVars["OutputFile"] = filepath.Base(opts.OutputFile)
+
 		opts.Vars["MockName"] = fmt.Sprintf("%sMock", opts.InterfaceName)
 		if mockName != "" {
 			opts.Vars["MockName"] = mockName
@@ -180,6 +182,10 @@ func processPackage(opts generator.Options, interfaces []types.InterfaceSpecific
 		}
 
 		if err := generate(opts); err != nil {
+			if strings.Contains(err.Error(), "interface has no methods") {
+				continue
+			}
+
 			return err
 		}
 

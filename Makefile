@@ -7,14 +7,16 @@ all: install test lint
 generate:
 	go run ./cmd/minimock/minimock.go -i github.com/gojuno/minimock/v3.Tester -o ./tests
 	go run ./cmd/minimock/minimock.go -i ./tests.Formatter -o ./tests/formatter_mock.go
+	go run ./cmd/minimock/minimock.go -i ./tests.genericInout -o ./tests/generic_inout.go
+	go run ./cmd/minimock/minimock.go -i ./tests.genericOut -o ./tests/generic_out.go
+	go run ./cmd/minimock/minimock.go -i ./tests.genericIn -o ./tests/generic_in.go
+	go run ./cmd/minimock/minimock.go -i ./tests.genericSpecific -o ./tests/generic_specific.go
+	go run ./cmd/minimock/minimock.go -i ./tests.genericSimpleUnion -o ./tests/generic_simple_union.go
+	go run ./cmd/minimock/minimock.go -i ./tests.genericComplexUnion -o ./tests/generic_complex_union.go
+	go run ./cmd/minimock/minimock.go -i ./tests.genericInlineUnion -o ./tests/generic_inline_union.go
+	go run ./cmd/minimock/minimock.go -i ./tests.genericInlineUnion -o ./tests/generic_inline_union.go
+	go run ./cmd/minimock/minimock.go -i ./tests.contextAccepter -o ./tests/context_accepter_mock.go
 	go run ./cmd/minimock/minimock.go -i github.com/gojuno/minimock/v3.Tester -o ./tests/package_name_specified_test.go -p tests_test
-	go run ./cmd/minimock/minimock.go -i ./tests.genericInout -o ./tests/generic/generic_inout.go
-	go run ./cmd/minimock/minimock.go -i ./tests.genericOut -o ./tests/generic/generic_out.go
-	go run ./cmd/minimock/minimock.go -i ./tests.genericIn -o ./tests/generic/generic_in.go
-	go run ./cmd/minimock/minimock.go -i ./tests.genericSpecific -o ./tests/generic/generic_specific.go
-	go run ./cmd/minimock/minimock.go -i ./tests.genericSimpleUnion -o ./tests/generic/generic_simple_union.go
-	go run ./cmd/minimock/minimock.go -i ./tests.genericComplexUnion -o ./tests/generic/generic_complex_union.go
-	go run ./cmd/minimock/minimock.go -i ./tests.genericInlineUnion -o ./tests/generic/generic_inline_union.go
 
 ./bin:
 	mkdir ./bin
@@ -35,8 +37,9 @@ install:
 ./bin/minimock:
 	go build ./cmd/minimock -o ./bin/minimock
 
+.PHONY:
 test:
-	go test $(go list ./... | grep -v /snapshots)
+	go test -race ./... -v
 
 release: ./bin/goreleaser
 	./bin/goreleaser release
