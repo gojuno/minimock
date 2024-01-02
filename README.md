@@ -126,8 +126,8 @@ readCloserMock := NewReadCloserMock(mc).ReadMock.Inspect(func(p []byte){
 ```go
 mc := minimock.NewController(t)
 formatterMock := NewFormatterMock(mc)
-formatterMock.When("Hello %s!", "world").Then("Hello world!")
-formatterMock.When("Hi %s!", "there").Then("Hi there!")
+formatterMock.FormatMock.When("Hello %s!", "world").Then("Hello world!")
+formatterMock.FormatMock.When("Hi %s!", "there").Then("Hi there!")
 ```
 
 alternatively you can use the one-liner:
@@ -151,6 +151,27 @@ formatterMock := NewFormatterMock(mc)
 formatterMock.FormatMock.Set(func(string, ...interface{}) string {
   return fmt.Sprintf("minimock: %d", formatterMock.BeforeFormatCounter())
 })
+```
+
+### Mocking context
+Sometimes context gets modified by the time the mocked method is being called.
+However, in most cases you don't really care about the exact value of the context argument.
+In such cases you can use special `minimock.AnyContext` variable, here are a couple of examples:
+
+```go
+mc := minimock.NewController(t)
+senderMock := NewSenderMock(mc).
+  SendMock.
+    When(minimock.AnyContext, "message1").Then(nil).
+    When(minimock.AnyContext, "message2").Then(errors.New("invalid message"))
+```
+
+or using Expect:
+
+```go
+mc := minimock.NewController(t)
+senderMock := NewSenderMock(mc).
+  SendMock.Expect(minimock.AnyContext, "message").Return(nil)
 ```
 
 ### Make sure that your mocks are being used 

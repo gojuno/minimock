@@ -152,15 +152,15 @@ func (mmFormat *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) 
 		mmFormat.inspectFuncFormat(s1, p1...)
 	}
 
-	mm_params := &FormatterMockFormatParams{s1, p1}
+	mm_params := FormatterMockFormatParams{s1, p1}
 
 	// Record call args
 	mmFormat.FormatMock.mutex.Lock()
-	mmFormat.FormatMock.callArgs = append(mmFormat.FormatMock.callArgs, mm_params)
+	mmFormat.FormatMock.callArgs = append(mmFormat.FormatMock.callArgs, &mm_params)
 	mmFormat.FormatMock.mutex.Unlock()
 
 	for _, e := range mmFormat.FormatMock.expectations {
-		if minimock.Equal(e.params, mm_params) {
+		if minimock.Equal(*e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.s2
 		}

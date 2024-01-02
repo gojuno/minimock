@@ -12,7 +12,7 @@ import (
 	"github.com/gojuno/minimock/v3"
 )
 
-// GenericInMock implements genericIn
+// GenericInMock implements tests.genericIn
 type GenericInMock[T any] struct {
 	t minimock.Tester
 
@@ -23,7 +23,7 @@ type GenericInMock[T any] struct {
 	NameMock          mGenericInMockName[T]
 }
 
-// NewGenericInMock returns a mock for genericIn
+// NewGenericInMock returns a mock for tests.genericIn
 func NewGenericInMock[T any](t minimock.Tester) *GenericInMock[T] {
 	m := &GenericInMock[T]{t: t}
 	if controller, ok := t.(minimock.MockController); ok {
@@ -116,7 +116,7 @@ func (mmName *mGenericInMockName[T]) Set(f func(t1 T)) *GenericInMock[T] {
 	return mmName.mock
 }
 
-// Name implements genericIn
+// Name implements tests.genericIn
 func (mmName *GenericInMock[T]) Name(t1 T) {
 	mm_atomic.AddUint64(&mmName.beforeNameCounter, 1)
 	defer mm_atomic.AddUint64(&mmName.afterNameCounter, 1)
@@ -125,15 +125,15 @@ func (mmName *GenericInMock[T]) Name(t1 T) {
 		mmName.inspectFuncName(t1)
 	}
 
-	mm_params := &GenericInMockNameParams[T]{t1}
+	mm_params := GenericInMockNameParams[T]{t1}
 
 	// Record call args
 	mmName.NameMock.mutex.Lock()
-	mmName.NameMock.callArgs = append(mmName.NameMock.callArgs, mm_params)
+	mmName.NameMock.callArgs = append(mmName.NameMock.callArgs, &mm_params)
 	mmName.NameMock.mutex.Unlock()
 
 	for _, e := range mmName.NameMock.expectations {
-		if minimock.Equal(e.params, mm_params) {
+		if minimock.Equal(*e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}

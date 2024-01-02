@@ -173,15 +173,15 @@ const (
 				}
 
 				{{if $method.HasParams}}
-					mm_params := &{{$mock}}{{$method.Name}}Params{{(paramsRef)}}{ {{$method.ParamsNames}} }
+					mm_params := {{$mock}}{{$method.Name}}Params{{(paramsRef)}}{ {{$method.ParamsNames}} }
 
 					// Record call args
 					{{$m}}.{{$method.Name}}Mock.mutex.Lock()
-					{{$m}}.{{$method.Name}}Mock.callArgs = append({{$m}}.{{$method.Name}}Mock.callArgs, mm_params)
+					{{$m}}.{{$method.Name}}Mock.callArgs = append({{$m}}.{{$method.Name}}Mock.callArgs, &mm_params)
 					{{$m}}.{{$method.Name}}Mock.mutex.Unlock()
 
 					for _, e := range {{$m}}.{{$method.Name}}Mock.expectations {
-						if minimock.Equal(e.params, mm_params) {
+						if minimock.Equal(*e.params, mm_params) {
 							mm_atomic.AddUint64(&e.Counter, 1)
 							{{$method.ReturnStruct "e.results" -}}
 						}

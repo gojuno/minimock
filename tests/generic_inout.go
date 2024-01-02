@@ -151,15 +151,15 @@ func (mmName *GenericInoutMock[T]) Name(t1 T) (t2 T) {
 		mmName.inspectFuncName(t1)
 	}
 
-	mm_params := &GenericInoutMockNameParams[T]{t1}
+	mm_params := GenericInoutMockNameParams[T]{t1}
 
 	// Record call args
 	mmName.NameMock.mutex.Lock()
-	mmName.NameMock.callArgs = append(mmName.NameMock.callArgs, mm_params)
+	mmName.NameMock.callArgs = append(mmName.NameMock.callArgs, &mm_params)
 	mmName.NameMock.mutex.Unlock()
 
 	for _, e := range mmName.NameMock.expectations {
-		if minimock.Equal(e.params, mm_params) {
+		if minimock.Equal(*e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.t2
 		}

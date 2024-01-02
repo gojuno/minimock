@@ -160,15 +160,15 @@ func (mmError *TesterMock) Error(p1 ...interface{}) {
 		mmError.inspectFuncError(p1...)
 	}
 
-	mm_params := &TesterMockErrorParams{p1}
+	mm_params := TesterMockErrorParams{p1}
 
 	// Record call args
 	mmError.ErrorMock.mutex.Lock()
-	mmError.ErrorMock.callArgs = append(mmError.ErrorMock.callArgs, mm_params)
+	mmError.ErrorMock.callArgs = append(mmError.ErrorMock.callArgs, &mm_params)
 	mmError.ErrorMock.mutex.Unlock()
 
 	for _, e := range mmError.ErrorMock.expectations {
-		if minimock.Equal(e.params, mm_params) {
+		if minimock.Equal(*e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}
@@ -348,15 +348,15 @@ func (mmErrorf *TesterMock) Errorf(format string, args ...interface{}) {
 		mmErrorf.inspectFuncErrorf(format, args...)
 	}
 
-	mm_params := &TesterMockErrorfParams{format, args}
+	mm_params := TesterMockErrorfParams{format, args}
 
 	// Record call args
 	mmErrorf.ErrorfMock.mutex.Lock()
-	mmErrorf.ErrorfMock.callArgs = append(mmErrorf.ErrorfMock.callArgs, mm_params)
+	mmErrorf.ErrorfMock.callArgs = append(mmErrorf.ErrorfMock.callArgs, &mm_params)
 	mmErrorf.ErrorfMock.mutex.Unlock()
 
 	for _, e := range mmErrorf.ErrorfMock.expectations {
-		if minimock.Equal(e.params, mm_params) {
+		if minimock.Equal(*e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}
@@ -670,15 +670,15 @@ func (mmFatal *TesterMock) Fatal(args ...interface{}) {
 		mmFatal.inspectFuncFatal(args...)
 	}
 
-	mm_params := &TesterMockFatalParams{args}
+	mm_params := TesterMockFatalParams{args}
 
 	// Record call args
 	mmFatal.FatalMock.mutex.Lock()
-	mmFatal.FatalMock.callArgs = append(mmFatal.FatalMock.callArgs, mm_params)
+	mmFatal.FatalMock.callArgs = append(mmFatal.FatalMock.callArgs, &mm_params)
 	mmFatal.FatalMock.mutex.Unlock()
 
 	for _, e := range mmFatal.FatalMock.expectations {
-		if minimock.Equal(e.params, mm_params) {
+		if minimock.Equal(*e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}
@@ -858,15 +858,15 @@ func (mmFatalf *TesterMock) Fatalf(format string, args ...interface{}) {
 		mmFatalf.inspectFuncFatalf(format, args...)
 	}
 
-	mm_params := &TesterMockFatalfParams{format, args}
+	mm_params := TesterMockFatalfParams{format, args}
 
 	// Record call args
 	mmFatalf.FatalfMock.mutex.Lock()
-	mmFatalf.FatalfMock.callArgs = append(mmFatalf.FatalfMock.callArgs, mm_params)
+	mmFatalf.FatalfMock.callArgs = append(mmFatalf.FatalfMock.callArgs, &mm_params)
 	mmFatalf.FatalfMock.mutex.Unlock()
 
 	for _, e := range mmFatalf.FatalfMock.expectations {
-		if minimock.Equal(e.params, mm_params) {
+		if minimock.Equal(*e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return
 		}
