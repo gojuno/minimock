@@ -175,6 +175,10 @@ func processPackage(opts generator.Options, interfaces []types.InterfaceSpecific
 		}
 
 		if err := generate(opts); err != nil {
+			if strings.Contains(err.Error(), "interface has no methods") {
+				continue
+			}
+
 			return err
 		}
 
