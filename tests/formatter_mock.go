@@ -14,7 +14,8 @@ import (
 
 // FormatterMock implements Formatter
 type FormatterMock struct {
-	t minimock.Tester
+	t          minimock.Tester
+	finishOnce sync.Once
 
 	funcFormat          func(s1 string, p1 ...interface{}) (s2 string)
 	inspectFuncFormat   func(s1 string, p1 ...interface{})
@@ -26,12 +27,15 @@ type FormatterMock struct {
 // NewFormatterMock returns a mock for Formatter
 func NewFormatterMock(t minimock.Tester) *FormatterMock {
 	m := &FormatterMock{t: t}
+
 	if controller, ok := t.(minimock.MockController); ok {
 		controller.RegisterMocker(m)
 	}
 
 	m.FormatMock = mFormatterMockFormat{mock: m}
 	m.FormatMock.callArgs = []*FormatterMockFormatParams{}
+
+	t.Cleanup(m.MinimockFinish)
 
 	return m
 }
@@ -254,10 +258,12 @@ func (m *FormatterMock) MinimockFormatInspect() {
 
 // MinimockFinish checks that all mocked methods have been called the expected number of times
 func (m *FormatterMock) MinimockFinish() {
-	if !m.minimockDone() {
-		m.MinimockFormatInspect()
-		m.t.FailNow()
-	}
+	m.finishOnce.Do(func() {
+		if !m.minimockDone() {
+			m.MinimockFormatInspect()
+			m.t.FailNow()
+		}
+	})
 }
 
 // MinimockWait waits for all mocked methods to be called the expected number of times

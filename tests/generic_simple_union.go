@@ -14,7 +14,8 @@ import (
 
 // GenericSimpleUnionMock implements genericSimpleUnion
 type GenericSimpleUnionMock[T simpleUnion] struct {
-	t minimock.Tester
+	t          minimock.Tester
+	finishOnce sync.Once
 
 	funcName          func(t1 T)
 	inspectFuncName   func(t1 T)
@@ -26,12 +27,15 @@ type GenericSimpleUnionMock[T simpleUnion] struct {
 // NewGenericSimpleUnionMock returns a mock for genericSimpleUnion
 func NewGenericSimpleUnionMock[T simpleUnion](t minimock.Tester) *GenericSimpleUnionMock[T] {
 	m := &GenericSimpleUnionMock[T]{t: t}
+
 	if controller, ok := t.(minimock.MockController); ok {
 		controller.RegisterMocker(m)
 	}
 
 	m.NameMock = mGenericSimpleUnionMockName[T]{mock: m}
 	m.NameMock.callArgs = []*GenericSimpleUnionMockNameParams[T]{}
+
+	t.Cleanup(m.MinimockFinish)
 
 	return m
 }
@@ -225,10 +229,12 @@ func (m *GenericSimpleUnionMock[T]) MinimockNameInspect() {
 
 // MinimockFinish checks that all mocked methods have been called the expected number of times
 func (m *GenericSimpleUnionMock[T]) MinimockFinish() {
-	if !m.minimockDone() {
-		m.MinimockNameInspect()
-		m.t.FailNow()
-	}
+	m.finishOnce.Do(func() {
+		if !m.minimockDone() {
+			m.MinimockNameInspect()
+			m.t.FailNow()
+		}
+	})
 }
 
 // MinimockWait waits for all mocked methods to be called the expected number of times

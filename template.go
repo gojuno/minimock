@@ -28,6 +28,8 @@ const (
 		// {{$mock}} implements {{$.Interface.Type}}
 		type {{$mock}}{{(params)}} struct {
 			t minimock.Tester
+			finishOnce sync.Once
+
 			{{ range $method := $.Interface.Methods }}
 				func{{$method.Name}} func{{ $method.Signature }}
 				inspectFunc{{$method.Name}} func({{ $method.Params}})
@@ -40,6 +42,7 @@ const (
 		// New{{$mock}} returns a mock for {{$.Interface.Type}}
 		func New{{$mock}}{{(params)}}(t minimock.Tester) *{{$mock}}{{(paramsRef)}} {
 			m := &{{$mock}}{{(paramsRef)}}{t: t}
+
 			if controller, ok := t.(minimock.MockController); ok {
 				controller.RegisterMocker(m)
 			}
@@ -47,6 +50,9 @@ const (
 				m.{{$method.Name}}Mock = m{{$mock}}{{$method.Name}}{{(paramsRef)}}{mock: m}
 				{{ if $method.HasParams }} m.{{$method.Name}}Mock.callArgs = []*{{$mock}}{{$method.Name}}Params{{(paramsRef)}}{} {{ end }}
 			{{ end }}
+
+			t.Cleanup(m.MinimockFinish)
+
 			return m
 		}
 
@@ -292,12 +298,14 @@ const (
 
 		// MinimockFinish checks that all mocked methods have been called the expected number of times
 		func (m *{{$mock}}{{(paramsRef)}}) MinimockFinish() {
-			if !m.minimockDone() {
-				{{- range $method := $.Interface.Methods }}
-					m.Minimock{{$method.Name}}Inspect()
-				{{ end -}}
-				m.t.FailNow()
-			}
+			m.finishOnce.Do(func() {
+				if !m.minimockDone() {
+					{{- range $method := $.Interface.Methods }}
+						m.Minimock{{$method.Name}}Inspect()
+					{{ end -}}
+					m.t.FailNow()
+				}
+			})
 		}
 
 		// MinimockWait waits for all mocked methods to be called the expected number of times

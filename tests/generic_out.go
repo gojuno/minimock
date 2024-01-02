@@ -5,6 +5,7 @@ package tests
 //go:generate minimock -i github.com/gojuno/minimock/v3/tests.genericOut -o generic_out.go -n GenericOutMock
 
 import (
+	"sync"
 	mm_atomic "sync/atomic"
 	mm_time "time"
 
@@ -13,7 +14,8 @@ import (
 
 // GenericOutMock implements genericOut
 type GenericOutMock[T any] struct {
-	t minimock.Tester
+	t          minimock.Tester
+	finishOnce sync.Once
 
 	funcName          func() (t1 T)
 	inspectFuncName   func()
@@ -25,11 +27,14 @@ type GenericOutMock[T any] struct {
 // NewGenericOutMock returns a mock for genericOut
 func NewGenericOutMock[T any](t minimock.Tester) *GenericOutMock[T] {
 	m := &GenericOutMock[T]{t: t}
+
 	if controller, ok := t.(minimock.MockController); ok {
 		controller.RegisterMocker(m)
 	}
 
 	m.NameMock = mGenericOutMockName[T]{mock: m}
+
+	t.Cleanup(m.MinimockFinish)
 
 	return m
 }
@@ -179,10 +184,12 @@ func (m *GenericOutMock[T]) MinimockNameInspect() {
 
 // MinimockFinish checks that all mocked methods have been called the expected number of times
 func (m *GenericOutMock[T]) MinimockFinish() {
-	if !m.minimockDone() {
-		m.MinimockNameInspect()
-		m.t.FailNow()
-	}
+	m.finishOnce.Do(func() {
+		if !m.minimockDone() {
+			m.MinimockNameInspect()
+			m.t.FailNow()
+		}
+	})
 }
 
 // MinimockWait waits for all mocked methods to be called the expected number of times

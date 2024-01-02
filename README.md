@@ -18,7 +18,7 @@ The main features of minimock are:
 * It can generate several mocks in one run.
 * It generates code that passes [gometalinter](https://github.com/alecthomas/gometalinter) checks.
 * It puts //go:generate instruction into the generated code, so all you need to do when the source interface is updated is to run the `go generate ./...` command from within the project's directory.
-* It provides Finish and Wait helpers to check if all mocked methods have been called during the test and keeps your test code clean and up to date.
+* It makes sure that all mocked methods have been called during the test and keeps your test code clean and up to date.
 * It provides When and Then helpers to set up several expectations and results for any method.
 * It generates concurrent-safe mocks and mock invocation counters that you can use to manage mock behavior depending on the number of calls.
 * It can be used with the [GoUnit](https://github.com/hexdigest/gounit) tool which generates table-driven tests that make use of minimock.
@@ -174,13 +174,15 @@ senderMock := NewSenderMock(mc).
 
 ### Make sure that your mocks are being used 
 Often we write tons of mocks to test our code but sometimes the tested code stops using mocked dependencies.
-You can easily identify this problem by using mc.Finish or mc.Wait helpers.
+You can easily identify this problem by using `minimock.NewController` instead of just `*testing.T`. 
+Alternatively you can use `mc.Wait` helper if your're testing concurrent code.
 These helpers ensure that all your mocks and expectations have been used at least once during the test run.
 
 ```go
 func TestSomething(t *testing.T) {
+  // it will mark this example test as failed because there are no calls
+  // to formatterMock.Format() and readCloserMock.Read() below
   mc := minimock.NewController(t)
-  defer mc.Finish() //it will mark this example test as failed because there are no calls to formatterMock.Format() and readCloserMock.Read() below
 
   formatterMock := NewFormatterMock(mc)
   formatterMock.FormatMock.Return("minimock")

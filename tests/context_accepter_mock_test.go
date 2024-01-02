@@ -16,9 +16,7 @@ func TestContextAccepterMock_AnyContext(t *testing.T) {
 		assert.Equal(t, "ContextAccepterMock.AcceptContext got unexpected parameters, want: %#v, got: %#v%s\n", s)
 
 		mockCalled = true
-	})
-
-	defer tester.MinimockFinish()
+	}).CleanupMock.Return()
 
 	mock := NewContextAccepterMock(tester).
 		AcceptContextMock.Expect(context.Background()).Return()
@@ -30,8 +28,7 @@ func TestContextAccepterMock_AnyContext(t *testing.T) {
 
 func TestContextAccepterMock_TodoContextMatchesAnycontext(t *testing.T) {
 	tester := NewTesterMock(t)
-
-	defer tester.MinimockFinish()
+	tester.CleanupMock.Return()
 
 	mock := NewContextAccepterMock(tester).
 		AcceptContextMock.Expect(minimock.AnyContext).Return()
@@ -41,8 +38,7 @@ func TestContextAccepterMock_TodoContextMatchesAnycontext(t *testing.T) {
 
 func TestContextAccepterMock_WhenThenMatchAnycontext(t *testing.T) {
 	tester := NewTesterMock(t)
-
-	defer tester.MinimockFinish()
+	tester.CleanupMock.Return()
 
 	mock := NewContextAccepterMock(tester).
 		AcceptContextWithOtherArgsMock.When(minimock.AnyContext, 1).Then(42, nil)

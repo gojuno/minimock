@@ -15,7 +15,8 @@ import (
 
 // ContextAccepterMock implements contextAccepter
 type ContextAccepterMock struct {
-	t minimock.Tester
+	t          minimock.Tester
+	finishOnce sync.Once
 
 	funcAcceptContext          func(ctx context.Context)
 	inspectFuncAcceptContext   func(ctx context.Context)
@@ -33,6 +34,7 @@ type ContextAccepterMock struct {
 // NewContextAccepterMock returns a mock for contextAccepter
 func NewContextAccepterMock(t minimock.Tester) *ContextAccepterMock {
 	m := &ContextAccepterMock{t: t}
+
 	if controller, ok := t.(minimock.MockController); ok {
 		controller.RegisterMocker(m)
 	}
@@ -42,6 +44,8 @@ func NewContextAccepterMock(t minimock.Tester) *ContextAccepterMock {
 
 	m.AcceptContextWithOtherArgsMock = mContextAccepterMockAcceptContextWithOtherArgs{mock: m}
 	m.AcceptContextWithOtherArgsMock.callArgs = []*ContextAccepterMockAcceptContextWithOtherArgsParams{}
+
+	t.Cleanup(m.MinimockFinish)
 
 	return m
 }
@@ -452,12 +456,14 @@ func (m *ContextAccepterMock) MinimockAcceptContextWithOtherArgsInspect() {
 
 // MinimockFinish checks that all mocked methods have been called the expected number of times
 func (m *ContextAccepterMock) MinimockFinish() {
-	if !m.minimockDone() {
-		m.MinimockAcceptContextInspect()
+	m.finishOnce.Do(func() {
+		if !m.minimockDone() {
+			m.MinimockAcceptContextInspect()
 
-		m.MinimockAcceptContextWithOtherArgsInspect()
-		m.t.FailNow()
-	}
+			m.MinimockAcceptContextWithOtherArgsInspect()
+			m.t.FailNow()
+		}
+	})
 }
 
 // MinimockWait waits for all mocked methods to be called the expected number of times

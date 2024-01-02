@@ -14,7 +14,8 @@ import (
 
 // GenericInoutMock implements genericInout
 type GenericInoutMock[T any] struct {
-	t minimock.Tester
+	t          minimock.Tester
+	finishOnce sync.Once
 
 	funcName          func(t1 T) (t2 T)
 	inspectFuncName   func(t1 T)
@@ -26,12 +27,15 @@ type GenericInoutMock[T any] struct {
 // NewGenericInoutMock returns a mock for genericInout
 func NewGenericInoutMock[T any](t minimock.Tester) *GenericInoutMock[T] {
 	m := &GenericInoutMock[T]{t: t}
+
 	if controller, ok := t.(minimock.MockController); ok {
 		controller.RegisterMocker(m)
 	}
 
 	m.NameMock = mGenericInoutMockName[T]{mock: m}
 	m.NameMock.callArgs = []*GenericInoutMockNameParams[T]{}
+
+	t.Cleanup(m.MinimockFinish)
 
 	return m
 }
@@ -253,10 +257,12 @@ func (m *GenericInoutMock[T]) MinimockNameInspect() {
 
 // MinimockFinish checks that all mocked methods have been called the expected number of times
 func (m *GenericInoutMock[T]) MinimockFinish() {
-	if !m.minimockDone() {
-		m.MinimockNameInspect()
-		m.t.FailNow()
-	}
+	m.finishOnce.Do(func() {
+		if !m.minimockDone() {
+			m.MinimockNameInspect()
+			m.t.FailNow()
+		}
+	})
 }
 
 // MinimockWait waits for all mocked methods to be called the expected number of times
