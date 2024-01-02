@@ -2,7 +2,6 @@
 [![GoDoc](https://godoc.org/github.com/gojuno/minimock?status.svg)](http://godoc.org/github.com/gojuno/minimock) 
 [![Build Status](https://travis-ci.org/gojuno/minimock.svg?branch=master)](https://travis-ci.org/gojuno/minimock)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gojuno/minimock)](https://goreportcard.com/report/github.com/gojuno/minimock)
-[![Coverage Status](https://coveralls.io/repos/github/gojuno/minimock/badge.svg?branch=master)](https://coveralls.io/github/gojuno/minimock?branch=master)
 [![Release](https://img.shields.io/github/release/gojuno/minimock.svg)](https://github.com/gojuno/minimock/releases/latest)
 [![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/avelino/awesome-go#testing)
 
