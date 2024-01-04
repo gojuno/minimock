@@ -1,7 +1,4 @@
 project_name: minimock
-before:
-  hooks:
-    - make all
 builds:
 - 
   main: ./cmd/minimock/
