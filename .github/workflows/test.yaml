@@ -4,6 +4,7 @@ on: pull_request
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - uses: actions/checkout@v4.1.1
       - uses: actions/setup-go@v5.0.0
