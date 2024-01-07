@@ -45,10 +45,11 @@ var helpers = template.FuncMap{
 
 type (
 	options struct {
-		interfaces []interfaceInfo
-		noGenerate bool
-		suffix     string
-		mockNames  []string
+		interfaces   []interfaceInfo
+		noGenerate   bool
+		suffix       string
+		mockNames    []string
+		packageNames []string
 	}
 
 	interfaceInfo struct {
@@ -98,6 +99,11 @@ func run(opts *options) (err error) {
 
 		interfaces := types.FindAllInterfaces(astPackage, in.Type)
 
+		packageName := ""
+		if len(opts.interfaces) == len(opts.packageNames) {
+			packageName = opts.packageNames[i]
+		}
+
 		gopts := generator.Options{
 			SourcePackage:      sourcePackage.PkgPath,
 			SourcePackageAlias: "mm_" + sourcePackage.Name,
@@ -106,6 +112,7 @@ func run(opts *options) (err error) {
 			HeaderVars: map[string]interface{}{
 				"GenerateInstruction": !opts.noGenerate,
 				"Version":             version,
+				"PackageName":         packageName,
 			},
 			Vars:  map[string]interface{}{},
 			Funcs: helpers,
@@ -302,6 +309,22 @@ Build date: {{bold .BuildDate}}
 	}
 }
 
+func processNames(names string, interfacesNum int, isInterfaceWildeCarded bool) ([]string, error) {
+	if names == "" {
+		return nil, nil
+	}
+
+	namesSplitted := strings.Split(names, ",")
+	if len(namesSplitted) != 0 && len(namesSplitted) != interfacesNum {
+		return nil, errors.Errorf("count of the source interfaces doesn't match the names count")
+	}
+	if len(namesSplitted) != 0 && isInterfaceWildeCarded {
+		return nil, errors.Errorf("wildcards * can't be used with naming argument")
+	}
+
+	return namesSplitted, nil
+}
+
 var errInvalidArguments = errors.New("invalid arguments")
 
 func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
@@ -315,6 +338,7 @@ func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
 	input := fs.String("i", "*", "comma-separated names of the interfaces to mock, i.e fmt.Stringer,io.Reader\nuse io.* notation to generate mocks for all interfaces in the \"io\" package")
 	output := fs.String("o", "", "comma-separated destination file names or packages to put the generated mocks in,\nby default the generated mock is placed in the source package directory")
 	aliases := fs.String("n", "", "comma-separated mock names,\nby default the generated mock names append `Mock` to the given interface name")
+	packageNames := fs.String("p", "", "comma-separated package names,\nby default the generated package names are taken from the destination directory names")
 	help := fs.Bool("h", false, "show this help message")
 	version := fs.Bool("version", false, "display version information and exit")
 
@@ -335,19 +359,20 @@ func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
 	}
 
 	interfaces := strings.Split(*input, ",")
+	interfacesLen := len(interfaces)
+	isWildecarded := strings.Contains(*input, "*")
 
-	var mockNames []string
-	if *aliases != "" {
-		mockNames = strings.Split(*aliases, ",")
+	mockNames, err := processNames(*aliases, interfacesLen, isWildecarded)
+	if err != nil {
+		return nil, fmt.Errorf("processing -n flag arguments: %w", err)
 	}
-	if len(mockNames) != 0 && len(mockNames) != len(interfaces) {
-		return nil, errors.Errorf("count of the source interfaces doesn't match the mock names count")
-	}
-	if len(mockNames) != 0 && strings.Contains(*input, "*") {
-		return nil, errors.Errorf("wildcards * can't be used with -n argument")
-	}
-
 	opts.mockNames = mockNames
+
+	parsedPackages, err := processNames(*packageNames, interfacesLen, isWildecarded)
+	if err != nil {
+		return nil, fmt.Errorf("processing -p flag arguments: %w", err)
+	}
+	opts.packageNames = parsedPackages
 
 	var writeTo = make([]string, len(interfaces))
 	if *output != "" {
