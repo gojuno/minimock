@@ -51,8 +51,9 @@ type mGenericInlineUnionMockName[T int | float64] struct {
 
 // GenericInlineUnionMockNameExpectation specifies expectation struct of the genericInlineUnion.Name
 type GenericInlineUnionMockNameExpectation[T int | float64] struct {
-	mock   *GenericInlineUnionMock[T]
-	params *GenericInlineUnionMockNameParams[T]
+	mock      *GenericInlineUnionMock[T]
+	params    *GenericInlineUnionMockNameParams[T]
+	paramPtrs *GenericInlineUnionMockNameParamPtrs[T]
 
 	Counter uint64
 }
@@ -60,6 +61,11 @@ type GenericInlineUnionMockNameExpectation[T int | float64] struct {
 // GenericInlineUnionMockNameParams contains parameters of the genericInlineUnion.Name
 type GenericInlineUnionMockNameParams[T int | float64] struct {
 	t1 T
+}
+
+// GenericInlineUnionMockNameParamPtrs contains pointers to parameters of the genericInlineUnion.Name
+type GenericInlineUnionMockNameParamPtrs[T int | float64] struct {
+	t1 *T
 }
 
 // Expect sets up expected params for genericInlineUnion.Name
@@ -72,12 +78,38 @@ func (mmName *mGenericInlineUnionMockName[T]) Expect(t1 T) *mGenericInlineUnionM
 		mmName.defaultExpectation = &GenericInlineUnionMockNameExpectation[T]{}
 	}
 
+	if mmName.defaultExpectation.paramPtrs != nil {
+		mmName.mock.t.Fatalf("GenericInlineUnionMock.Name mock is already set by ExpectParams functions")
+	}
+
 	mmName.defaultExpectation.params = &GenericInlineUnionMockNameParams[T]{t1}
 	for _, e := range mmName.expectations {
 		if minimock.Equal(e.params, mmName.defaultExpectation.params) {
 			mmName.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmName.defaultExpectation.params)
 		}
 	}
+
+	return mmName
+}
+
+// ExpectT1Param1 sets up expected param t1 for genericInlineUnion.Name
+func (mmName *mGenericInlineUnionMockName[T]) ExpectT1Param1(t1 T) *mGenericInlineUnionMockName[T] {
+	if mmName.mock.funcName != nil {
+		mmName.mock.t.Fatalf("GenericInlineUnionMock.Name mock is already set by Set")
+	}
+
+	if mmName.defaultExpectation == nil {
+		mmName.defaultExpectation = &GenericInlineUnionMockNameExpectation[T]{}
+	}
+
+	if mmName.defaultExpectation.params != nil {
+		mmName.mock.t.Fatalf("GenericInlineUnionMock.Name mock is already set by Expect")
+	}
+
+	if mmName.defaultExpectation.paramPtrs == nil {
+		mmName.defaultExpectation.paramPtrs = &GenericInlineUnionMockNameParamPtrs[T]{}
+	}
+	mmName.defaultExpectation.paramPtrs.t1 = &t1
 
 	return mmName
 }
@@ -146,8 +178,17 @@ func (mmName *GenericInlineUnionMock[T]) Name(t1 T) {
 	if mmName.NameMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmName.NameMock.defaultExpectation.Counter, 1)
 		mm_want := mmName.NameMock.defaultExpectation.params
+		mm_want_ptrs := mmName.NameMock.defaultExpectation.paramPtrs
+
 		mm_got := GenericInlineUnionMockNameParams[T]{t1}
-		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.t1 != nil && !minimock.Equal(*mm_want_ptrs.t1, mm_got.t1) {
+				mmName.t.Errorf("GenericInlineUnionMock.Name got unexpected parameter t1, want: %#v, got: %#v\n", *mm_want_ptrs.t1, mm_got.t1)
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
 			mmName.t.Errorf("GenericInlineUnionMock.Name got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 

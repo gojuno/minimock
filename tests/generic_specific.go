@@ -52,8 +52,9 @@ type mGenericSpecificMockName[T proto.Message] struct {
 
 // GenericSpecificMockNameExpectation specifies expectation struct of the genericSpecific.Name
 type GenericSpecificMockNameExpectation[T proto.Message] struct {
-	mock   *GenericSpecificMock[T]
-	params *GenericSpecificMockNameParams[T]
+	mock      *GenericSpecificMock[T]
+	params    *GenericSpecificMockNameParams[T]
+	paramPtrs *GenericSpecificMockNameParamPtrs[T]
 
 	Counter uint64
 }
@@ -61,6 +62,11 @@ type GenericSpecificMockNameExpectation[T proto.Message] struct {
 // GenericSpecificMockNameParams contains parameters of the genericSpecific.Name
 type GenericSpecificMockNameParams[T proto.Message] struct {
 	t1 T
+}
+
+// GenericSpecificMockNameParamPtrs contains pointers to parameters of the genericSpecific.Name
+type GenericSpecificMockNameParamPtrs[T proto.Message] struct {
+	t1 *T
 }
 
 // Expect sets up expected params for genericSpecific.Name
@@ -73,12 +79,38 @@ func (mmName *mGenericSpecificMockName[T]) Expect(t1 T) *mGenericSpecificMockNam
 		mmName.defaultExpectation = &GenericSpecificMockNameExpectation[T]{}
 	}
 
+	if mmName.defaultExpectation.paramPtrs != nil {
+		mmName.mock.t.Fatalf("GenericSpecificMock.Name mock is already set by ExpectParams functions")
+	}
+
 	mmName.defaultExpectation.params = &GenericSpecificMockNameParams[T]{t1}
 	for _, e := range mmName.expectations {
 		if minimock.Equal(e.params, mmName.defaultExpectation.params) {
 			mmName.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmName.defaultExpectation.params)
 		}
 	}
+
+	return mmName
+}
+
+// ExpectT1Param1 sets up expected param t1 for genericSpecific.Name
+func (mmName *mGenericSpecificMockName[T]) ExpectT1Param1(t1 T) *mGenericSpecificMockName[T] {
+	if mmName.mock.funcName != nil {
+		mmName.mock.t.Fatalf("GenericSpecificMock.Name mock is already set by Set")
+	}
+
+	if mmName.defaultExpectation == nil {
+		mmName.defaultExpectation = &GenericSpecificMockNameExpectation[T]{}
+	}
+
+	if mmName.defaultExpectation.params != nil {
+		mmName.mock.t.Fatalf("GenericSpecificMock.Name mock is already set by Expect")
+	}
+
+	if mmName.defaultExpectation.paramPtrs == nil {
+		mmName.defaultExpectation.paramPtrs = &GenericSpecificMockNameParamPtrs[T]{}
+	}
+	mmName.defaultExpectation.paramPtrs.t1 = &t1
 
 	return mmName
 }
@@ -147,8 +179,17 @@ func (mmName *GenericSpecificMock[T]) Name(t1 T) {
 	if mmName.NameMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmName.NameMock.defaultExpectation.Counter, 1)
 		mm_want := mmName.NameMock.defaultExpectation.params
+		mm_want_ptrs := mmName.NameMock.defaultExpectation.paramPtrs
+
 		mm_got := GenericSpecificMockNameParams[T]{t1}
-		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.t1 != nil && !minimock.Equal(*mm_want_ptrs.t1, mm_got.t1) {
+				mmName.t.Errorf("GenericSpecificMock.Name got unexpected parameter t1, want: %#v, got: %#v\n", *mm_want_ptrs.t1, mm_got.t1)
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
 			mmName.t.Errorf("GenericSpecificMock.Name got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 

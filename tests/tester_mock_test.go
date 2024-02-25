@@ -95,8 +95,9 @@ type mTesterMockCleanup struct {
 
 // TesterMockCleanupExpectation specifies expectation struct of the Tester.Cleanup
 type TesterMockCleanupExpectation struct {
-	mock   *TesterMock
-	params *TesterMockCleanupParams
+	mock      *TesterMock
+	params    *TesterMockCleanupParams
+	paramPtrs *TesterMockCleanupParamPtrs
 
 	Counter uint64
 }
@@ -104,6 +105,11 @@ type TesterMockCleanupExpectation struct {
 // TesterMockCleanupParams contains parameters of the Tester.Cleanup
 type TesterMockCleanupParams struct {
 	f func()
+}
+
+// TesterMockCleanupParamPtrs contains pointers to parameters of the Tester.Cleanup
+type TesterMockCleanupParamPtrs struct {
+	f *func()
 }
 
 // Expect sets up expected params for Tester.Cleanup
@@ -116,12 +122,38 @@ func (mmCleanup *mTesterMockCleanup) Expect(f func()) *mTesterMockCleanup {
 		mmCleanup.defaultExpectation = &TesterMockCleanupExpectation{}
 	}
 
+	if mmCleanup.defaultExpectation.paramPtrs != nil {
+		mmCleanup.mock.t.Fatalf("TesterMock.Cleanup mock is already set by ExpectParams functions")
+	}
+
 	mmCleanup.defaultExpectation.params = &TesterMockCleanupParams{f}
 	for _, e := range mmCleanup.expectations {
 		if minimock.Equal(e.params, mmCleanup.defaultExpectation.params) {
 			mmCleanup.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmCleanup.defaultExpectation.params)
 		}
 	}
+
+	return mmCleanup
+}
+
+// ExpectFParam1 sets up expected param f for Tester.Cleanup
+func (mmCleanup *mTesterMockCleanup) ExpectFParam1(f func()) *mTesterMockCleanup {
+	if mmCleanup.mock.funcCleanup != nil {
+		mmCleanup.mock.t.Fatalf("TesterMock.Cleanup mock is already set by Set")
+	}
+
+	if mmCleanup.defaultExpectation == nil {
+		mmCleanup.defaultExpectation = &TesterMockCleanupExpectation{}
+	}
+
+	if mmCleanup.defaultExpectation.params != nil {
+		mmCleanup.mock.t.Fatalf("TesterMock.Cleanup mock is already set by Expect")
+	}
+
+	if mmCleanup.defaultExpectation.paramPtrs == nil {
+		mmCleanup.defaultExpectation.paramPtrs = &TesterMockCleanupParamPtrs{}
+	}
+	mmCleanup.defaultExpectation.paramPtrs.f = &f
 
 	return mmCleanup
 }
@@ -190,8 +222,17 @@ func (mmCleanup *TesterMock) Cleanup(f func()) {
 	if mmCleanup.CleanupMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmCleanup.CleanupMock.defaultExpectation.Counter, 1)
 		mm_want := mmCleanup.CleanupMock.defaultExpectation.params
+		mm_want_ptrs := mmCleanup.CleanupMock.defaultExpectation.paramPtrs
+
 		mm_got := TesterMockCleanupParams{f}
-		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.f != nil && !minimock.Equal(*mm_want_ptrs.f, mm_got.f) {
+				mmCleanup.t.Errorf("TesterMock.Cleanup got unexpected parameter f, want: %#v, got: %#v\n", *mm_want_ptrs.f, mm_got.f)
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
 			mmCleanup.t.Errorf("TesterMock.Cleanup got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
@@ -282,8 +323,9 @@ type mTesterMockError struct {
 
 // TesterMockErrorExpectation specifies expectation struct of the Tester.Error
 type TesterMockErrorExpectation struct {
-	mock   *TesterMock
-	params *TesterMockErrorParams
+	mock      *TesterMock
+	params    *TesterMockErrorParams
+	paramPtrs *TesterMockErrorParamPtrs
 
 	Counter uint64
 }
@@ -291,6 +333,11 @@ type TesterMockErrorExpectation struct {
 // TesterMockErrorParams contains parameters of the Tester.Error
 type TesterMockErrorParams struct {
 	p1 []interface{}
+}
+
+// TesterMockErrorParamPtrs contains pointers to parameters of the Tester.Error
+type TesterMockErrorParamPtrs struct {
+	p1 *[]interface{}
 }
 
 // Expect sets up expected params for Tester.Error
@@ -303,12 +350,38 @@ func (mmError *mTesterMockError) Expect(p1 ...interface{}) *mTesterMockError {
 		mmError.defaultExpectation = &TesterMockErrorExpectation{}
 	}
 
+	if mmError.defaultExpectation.paramPtrs != nil {
+		mmError.mock.t.Fatalf("TesterMock.Error mock is already set by ExpectParams functions")
+	}
+
 	mmError.defaultExpectation.params = &TesterMockErrorParams{p1}
 	for _, e := range mmError.expectations {
 		if minimock.Equal(e.params, mmError.defaultExpectation.params) {
 			mmError.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmError.defaultExpectation.params)
 		}
 	}
+
+	return mmError
+}
+
+// ExpectP1Param1 sets up expected param p1 for Tester.Error
+func (mmError *mTesterMockError) ExpectP1Param1(p1 ...interface{}) *mTesterMockError {
+	if mmError.mock.funcError != nil {
+		mmError.mock.t.Fatalf("TesterMock.Error mock is already set by Set")
+	}
+
+	if mmError.defaultExpectation == nil {
+		mmError.defaultExpectation = &TesterMockErrorExpectation{}
+	}
+
+	if mmError.defaultExpectation.params != nil {
+		mmError.mock.t.Fatalf("TesterMock.Error mock is already set by Expect")
+	}
+
+	if mmError.defaultExpectation.paramPtrs == nil {
+		mmError.defaultExpectation.paramPtrs = &TesterMockErrorParamPtrs{}
+	}
+	mmError.defaultExpectation.paramPtrs.p1 = &p1
 
 	return mmError
 }
@@ -377,8 +450,17 @@ func (mmError *TesterMock) Error(p1 ...interface{}) {
 	if mmError.ErrorMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmError.ErrorMock.defaultExpectation.Counter, 1)
 		mm_want := mmError.ErrorMock.defaultExpectation.params
+		mm_want_ptrs := mmError.ErrorMock.defaultExpectation.paramPtrs
+
 		mm_got := TesterMockErrorParams{p1}
-		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.p1 != nil && !minimock.Equal(*mm_want_ptrs.p1, mm_got.p1) {
+				mmError.t.Errorf("TesterMock.Error got unexpected parameter p1, want: %#v, got: %#v\n", *mm_want_ptrs.p1, mm_got.p1)
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
 			mmError.t.Errorf("TesterMock.Error got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
@@ -469,8 +551,9 @@ type mTesterMockErrorf struct {
 
 // TesterMockErrorfExpectation specifies expectation struct of the Tester.Errorf
 type TesterMockErrorfExpectation struct {
-	mock   *TesterMock
-	params *TesterMockErrorfParams
+	mock      *TesterMock
+	params    *TesterMockErrorfParams
+	paramPtrs *TesterMockErrorfParamPtrs
 
 	Counter uint64
 }
@@ -479,6 +562,12 @@ type TesterMockErrorfExpectation struct {
 type TesterMockErrorfParams struct {
 	format string
 	args   []interface{}
+}
+
+// TesterMockErrorfParamPtrs contains pointers to parameters of the Tester.Errorf
+type TesterMockErrorfParamPtrs struct {
+	format *string
+	args   *[]interface{}
 }
 
 // Expect sets up expected params for Tester.Errorf
@@ -491,12 +580,60 @@ func (mmErrorf *mTesterMockErrorf) Expect(format string, args ...interface{}) *m
 		mmErrorf.defaultExpectation = &TesterMockErrorfExpectation{}
 	}
 
+	if mmErrorf.defaultExpectation.paramPtrs != nil {
+		mmErrorf.mock.t.Fatalf("TesterMock.Errorf mock is already set by ExpectParams functions")
+	}
+
 	mmErrorf.defaultExpectation.params = &TesterMockErrorfParams{format, args}
 	for _, e := range mmErrorf.expectations {
 		if minimock.Equal(e.params, mmErrorf.defaultExpectation.params) {
 			mmErrorf.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmErrorf.defaultExpectation.params)
 		}
 	}
+
+	return mmErrorf
+}
+
+// ExpectFormatParam1 sets up expected param format for Tester.Errorf
+func (mmErrorf *mTesterMockErrorf) ExpectFormatParam1(format string) *mTesterMockErrorf {
+	if mmErrorf.mock.funcErrorf != nil {
+		mmErrorf.mock.t.Fatalf("TesterMock.Errorf mock is already set by Set")
+	}
+
+	if mmErrorf.defaultExpectation == nil {
+		mmErrorf.defaultExpectation = &TesterMockErrorfExpectation{}
+	}
+
+	if mmErrorf.defaultExpectation.params != nil {
+		mmErrorf.mock.t.Fatalf("TesterMock.Errorf mock is already set by Expect")
+	}
+
+	if mmErrorf.defaultExpectation.paramPtrs == nil {
+		mmErrorf.defaultExpectation.paramPtrs = &TesterMockErrorfParamPtrs{}
+	}
+	mmErrorf.defaultExpectation.paramPtrs.format = &format
+
+	return mmErrorf
+}
+
+// ExpectArgsParam2 sets up expected param args for Tester.Errorf
+func (mmErrorf *mTesterMockErrorf) ExpectArgsParam2(args ...interface{}) *mTesterMockErrorf {
+	if mmErrorf.mock.funcErrorf != nil {
+		mmErrorf.mock.t.Fatalf("TesterMock.Errorf mock is already set by Set")
+	}
+
+	if mmErrorf.defaultExpectation == nil {
+		mmErrorf.defaultExpectation = &TesterMockErrorfExpectation{}
+	}
+
+	if mmErrorf.defaultExpectation.params != nil {
+		mmErrorf.mock.t.Fatalf("TesterMock.Errorf mock is already set by Expect")
+	}
+
+	if mmErrorf.defaultExpectation.paramPtrs == nil {
+		mmErrorf.defaultExpectation.paramPtrs = &TesterMockErrorfParamPtrs{}
+	}
+	mmErrorf.defaultExpectation.paramPtrs.args = &args
 
 	return mmErrorf
 }
@@ -565,8 +702,21 @@ func (mmErrorf *TesterMock) Errorf(format string, args ...interface{}) {
 	if mmErrorf.ErrorfMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmErrorf.ErrorfMock.defaultExpectation.Counter, 1)
 		mm_want := mmErrorf.ErrorfMock.defaultExpectation.params
+		mm_want_ptrs := mmErrorf.ErrorfMock.defaultExpectation.paramPtrs
+
 		mm_got := TesterMockErrorfParams{format, args}
-		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.format != nil && !minimock.Equal(*mm_want_ptrs.format, mm_got.format) {
+				mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameter format, want: %#v, got: %#v\n", *mm_want_ptrs.format, mm_got.format)
+			}
+
+			if mm_want_ptrs.args != nil && !minimock.Equal(*mm_want_ptrs.args, mm_got.args) {
+				mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameter args, want: %#v, got: %#v\n", *mm_want_ptrs.args, mm_got.args)
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
 			mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
@@ -792,8 +942,9 @@ type mTesterMockFatal struct {
 
 // TesterMockFatalExpectation specifies expectation struct of the Tester.Fatal
 type TesterMockFatalExpectation struct {
-	mock   *TesterMock
-	params *TesterMockFatalParams
+	mock      *TesterMock
+	params    *TesterMockFatalParams
+	paramPtrs *TesterMockFatalParamPtrs
 
 	Counter uint64
 }
@@ -801,6 +952,11 @@ type TesterMockFatalExpectation struct {
 // TesterMockFatalParams contains parameters of the Tester.Fatal
 type TesterMockFatalParams struct {
 	args []interface{}
+}
+
+// TesterMockFatalParamPtrs contains pointers to parameters of the Tester.Fatal
+type TesterMockFatalParamPtrs struct {
+	args *[]interface{}
 }
 
 // Expect sets up expected params for Tester.Fatal
@@ -813,12 +969,38 @@ func (mmFatal *mTesterMockFatal) Expect(args ...interface{}) *mTesterMockFatal {
 		mmFatal.defaultExpectation = &TesterMockFatalExpectation{}
 	}
 
+	if mmFatal.defaultExpectation.paramPtrs != nil {
+		mmFatal.mock.t.Fatalf("TesterMock.Fatal mock is already set by ExpectParams functions")
+	}
+
 	mmFatal.defaultExpectation.params = &TesterMockFatalParams{args}
 	for _, e := range mmFatal.expectations {
 		if minimock.Equal(e.params, mmFatal.defaultExpectation.params) {
 			mmFatal.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmFatal.defaultExpectation.params)
 		}
 	}
+
+	return mmFatal
+}
+
+// ExpectArgsParam1 sets up expected param args for Tester.Fatal
+func (mmFatal *mTesterMockFatal) ExpectArgsParam1(args ...interface{}) *mTesterMockFatal {
+	if mmFatal.mock.funcFatal != nil {
+		mmFatal.mock.t.Fatalf("TesterMock.Fatal mock is already set by Set")
+	}
+
+	if mmFatal.defaultExpectation == nil {
+		mmFatal.defaultExpectation = &TesterMockFatalExpectation{}
+	}
+
+	if mmFatal.defaultExpectation.params != nil {
+		mmFatal.mock.t.Fatalf("TesterMock.Fatal mock is already set by Expect")
+	}
+
+	if mmFatal.defaultExpectation.paramPtrs == nil {
+		mmFatal.defaultExpectation.paramPtrs = &TesterMockFatalParamPtrs{}
+	}
+	mmFatal.defaultExpectation.paramPtrs.args = &args
 
 	return mmFatal
 }
@@ -887,8 +1069,17 @@ func (mmFatal *TesterMock) Fatal(args ...interface{}) {
 	if mmFatal.FatalMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmFatal.FatalMock.defaultExpectation.Counter, 1)
 		mm_want := mmFatal.FatalMock.defaultExpectation.params
+		mm_want_ptrs := mmFatal.FatalMock.defaultExpectation.paramPtrs
+
 		mm_got := TesterMockFatalParams{args}
-		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.args != nil && !minimock.Equal(*mm_want_ptrs.args, mm_got.args) {
+				mmFatal.t.Errorf("TesterMock.Fatal got unexpected parameter args, want: %#v, got: %#v\n", *mm_want_ptrs.args, mm_got.args)
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
 			mmFatal.t.Errorf("TesterMock.Fatal got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
@@ -979,8 +1170,9 @@ type mTesterMockFatalf struct {
 
 // TesterMockFatalfExpectation specifies expectation struct of the Tester.Fatalf
 type TesterMockFatalfExpectation struct {
-	mock   *TesterMock
-	params *TesterMockFatalfParams
+	mock      *TesterMock
+	params    *TesterMockFatalfParams
+	paramPtrs *TesterMockFatalfParamPtrs
 
 	Counter uint64
 }
@@ -989,6 +1181,12 @@ type TesterMockFatalfExpectation struct {
 type TesterMockFatalfParams struct {
 	format string
 	args   []interface{}
+}
+
+// TesterMockFatalfParamPtrs contains pointers to parameters of the Tester.Fatalf
+type TesterMockFatalfParamPtrs struct {
+	format *string
+	args   *[]interface{}
 }
 
 // Expect sets up expected params for Tester.Fatalf
@@ -1001,12 +1199,60 @@ func (mmFatalf *mTesterMockFatalf) Expect(format string, args ...interface{}) *m
 		mmFatalf.defaultExpectation = &TesterMockFatalfExpectation{}
 	}
 
+	if mmFatalf.defaultExpectation.paramPtrs != nil {
+		mmFatalf.mock.t.Fatalf("TesterMock.Fatalf mock is already set by ExpectParams functions")
+	}
+
 	mmFatalf.defaultExpectation.params = &TesterMockFatalfParams{format, args}
 	for _, e := range mmFatalf.expectations {
 		if minimock.Equal(e.params, mmFatalf.defaultExpectation.params) {
 			mmFatalf.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmFatalf.defaultExpectation.params)
 		}
 	}
+
+	return mmFatalf
+}
+
+// ExpectFormatParam1 sets up expected param format for Tester.Fatalf
+func (mmFatalf *mTesterMockFatalf) ExpectFormatParam1(format string) *mTesterMockFatalf {
+	if mmFatalf.mock.funcFatalf != nil {
+		mmFatalf.mock.t.Fatalf("TesterMock.Fatalf mock is already set by Set")
+	}
+
+	if mmFatalf.defaultExpectation == nil {
+		mmFatalf.defaultExpectation = &TesterMockFatalfExpectation{}
+	}
+
+	if mmFatalf.defaultExpectation.params != nil {
+		mmFatalf.mock.t.Fatalf("TesterMock.Fatalf mock is already set by Expect")
+	}
+
+	if mmFatalf.defaultExpectation.paramPtrs == nil {
+		mmFatalf.defaultExpectation.paramPtrs = &TesterMockFatalfParamPtrs{}
+	}
+	mmFatalf.defaultExpectation.paramPtrs.format = &format
+
+	return mmFatalf
+}
+
+// ExpectArgsParam2 sets up expected param args for Tester.Fatalf
+func (mmFatalf *mTesterMockFatalf) ExpectArgsParam2(args ...interface{}) *mTesterMockFatalf {
+	if mmFatalf.mock.funcFatalf != nil {
+		mmFatalf.mock.t.Fatalf("TesterMock.Fatalf mock is already set by Set")
+	}
+
+	if mmFatalf.defaultExpectation == nil {
+		mmFatalf.defaultExpectation = &TesterMockFatalfExpectation{}
+	}
+
+	if mmFatalf.defaultExpectation.params != nil {
+		mmFatalf.mock.t.Fatalf("TesterMock.Fatalf mock is already set by Expect")
+	}
+
+	if mmFatalf.defaultExpectation.paramPtrs == nil {
+		mmFatalf.defaultExpectation.paramPtrs = &TesterMockFatalfParamPtrs{}
+	}
+	mmFatalf.defaultExpectation.paramPtrs.args = &args
 
 	return mmFatalf
 }
@@ -1075,8 +1321,21 @@ func (mmFatalf *TesterMock) Fatalf(format string, args ...interface{}) {
 	if mmFatalf.FatalfMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmFatalf.FatalfMock.defaultExpectation.Counter, 1)
 		mm_want := mmFatalf.FatalfMock.defaultExpectation.params
+		mm_want_ptrs := mmFatalf.FatalfMock.defaultExpectation.paramPtrs
+
 		mm_got := TesterMockFatalfParams{format, args}
-		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.format != nil && !minimock.Equal(*mm_want_ptrs.format, mm_got.format) {
+				mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameter format, want: %#v, got: %#v\n", *mm_want_ptrs.format, mm_got.format)
+			}
+
+			if mm_want_ptrs.args != nil && !minimock.Equal(*mm_want_ptrs.args, mm_got.args) {
+				mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameter args, want: %#v, got: %#v\n", *mm_want_ptrs.args, mm_got.args)
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
 			mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 

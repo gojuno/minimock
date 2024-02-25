@@ -107,11 +107,11 @@ const (
 					{{$m}}.defaultExpectation = &{{$mock}}{{$method.Name}}Expectation{{(paramsRef)}}{}
 				}
 
-             	if {{$m}}.defaultExpectation.paramPtrs != nil {
-		           {{$m}}.mock.t.Fatalf("{{$mock}}.{{$method.Name}} mock is already set by ExpectParams functions")
-	            }
-
 				{{if $method.HasParams }}
+                	if {{$m}}.defaultExpectation.paramPtrs != nil {
+	       	           {{$m}}.mock.t.Fatalf("{{$mock}}.{{$method.Name}} mock is already set by ExpectParams functions")
+      	            }
+
 					{{$m}}.defaultExpectation.params = &{{$mock}}{{$method.Name}}Params{{(paramsRef)}}{ {{ $method.ParamsNames }} }
 					for _, e := range {{$m}}.expectations {
 						if minimock.Equal(e.params, {{$m}}.defaultExpectation.params) {

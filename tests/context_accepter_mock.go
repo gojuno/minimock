@@ -61,8 +61,9 @@ type mContextAccepterMockAcceptContext struct {
 
 // ContextAccepterMockAcceptContextExpectation specifies expectation struct of the contextAccepter.AcceptContext
 type ContextAccepterMockAcceptContextExpectation struct {
-	mock   *ContextAccepterMock
-	params *ContextAccepterMockAcceptContextParams
+	mock      *ContextAccepterMock
+	params    *ContextAccepterMockAcceptContextParams
+	paramPtrs *ContextAccepterMockAcceptContextParamPtrs
 
 	Counter uint64
 }
@@ -70,6 +71,11 @@ type ContextAccepterMockAcceptContextExpectation struct {
 // ContextAccepterMockAcceptContextParams contains parameters of the contextAccepter.AcceptContext
 type ContextAccepterMockAcceptContextParams struct {
 	ctx context.Context
+}
+
+// ContextAccepterMockAcceptContextParamPtrs contains pointers to parameters of the contextAccepter.AcceptContext
+type ContextAccepterMockAcceptContextParamPtrs struct {
+	ctx *context.Context
 }
 
 // Expect sets up expected params for contextAccepter.AcceptContext
@@ -82,12 +88,38 @@ func (mmAcceptContext *mContextAccepterMockAcceptContext) Expect(ctx context.Con
 		mmAcceptContext.defaultExpectation = &ContextAccepterMockAcceptContextExpectation{}
 	}
 
+	if mmAcceptContext.defaultExpectation.paramPtrs != nil {
+		mmAcceptContext.mock.t.Fatalf("ContextAccepterMock.AcceptContext mock is already set by ExpectParams functions")
+	}
+
 	mmAcceptContext.defaultExpectation.params = &ContextAccepterMockAcceptContextParams{ctx}
 	for _, e := range mmAcceptContext.expectations {
 		if minimock.Equal(e.params, mmAcceptContext.defaultExpectation.params) {
 			mmAcceptContext.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmAcceptContext.defaultExpectation.params)
 		}
 	}
+
+	return mmAcceptContext
+}
+
+// ExpectCtxParam1 sets up expected param ctx for contextAccepter.AcceptContext
+func (mmAcceptContext *mContextAccepterMockAcceptContext) ExpectCtxParam1(ctx context.Context) *mContextAccepterMockAcceptContext {
+	if mmAcceptContext.mock.funcAcceptContext != nil {
+		mmAcceptContext.mock.t.Fatalf("ContextAccepterMock.AcceptContext mock is already set by Set")
+	}
+
+	if mmAcceptContext.defaultExpectation == nil {
+		mmAcceptContext.defaultExpectation = &ContextAccepterMockAcceptContextExpectation{}
+	}
+
+	if mmAcceptContext.defaultExpectation.params != nil {
+		mmAcceptContext.mock.t.Fatalf("ContextAccepterMock.AcceptContext mock is already set by Expect")
+	}
+
+	if mmAcceptContext.defaultExpectation.paramPtrs == nil {
+		mmAcceptContext.defaultExpectation.paramPtrs = &ContextAccepterMockAcceptContextParamPtrs{}
+	}
+	mmAcceptContext.defaultExpectation.paramPtrs.ctx = &ctx
 
 	return mmAcceptContext
 }
@@ -156,8 +188,17 @@ func (mmAcceptContext *ContextAccepterMock) AcceptContext(ctx context.Context) {
 	if mmAcceptContext.AcceptContextMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmAcceptContext.AcceptContextMock.defaultExpectation.Counter, 1)
 		mm_want := mmAcceptContext.AcceptContextMock.defaultExpectation.params
+		mm_want_ptrs := mmAcceptContext.AcceptContextMock.defaultExpectation.paramPtrs
+
 		mm_got := ContextAccepterMockAcceptContextParams{ctx}
-		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
+				mmAcceptContext.t.Errorf("ContextAccepterMock.AcceptContext got unexpected parameter ctx, want: %#v, got: %#v\n", *mm_want_ptrs.ctx, mm_got.ctx)
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
 			mmAcceptContext.t.Errorf("ContextAccepterMock.AcceptContext got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
@@ -248,16 +289,23 @@ type mContextAccepterMockAcceptContextWithOtherArgs struct {
 
 // ContextAccepterMockAcceptContextWithOtherArgsExpectation specifies expectation struct of the contextAccepter.AcceptContextWithOtherArgs
 type ContextAccepterMockAcceptContextWithOtherArgsExpectation struct {
-	mock    *ContextAccepterMock
-	params  *ContextAccepterMockAcceptContextWithOtherArgsParams
-	results *ContextAccepterMockAcceptContextWithOtherArgsResults
-	Counter uint64
+	mock      *ContextAccepterMock
+	params    *ContextAccepterMockAcceptContextWithOtherArgsParams
+	paramPtrs *ContextAccepterMockAcceptContextWithOtherArgsParamPtrs
+	results   *ContextAccepterMockAcceptContextWithOtherArgsResults
+	Counter   uint64
 }
 
 // ContextAccepterMockAcceptContextWithOtherArgsParams contains parameters of the contextAccepter.AcceptContextWithOtherArgs
 type ContextAccepterMockAcceptContextWithOtherArgsParams struct {
 	ctx context.Context
 	i1  int
+}
+
+// ContextAccepterMockAcceptContextWithOtherArgsParamPtrs contains pointers to parameters of the contextAccepter.AcceptContextWithOtherArgs
+type ContextAccepterMockAcceptContextWithOtherArgsParamPtrs struct {
+	ctx *context.Context
+	i1  *int
 }
 
 // ContextAccepterMockAcceptContextWithOtherArgsResults contains results of the contextAccepter.AcceptContextWithOtherArgs
@@ -276,12 +324,60 @@ func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherAr
 		mmAcceptContextWithOtherArgs.defaultExpectation = &ContextAccepterMockAcceptContextWithOtherArgsExpectation{}
 	}
 
+	if mmAcceptContextWithOtherArgs.defaultExpectation.paramPtrs != nil {
+		mmAcceptContextWithOtherArgs.mock.t.Fatalf("ContextAccepterMock.AcceptContextWithOtherArgs mock is already set by ExpectParams functions")
+	}
+
 	mmAcceptContextWithOtherArgs.defaultExpectation.params = &ContextAccepterMockAcceptContextWithOtherArgsParams{ctx, i1}
 	for _, e := range mmAcceptContextWithOtherArgs.expectations {
 		if minimock.Equal(e.params, mmAcceptContextWithOtherArgs.defaultExpectation.params) {
 			mmAcceptContextWithOtherArgs.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmAcceptContextWithOtherArgs.defaultExpectation.params)
 		}
 	}
+
+	return mmAcceptContextWithOtherArgs
+}
+
+// ExpectCtxParam1 sets up expected param ctx for contextAccepter.AcceptContextWithOtherArgs
+func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherArgs) ExpectCtxParam1(ctx context.Context) *mContextAccepterMockAcceptContextWithOtherArgs {
+	if mmAcceptContextWithOtherArgs.mock.funcAcceptContextWithOtherArgs != nil {
+		mmAcceptContextWithOtherArgs.mock.t.Fatalf("ContextAccepterMock.AcceptContextWithOtherArgs mock is already set by Set")
+	}
+
+	if mmAcceptContextWithOtherArgs.defaultExpectation == nil {
+		mmAcceptContextWithOtherArgs.defaultExpectation = &ContextAccepterMockAcceptContextWithOtherArgsExpectation{}
+	}
+
+	if mmAcceptContextWithOtherArgs.defaultExpectation.params != nil {
+		mmAcceptContextWithOtherArgs.mock.t.Fatalf("ContextAccepterMock.AcceptContextWithOtherArgs mock is already set by Expect")
+	}
+
+	if mmAcceptContextWithOtherArgs.defaultExpectation.paramPtrs == nil {
+		mmAcceptContextWithOtherArgs.defaultExpectation.paramPtrs = &ContextAccepterMockAcceptContextWithOtherArgsParamPtrs{}
+	}
+	mmAcceptContextWithOtherArgs.defaultExpectation.paramPtrs.ctx = &ctx
+
+	return mmAcceptContextWithOtherArgs
+}
+
+// ExpectI1Param2 sets up expected param i1 for contextAccepter.AcceptContextWithOtherArgs
+func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherArgs) ExpectI1Param2(i1 int) *mContextAccepterMockAcceptContextWithOtherArgs {
+	if mmAcceptContextWithOtherArgs.mock.funcAcceptContextWithOtherArgs != nil {
+		mmAcceptContextWithOtherArgs.mock.t.Fatalf("ContextAccepterMock.AcceptContextWithOtherArgs mock is already set by Set")
+	}
+
+	if mmAcceptContextWithOtherArgs.defaultExpectation == nil {
+		mmAcceptContextWithOtherArgs.defaultExpectation = &ContextAccepterMockAcceptContextWithOtherArgsExpectation{}
+	}
+
+	if mmAcceptContextWithOtherArgs.defaultExpectation.params != nil {
+		mmAcceptContextWithOtherArgs.mock.t.Fatalf("ContextAccepterMock.AcceptContextWithOtherArgs mock is already set by Expect")
+	}
+
+	if mmAcceptContextWithOtherArgs.defaultExpectation.paramPtrs == nil {
+		mmAcceptContextWithOtherArgs.defaultExpectation.paramPtrs = &ContextAccepterMockAcceptContextWithOtherArgsParamPtrs{}
+	}
+	mmAcceptContextWithOtherArgs.defaultExpectation.paramPtrs.i1 = &i1
 
 	return mmAcceptContextWithOtherArgs
 }
@@ -371,8 +467,21 @@ func (mmAcceptContextWithOtherArgs *ContextAccepterMock) AcceptContextWithOtherA
 	if mmAcceptContextWithOtherArgs.AcceptContextWithOtherArgsMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmAcceptContextWithOtherArgs.AcceptContextWithOtherArgsMock.defaultExpectation.Counter, 1)
 		mm_want := mmAcceptContextWithOtherArgs.AcceptContextWithOtherArgsMock.defaultExpectation.params
+		mm_want_ptrs := mmAcceptContextWithOtherArgs.AcceptContextWithOtherArgsMock.defaultExpectation.paramPtrs
+
 		mm_got := ContextAccepterMockAcceptContextWithOtherArgsParams{ctx, i1}
-		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
+				mmAcceptContextWithOtherArgs.t.Errorf("ContextAccepterMock.AcceptContextWithOtherArgs got unexpected parameter ctx, want: %#v, got: %#v\n", *mm_want_ptrs.ctx, mm_got.ctx)
+			}
+
+			if mm_want_ptrs.i1 != nil && !minimock.Equal(*mm_want_ptrs.i1, mm_got.i1) {
+				mmAcceptContextWithOtherArgs.t.Errorf("ContextAccepterMock.AcceptContextWithOtherArgs got unexpected parameter i1, want: %#v, got: %#v\n", *mm_want_ptrs.i1, mm_got.i1)
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
 			mmAcceptContextWithOtherArgs.t.Errorf("ContextAccepterMock.AcceptContextWithOtherArgs got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
