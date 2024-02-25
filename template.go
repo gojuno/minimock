@@ -77,6 +77,7 @@ const (
 			type {{$mock}}{{$method.Name}}Expectation{{(params)}} struct {
 				mock *{{$mock}}{{(paramsRef)}}
 				{{ if $method.HasParams }}  params *{{$mock}}{{$method.Name}}Params{{(paramsRef)}}  {{end}}
+				{{ if $method.HasParams }}  paramPtrs *{{$mock}}{{$method.Name}}ParamPtrs{{(paramsRef)}}  {{end}}
 				{{ if $method.HasResults }} results *{{$mock}}{{$method.Name}}Results{{(paramsRef)}} {{end}}
 				Counter uint64
 			}
@@ -84,6 +85,11 @@ const (
 			{{if $method.HasParams }}
 				// {{$mock}}{{$method.Name}}Params contains parameters of the {{$.Interface.Name}}.{{$method.Name}}
 				type {{$mock}}{{$method.Name}}Params{{(params)}} {{$method.ParamsStruct}}
+			{{end}}
+
+			{{if $method.HasParams }}
+				// {{$mock}}{{$method.Name}}ParamPtrs contains pointers to parameters of the {{$.Interface.Name}}.{{$method.Name}}
+				type {{$mock}}{{$method.Name}}ParamPtrs{{(params)}} {{$method.ParamPtrsStruct}}
 			{{end}}
 
 			{{if $method.HasResults }}
@@ -101,6 +107,10 @@ const (
 					{{$m}}.defaultExpectation = &{{$mock}}{{$method.Name}}Expectation{{(paramsRef)}}{}
 				}
 
+             	if {{$m}}.defaultExpectation.paramPtrs != nil {
+		           {{$m}}.mock.t.Fatalf("{{$mock}}.{{$method.Name}} mock is already set by ExpectParams functions")
+	            }
+
 				{{if $method.HasParams }}
 					{{$m}}.defaultExpectation.params = &{{$mock}}{{$method.Name}}Params{{(paramsRef)}}{ {{ $method.ParamsNames }} }
 					for _, e := range {{$m}}.expectations {
@@ -112,6 +122,29 @@ const (
 				return {{$m}}
 			}
 
+            {{ range $idx, $param := $method.Params }}
+			// Expect{{ $param.Name | title }}Param{{$idx | inc}} sets up expected param {{ $param.Name }} for {{$.Interface.Name}}.{{$method.Name}}
+                func ({{$m}} *m{{$mock}}{{$method.Name}}{{(paramsRef)}}) Expect{{ $param.Name | title }}Param{{$idx | inc}}({{$param.Name}} {{$param.Type}}) *m{{$mock}}{{$method.Name}}{{(paramsRef)}} {
+				    if {{$m}}.mock.func{{$method.Name}} != nil {
+					    {{$m}}.mock.t.Fatalf("{{$mock}}.{{$method.Name}} mock is already set by Set")
+				    }
+
+				    if {{$m}}.defaultExpectation == nil {
+                        {{$m}}.defaultExpectation = &{{$mock}}{{$method.Name}}Expectation{{(paramsRef)}}{}
+				    }
+
+	                if {{$m}}.defaultExpectation.params != nil {
+		                {{$m}}.mock.t.Fatalf("{{$mock}}.{{$method.Name}} mock is already set by Expect")
+	                }
+
+                    if {{$m}}.defaultExpectation.paramPtrs == nil {
+                        {{$m}}.defaultExpectation.paramPtrs = &{{$mock}}{{$method.Name}}ParamPtrs{{(paramsRef)}}{}   
+                    } 
+                    {{$m}}.defaultExpectation.paramPtrs.{{$param.Name}} = &{{$param.Name}}
+
+	                return {{$m}}
+               }
+            {{ end }} 
 			// Inspect accepts an inspector function that has same arguments as the {{$.Interface.Name}}.{{$method.Name}}
 			func ({{$m}} *m{{$mock}}{{$method.Name}}{{(paramsRef)}}) Inspect(f func({{$method.Params}})) *m{{$mock}}{{$method.Name}}{{(paramsRef)}} {
 				if {{$m}}.mock.inspectFunc{{$method.Name}} != nil {
@@ -202,8 +235,17 @@ const (
 					mm_atomic.AddUint64(&{{$m}}.{{$method.Name}}Mock.defaultExpectation.Counter, 1)
 					{{- if $method.HasParams }}
 						mm_want := {{$m}}.{{$method.Name}}Mock.defaultExpectation.params
+						mm_want_ptrs := {{$m}}.{{$method.Name}}Mock.defaultExpectation.paramPtrs
+
 						mm_got := {{$mock}}{{$method.Name}}Params{{(paramsRef)}}{ {{$method.ParamsNames}} }
-						if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+
+                        if mm_want_ptrs != nil {
+                            {{ range $idx, $param := $method.Params }}
+                                if mm_want_ptrs.{{$param.Name}} != nil && !minimock.Equal(*mm_want_ptrs.{{$param.Name}}, mm_got.{{$param.Name}}) {
+                                   {{$m}}.t.Errorf("{{$mock}}.{{$method.Name}} got unexpected parameter {{$param.Name}}, want: %#v, got: %#v\n", *mm_want_ptrs.{{$param.Name}}, mm_got.{{$param.Name}})
+                                }
+                            {{ end }}
+                        } else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
 							{{$m}}.t.Errorf("{{$mock}}.{{$method.Name}} got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 						}
 					{{ end }}
