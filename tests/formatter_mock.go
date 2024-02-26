@@ -235,11 +235,11 @@ func (mmFormat *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) 
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.s1 != nil && !minimock.Equal(*mm_want_ptrs.s1, mm_got.s1) {
-				mmFormat.t.Errorf("FormatterMock.Format got unexpected parameter s1, want: %#v, got: %#v\n", *mm_want_ptrs.s1, mm_got.s1)
+				mmFormat.t.Errorf("FormatterMock.Format got unexpected parameter s1, want: %#v, got: %#v%s\n", *mm_want_ptrs.s1, mm_got.s1, minimock.Diff(*mm_want_ptrs.s1, mm_got.s1))
 			}
 
 			if mm_want_ptrs.p1 != nil && !minimock.Equal(*mm_want_ptrs.p1, mm_got.p1) {
-				mmFormat.t.Errorf("FormatterMock.Format got unexpected parameter p1, want: %#v, got: %#v\n", *mm_want_ptrs.p1, mm_got.p1)
+				mmFormat.t.Errorf("FormatterMock.Format got unexpected parameter p1, want: %#v, got: %#v%s\n", *mm_want_ptrs.p1, mm_got.p1, minimock.Diff(*mm_want_ptrs.p1, mm_got.p1))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {

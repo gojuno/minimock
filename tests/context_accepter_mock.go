@@ -195,7 +195,7 @@ func (mmAcceptContext *ContextAccepterMock) AcceptContext(ctx context.Context) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
-				mmAcceptContext.t.Errorf("ContextAccepterMock.AcceptContext got unexpected parameter ctx, want: %#v, got: %#v\n", *mm_want_ptrs.ctx, mm_got.ctx)
+				mmAcceptContext.t.Errorf("ContextAccepterMock.AcceptContext got unexpected parameter ctx, want: %#v, got: %#v%s\n", *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
@@ -474,11 +474,11 @@ func (mmAcceptContextWithOtherArgs *ContextAccepterMock) AcceptContextWithOtherA
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
-				mmAcceptContextWithOtherArgs.t.Errorf("ContextAccepterMock.AcceptContextWithOtherArgs got unexpected parameter ctx, want: %#v, got: %#v\n", *mm_want_ptrs.ctx, mm_got.ctx)
+				mmAcceptContextWithOtherArgs.t.Errorf("ContextAccepterMock.AcceptContextWithOtherArgs got unexpected parameter ctx, want: %#v, got: %#v%s\n", *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
 			}
 
 			if mm_want_ptrs.i1 != nil && !minimock.Equal(*mm_want_ptrs.i1, mm_got.i1) {
-				mmAcceptContextWithOtherArgs.t.Errorf("ContextAccepterMock.AcceptContextWithOtherArgs got unexpected parameter i1, want: %#v, got: %#v\n", *mm_want_ptrs.i1, mm_got.i1)
+				mmAcceptContextWithOtherArgs.t.Errorf("ContextAccepterMock.AcceptContextWithOtherArgs got unexpected parameter i1, want: %#v, got: %#v%s\n", *mm_want_ptrs.i1, mm_got.i1, minimock.Diff(*mm_want_ptrs.i1, mm_got.i1))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {

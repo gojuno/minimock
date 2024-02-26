@@ -236,11 +236,11 @@ func (mmAction *ActorMock) Action(firstParam string, secondParam int) (i1 int, e
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.firstParam != nil && !minimock.Equal(*mm_want_ptrs.firstParam, mm_got.firstParam) {
-				mmAction.t.Errorf("ActorMock.Action got unexpected parameter firstParam, want: %#v, got: %#v\n", *mm_want_ptrs.firstParam, mm_got.firstParam)
+				mmAction.t.Errorf("ActorMock.Action got unexpected parameter firstParam, want: %#v, got: %#v%s\n", *mm_want_ptrs.firstParam, mm_got.firstParam, minimock.Diff(*mm_want_ptrs.firstParam, mm_got.firstParam))
 			}
 
 			if mm_want_ptrs.secondParam != nil && !minimock.Equal(*mm_want_ptrs.secondParam, mm_got.secondParam) {
-				mmAction.t.Errorf("ActorMock.Action got unexpected parameter secondParam, want: %#v, got: %#v\n", *mm_want_ptrs.secondParam, mm_got.secondParam)
+				mmAction.t.Errorf("ActorMock.Action got unexpected parameter secondParam, want: %#v, got: %#v%s\n", *mm_want_ptrs.secondParam, mm_got.secondParam, minimock.Diff(*mm_want_ptrs.secondParam, mm_got.secondParam))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {

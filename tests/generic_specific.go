@@ -186,7 +186,7 @@ func (mmName *GenericSpecificMock[T]) Name(t1 T) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.t1 != nil && !minimock.Equal(*mm_want_ptrs.t1, mm_got.t1) {
-				mmName.t.Errorf("GenericSpecificMock.Name got unexpected parameter t1, want: %#v, got: %#v\n", *mm_want_ptrs.t1, mm_got.t1)
+				mmName.t.Errorf("GenericSpecificMock.Name got unexpected parameter t1, want: %#v, got: %#v%s\n", *mm_want_ptrs.t1, mm_got.t1, minimock.Diff(*mm_want_ptrs.t1, mm_got.t1))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {

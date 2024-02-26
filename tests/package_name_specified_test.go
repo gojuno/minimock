@@ -229,7 +229,7 @@ func (mmCleanup *TesterMock) Cleanup(f func()) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.f != nil && !minimock.Equal(*mm_want_ptrs.f, mm_got.f) {
-				mmCleanup.t.Errorf("TesterMock.Cleanup got unexpected parameter f, want: %#v, got: %#v\n", *mm_want_ptrs.f, mm_got.f)
+				mmCleanup.t.Errorf("TesterMock.Cleanup got unexpected parameter f, want: %#v, got: %#v%s\n", *mm_want_ptrs.f, mm_got.f, minimock.Diff(*mm_want_ptrs.f, mm_got.f))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
@@ -457,7 +457,7 @@ func (mmError *TesterMock) Error(p1 ...interface{}) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.p1 != nil && !minimock.Equal(*mm_want_ptrs.p1, mm_got.p1) {
-				mmError.t.Errorf("TesterMock.Error got unexpected parameter p1, want: %#v, got: %#v\n", *mm_want_ptrs.p1, mm_got.p1)
+				mmError.t.Errorf("TesterMock.Error got unexpected parameter p1, want: %#v, got: %#v%s\n", *mm_want_ptrs.p1, mm_got.p1, minimock.Diff(*mm_want_ptrs.p1, mm_got.p1))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
@@ -709,11 +709,11 @@ func (mmErrorf *TesterMock) Errorf(format string, args ...interface{}) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.format != nil && !minimock.Equal(*mm_want_ptrs.format, mm_got.format) {
-				mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameter format, want: %#v, got: %#v\n", *mm_want_ptrs.format, mm_got.format)
+				mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameter format, want: %#v, got: %#v%s\n", *mm_want_ptrs.format, mm_got.format, minimock.Diff(*mm_want_ptrs.format, mm_got.format))
 			}
 
 			if mm_want_ptrs.args != nil && !minimock.Equal(*mm_want_ptrs.args, mm_got.args) {
-				mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameter args, want: %#v, got: %#v\n", *mm_want_ptrs.args, mm_got.args)
+				mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameter args, want: %#v, got: %#v%s\n", *mm_want_ptrs.args, mm_got.args, minimock.Diff(*mm_want_ptrs.args, mm_got.args))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
@@ -1076,7 +1076,7 @@ func (mmFatal *TesterMock) Fatal(args ...interface{}) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.args != nil && !minimock.Equal(*mm_want_ptrs.args, mm_got.args) {
-				mmFatal.t.Errorf("TesterMock.Fatal got unexpected parameter args, want: %#v, got: %#v\n", *mm_want_ptrs.args, mm_got.args)
+				mmFatal.t.Errorf("TesterMock.Fatal got unexpected parameter args, want: %#v, got: %#v%s\n", *mm_want_ptrs.args, mm_got.args, minimock.Diff(*mm_want_ptrs.args, mm_got.args))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
@@ -1328,11 +1328,11 @@ func (mmFatalf *TesterMock) Fatalf(format string, args ...interface{}) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.format != nil && !minimock.Equal(*mm_want_ptrs.format, mm_got.format) {
-				mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameter format, want: %#v, got: %#v\n", *mm_want_ptrs.format, mm_got.format)
+				mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameter format, want: %#v, got: %#v%s\n", *mm_want_ptrs.format, mm_got.format, minimock.Diff(*mm_want_ptrs.format, mm_got.format))
 			}
 
 			if mm_want_ptrs.args != nil && !minimock.Equal(*mm_want_ptrs.args, mm_got.args) {
-				mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameter args, want: %#v, got: %#v\n", *mm_want_ptrs.args, mm_got.args)
+				mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameter args, want: %#v, got: %#v%s\n", *mm_want_ptrs.args, mm_got.args, minimock.Diff(*mm_want_ptrs.args, mm_got.args))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {

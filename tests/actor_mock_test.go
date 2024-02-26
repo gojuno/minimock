@@ -35,7 +35,7 @@ func TestActorMock_TestFailedWithExpectedParams(t *testing.T) {
 	tester := NewTesterMock(t)
 	tester.CleanupMock.Return()
 	tester.ErrorfMock.
-		Expect("ActorMock.Action got unexpected parameter secondParam, want: %#v, got: %#v\n", 24, 25).
+		Expect("ActorMock.Action got unexpected parameter secondParam, want: %#v, got: %#v%s\n", 24, 25, "").
 		Return()
 
 	mock := NewActorMock(tester).

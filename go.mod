@@ -21,4 +21,6 @@ require (
 
 go 1.19
 
+// TODO up gowrap version
+
 replace github.com/hexdigest/gowrap v1.3.2 => ../gowrap

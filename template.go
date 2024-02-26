@@ -242,7 +242,7 @@ const (
                         if mm_want_ptrs != nil {
                             {{ range $idx, $param := $method.Params }}
                                 if mm_want_ptrs.{{$param.Name}} != nil && !minimock.Equal(*mm_want_ptrs.{{$param.Name}}, mm_got.{{$param.Name}}) {
-                                   {{$m}}.t.Errorf("{{$mock}}.{{$method.Name}} got unexpected parameter {{$param.Name}}, want: %#v, got: %#v\n", *mm_want_ptrs.{{$param.Name}}, mm_got.{{$param.Name}})
+                                   {{$m}}.t.Errorf("{{$mock}}.{{$method.Name}} got unexpected parameter {{$param.Name}}, want: %#v, got: %#v%s\n", *mm_want_ptrs.{{$param.Name}}, mm_got.{{$param.Name}}, minimock.Diff(*mm_want_ptrs.{{$param.Name}}, mm_got.{{$param.Name}}))
                                 }
                             {{ end }}
                         } else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
