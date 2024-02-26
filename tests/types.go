@@ -72,4 +72,8 @@ type (
 		AcceptContext(context.Context)
 		AcceptContextWithOtherArgs(context.Context, int) (int, error)
 	}
+
+	actor interface {
+		Action(firstParam string, secondParam int) (int, error)
+	}
 )

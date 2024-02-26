@@ -51,16 +51,23 @@ type mFormatterMockFormat struct {
 
 // FormatterMockFormatExpectation specifies expectation struct of the Formatter.Format
 type FormatterMockFormatExpectation struct {
-	mock    *FormatterMock
-	params  *FormatterMockFormatParams
-	results *FormatterMockFormatResults
-	Counter uint64
+	mock      *FormatterMock
+	params    *FormatterMockFormatParams
+	paramPtrs *FormatterMockFormatParamPtrs
+	results   *FormatterMockFormatResults
+	Counter   uint64
 }
 
 // FormatterMockFormatParams contains parameters of the Formatter.Format
 type FormatterMockFormatParams struct {
 	s1 string
 	p1 []interface{}
+}
+
+// FormatterMockFormatParamPtrs contains pointers to parameters of the Formatter.Format
+type FormatterMockFormatParamPtrs struct {
+	s1 *string
+	p1 *[]interface{}
 }
 
 // FormatterMockFormatResults contains results of the Formatter.Format
@@ -78,12 +85,60 @@ func (mmFormat *mFormatterMockFormat) Expect(s1 string, p1 ...interface{}) *mFor
 		mmFormat.defaultExpectation = &FormatterMockFormatExpectation{}
 	}
 
+	if mmFormat.defaultExpectation.paramPtrs != nil {
+		mmFormat.mock.t.Fatalf("FormatterMock.Format mock is already set by ExpectParams functions")
+	}
+
 	mmFormat.defaultExpectation.params = &FormatterMockFormatParams{s1, p1}
 	for _, e := range mmFormat.expectations {
 		if minimock.Equal(e.params, mmFormat.defaultExpectation.params) {
 			mmFormat.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmFormat.defaultExpectation.params)
 		}
 	}
+
+	return mmFormat
+}
+
+// ExpectS1Param1 sets up expected param s1 for Formatter.Format
+func (mmFormat *mFormatterMockFormat) ExpectS1Param1(s1 string) *mFormatterMockFormat {
+	if mmFormat.mock.funcFormat != nil {
+		mmFormat.mock.t.Fatalf("FormatterMock.Format mock is already set by Set")
+	}
+
+	if mmFormat.defaultExpectation == nil {
+		mmFormat.defaultExpectation = &FormatterMockFormatExpectation{}
+	}
+
+	if mmFormat.defaultExpectation.params != nil {
+		mmFormat.mock.t.Fatalf("FormatterMock.Format mock is already set by Expect")
+	}
+
+	if mmFormat.defaultExpectation.paramPtrs == nil {
+		mmFormat.defaultExpectation.paramPtrs = &FormatterMockFormatParamPtrs{}
+	}
+	mmFormat.defaultExpectation.paramPtrs.s1 = &s1
+
+	return mmFormat
+}
+
+// ExpectP1Param2 sets up expected param p1 for Formatter.Format
+func (mmFormat *mFormatterMockFormat) ExpectP1Param2(p1 ...interface{}) *mFormatterMockFormat {
+	if mmFormat.mock.funcFormat != nil {
+		mmFormat.mock.t.Fatalf("FormatterMock.Format mock is already set by Set")
+	}
+
+	if mmFormat.defaultExpectation == nil {
+		mmFormat.defaultExpectation = &FormatterMockFormatExpectation{}
+	}
+
+	if mmFormat.defaultExpectation.params != nil {
+		mmFormat.mock.t.Fatalf("FormatterMock.Format mock is already set by Expect")
+	}
+
+	if mmFormat.defaultExpectation.paramPtrs == nil {
+		mmFormat.defaultExpectation.paramPtrs = &FormatterMockFormatParamPtrs{}
+	}
+	mmFormat.defaultExpectation.paramPtrs.p1 = &p1
 
 	return mmFormat
 }
@@ -173,8 +228,21 @@ func (mmFormat *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) 
 	if mmFormat.FormatMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmFormat.FormatMock.defaultExpectation.Counter, 1)
 		mm_want := mmFormat.FormatMock.defaultExpectation.params
+		mm_want_ptrs := mmFormat.FormatMock.defaultExpectation.paramPtrs
+
 		mm_got := FormatterMockFormatParams{s1, p1}
-		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.s1 != nil && !minimock.Equal(*mm_want_ptrs.s1, mm_got.s1) {
+				mmFormat.t.Errorf("FormatterMock.Format got unexpected parameter s1, want: %#v, got: %#v%s\n", *mm_want_ptrs.s1, mm_got.s1, minimock.Diff(*mm_want_ptrs.s1, mm_got.s1))
+			}
+
+			if mm_want_ptrs.p1 != nil && !minimock.Equal(*mm_want_ptrs.p1, mm_got.p1) {
+				mmFormat.t.Errorf("FormatterMock.Format got unexpected parameter p1, want: %#v, got: %#v%s\n", *mm_want_ptrs.p1, mm_got.p1, minimock.Diff(*mm_want_ptrs.p1, mm_got.p1))
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
 			mmFormat.t.Errorf("FormatterMock.Format got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 

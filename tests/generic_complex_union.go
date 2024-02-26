@@ -51,8 +51,9 @@ type mGenericComplexUnionMockName[T complexUnion] struct {
 
 // GenericComplexUnionMockNameExpectation specifies expectation struct of the genericComplexUnion.Name
 type GenericComplexUnionMockNameExpectation[T complexUnion] struct {
-	mock   *GenericComplexUnionMock[T]
-	params *GenericComplexUnionMockNameParams[T]
+	mock      *GenericComplexUnionMock[T]
+	params    *GenericComplexUnionMockNameParams[T]
+	paramPtrs *GenericComplexUnionMockNameParamPtrs[T]
 
 	Counter uint64
 }
@@ -60,6 +61,11 @@ type GenericComplexUnionMockNameExpectation[T complexUnion] struct {
 // GenericComplexUnionMockNameParams contains parameters of the genericComplexUnion.Name
 type GenericComplexUnionMockNameParams[T complexUnion] struct {
 	t1 T
+}
+
+// GenericComplexUnionMockNameParamPtrs contains pointers to parameters of the genericComplexUnion.Name
+type GenericComplexUnionMockNameParamPtrs[T complexUnion] struct {
+	t1 *T
 }
 
 // Expect sets up expected params for genericComplexUnion.Name
@@ -72,12 +78,38 @@ func (mmName *mGenericComplexUnionMockName[T]) Expect(t1 T) *mGenericComplexUnio
 		mmName.defaultExpectation = &GenericComplexUnionMockNameExpectation[T]{}
 	}
 
+	if mmName.defaultExpectation.paramPtrs != nil {
+		mmName.mock.t.Fatalf("GenericComplexUnionMock.Name mock is already set by ExpectParams functions")
+	}
+
 	mmName.defaultExpectation.params = &GenericComplexUnionMockNameParams[T]{t1}
 	for _, e := range mmName.expectations {
 		if minimock.Equal(e.params, mmName.defaultExpectation.params) {
 			mmName.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmName.defaultExpectation.params)
 		}
 	}
+
+	return mmName
+}
+
+// ExpectT1Param1 sets up expected param t1 for genericComplexUnion.Name
+func (mmName *mGenericComplexUnionMockName[T]) ExpectT1Param1(t1 T) *mGenericComplexUnionMockName[T] {
+	if mmName.mock.funcName != nil {
+		mmName.mock.t.Fatalf("GenericComplexUnionMock.Name mock is already set by Set")
+	}
+
+	if mmName.defaultExpectation == nil {
+		mmName.defaultExpectation = &GenericComplexUnionMockNameExpectation[T]{}
+	}
+
+	if mmName.defaultExpectation.params != nil {
+		mmName.mock.t.Fatalf("GenericComplexUnionMock.Name mock is already set by Expect")
+	}
+
+	if mmName.defaultExpectation.paramPtrs == nil {
+		mmName.defaultExpectation.paramPtrs = &GenericComplexUnionMockNameParamPtrs[T]{}
+	}
+	mmName.defaultExpectation.paramPtrs.t1 = &t1
 
 	return mmName
 }
@@ -146,8 +178,17 @@ func (mmName *GenericComplexUnionMock[T]) Name(t1 T) {
 	if mmName.NameMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmName.NameMock.defaultExpectation.Counter, 1)
 		mm_want := mmName.NameMock.defaultExpectation.params
+		mm_want_ptrs := mmName.NameMock.defaultExpectation.paramPtrs
+
 		mm_got := GenericComplexUnionMockNameParams[T]{t1}
-		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.t1 != nil && !minimock.Equal(*mm_want_ptrs.t1, mm_got.t1) {
+				mmName.t.Errorf("GenericComplexUnionMock.Name got unexpected parameter t1, want: %#v, got: %#v%s\n", *mm_want_ptrs.t1, mm_got.t1, minimock.Diff(*mm_want_ptrs.t1, mm_got.t1))
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
 			mmName.t.Errorf("GenericComplexUnionMock.Name got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
