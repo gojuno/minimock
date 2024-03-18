@@ -35,6 +35,8 @@ const (
 			t minimock.Tester
 			finishOnce sync.Once
 
+			skipMinimockFinishCheck bool
+
 			{{ range $method := $.Interface.Methods }}
 				func{{$method.Name}} func{{ $method.Signature }}
 				inspectFunc{{$method.Name}} func({{ $method.Params}})
@@ -301,10 +303,20 @@ const (
 			}
 		{{end}}
 
+		// SkipMinimockFinish makes minimock to skip methods call final check, making it to work in
+		// '0 or more' calls for all mocked methods. Without it, all methods mocked with 'Return()' are
+		// obligated to be called at least once ('1 or more' requirement) which is not a convenient
+		// restriction in some test scenarios.
+		// It is NOT RECOMMENDED to use this option by default unless you really need it, as it helps to
+		// catch the problems when the expected method call is totally skipped during test run.
+		func (m *{{$mock}}{{(paramsRef)}}) SkipMinimockFinish() {
+			m.skipMinimockFinishCheck = true
+		}
+
 		// MinimockFinish checks that all mocked methods have been called the expected number of times
 		func (m *{{$mock}}{{(paramsRef)}}) MinimockFinish() {
 			m.finishOnce.Do(func() {
-				if !m.minimockDone() {
+				if !m.minimockDone() && !m.skipMinimockFinishCheck {
 					{{- range $method := $.Interface.Methods }}
 						m.Minimock{{$method.Name}}Inspect()
 					{{ end -}}
