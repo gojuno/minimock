@@ -41,6 +41,9 @@ var helpers = template.FuncMap{
 		}
 		return false
 	},
+	"inc": func(a int) int {
+		return a + 1
+	},
 }
 
 type (
