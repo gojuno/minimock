@@ -2,10 +2,10 @@ module github.com/gojuno/minimock/v3
 
 require (
 	github.com/davecgh/go-spew v1.1.1
-	github.com/hexdigest/gowrap v1.3.2
+	github.com/hexdigest/gowrap v1.3.6
 	github.com/pkg/errors v0.9.1
 	github.com/pmezard/go-difflib v1.0.0
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/tools v0.1.11-0.20220316014157-77aa08bb151a
 	google.golang.org/protobuf v1.30.0
 )
@@ -16,11 +16,7 @@ require (
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220411194840-2f41105eb62f // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
-	gopkg.in/yaml.v3 v3.0.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 go 1.19
-
-// TODO up gowrap version
-
-replace github.com/hexdigest/gowrap v1.3.2 => ../gowrap
