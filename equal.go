@@ -28,25 +28,16 @@ func Equal(a, b interface{}) bool {
 	}
 
 	if reflect.TypeOf(a).Kind() == reflect.Struct {
-		aV := reflect.ValueOf(a)
-		bV := reflect.ValueOf(b)
-
-		ap := reflect.New(aV.Type()).Elem()
-		bp := reflect.New(bV.Type()).Elem()
-
-		ap.Set(aV)
-		bp.Set(bV)
+		ap := copyValue(a)
+		bp := copyValue(b)
 
 		// for every field in a
 		for i := 0; i < reflect.TypeOf(a).NumField(); i++ {
 			aFieldValue := unexported(ap.Field(i))
 			bFieldValue := unexported(bp.Field(i))
 
-			_, ok := aFieldValue.(anyContext)
-			if ok {
-				if ctx, ok := bFieldValue.(context.Context); ok && ctx != nil {
-					continue
-				}
+			if checkAnyContext(aFieldValue, bFieldValue) {
+				continue
 			}
 
 			if !reflect.DeepEqual(aFieldValue, bFieldValue) {
@@ -82,6 +73,10 @@ func Diff(e, a interface{}) string {
 		return ""
 	}
 
+	if k == reflect.Struct {
+		a = setAnyContext(e, a)
+	}
+
 	es := dumpConf.Sdump(e)
 	as := dumpConf.Sdump(a)
 
@@ -101,5 +96,9 @@ func Diff(e, a interface{}) string {
 }
 
 func unexported(field reflect.Value) interface{} {
-	return reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem().Interface()
+	return unexportedVal(field).Interface()
+}
+
+func unexportedVal(field reflect.Value) reflect.Value {
+	return reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem()
 }
