@@ -80,6 +80,5 @@ type (
 
 	actor interface {
 		Action(firstParam string, secondParam int) (int, error)
-		ActionHard(ctx context.Context, r req) (int, error)
 	}
 )

@@ -22,3 +22,7 @@ require (
 go 1.22
 
 toolchain go1.22.0
+
+replace (
+	github.com/hexdigest/gowrap => ../gowrap
+)
