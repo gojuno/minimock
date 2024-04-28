@@ -47,3 +47,13 @@ func TestContextAccepterMock_WhenThenMatchAnycontext(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 42, result)
 }
+
+//func TestContextAccepterMock_Anycontext(t *testing.T) {
+//	tester := NewTesterMock(t)
+//	tester.CleanupMock.Return()
+//
+//	mock := NewContextAccepterMock(tester).
+//		AcceptContextWithOtherArgsMock.Expect(minimock.AnyContext, 2422).Return(1, nil)
+//
+//	mock.AcceptContextWithOtherArgs(context.WithValue(context.TODO(), "a", 123), 123)
+//}

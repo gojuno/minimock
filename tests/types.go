@@ -73,7 +73,13 @@ type (
 		AcceptContextWithOtherArgs(context.Context, int) (int, error)
 	}
 
+	req struct {
+		a int
+		b string
+	}
+
 	actor interface {
 		Action(firstParam string, secondParam int) (int, error)
+		ActionHard(ctx context.Context, r req) (int, error)
 	}
 )

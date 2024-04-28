@@ -58,6 +58,10 @@ func (c *Controller) RegisterMocker(m Mocker) {
 }
 
 // Finish calls to MinimockFinish method for all registered mockers
+//
+// Deprecated: Finish exists for historical compatibility
+// and should not be used. Current implementation of controller registers
+// Finish as Cleanup function for the testing.T instance passed to NewController.
 func (c *Controller) Finish() {
 	c.Lock()
 	for _, m := range c.mockers {

@@ -30,7 +30,7 @@ install:
 	go install ./cmd/minimock
 
 ./bin/golangci-lint: ./bin
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./bin v1.51.1
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./bin v1.55.2
 
 ./bin/goreleaser: ./bin
 	go install -modfile tools/go.mod github.com/goreleaser/goreleaser
@@ -43,7 +43,12 @@ test:
 	go test -race ./... -v
 
 release: ./bin/goreleaser
-	./bin/goreleaser release
+	./bin/goreleaser release --rm-dist
 
 build: ./bin/goreleaser
 	./bin/goreleaser build --snapshot --rm-dist
+
+.PHONY:
+tidy:
+	go mod tidy
+	cd tools && go mod tidy
