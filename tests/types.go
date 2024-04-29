@@ -68,14 +68,15 @@ type (
 		Name(T, K)
 	}
 
+	structArg struct {
+		a int
+		b string
+	}
+
 	contextAccepter interface {
 		AcceptContext(context.Context)
 		AcceptContextWithOtherArgs(context.Context, int) (int, error)
-	}
-
-	req struct {
-		a int
-		b string
+		AcceptContextWithStructArgs(context.Context, structArg) (int, error)
 	}
 
 	actor interface {

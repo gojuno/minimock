@@ -29,6 +29,12 @@ type ContextAccepterMock struct {
 	afterAcceptContextWithOtherArgsCounter  uint64
 	beforeAcceptContextWithOtherArgsCounter uint64
 	AcceptContextWithOtherArgsMock          mContextAccepterMockAcceptContextWithOtherArgs
+
+	funcAcceptContextWithStructArgs          func(ctx context.Context, s1 structArg) (i1 int, err error)
+	inspectFuncAcceptContextWithStructArgs   func(ctx context.Context, s1 structArg)
+	afterAcceptContextWithStructArgsCounter  uint64
+	beforeAcceptContextWithStructArgsCounter uint64
+	AcceptContextWithStructArgsMock          mContextAccepterMockAcceptContextWithStructArgs
 }
 
 // NewContextAccepterMock returns a mock for contextAccepter
@@ -44,6 +50,9 @@ func NewContextAccepterMock(t minimock.Tester) *ContextAccepterMock {
 
 	m.AcceptContextWithOtherArgsMock = mContextAccepterMockAcceptContextWithOtherArgs{mock: m}
 	m.AcceptContextWithOtherArgsMock.callArgs = []*ContextAccepterMockAcceptContextWithOtherArgsParams{}
+
+	m.AcceptContextWithStructArgsMock = mContextAccepterMockAcceptContextWithStructArgs{mock: m}
+	m.AcceptContextWithStructArgsMock.callArgs = []*ContextAccepterMockAcceptContextWithStructArgsParams{}
 
 	t.Cleanup(m.MinimockFinish)
 
@@ -563,6 +572,291 @@ func (m *ContextAccepterMock) MinimockAcceptContextWithOtherArgsInspect() {
 	}
 }
 
+type mContextAccepterMockAcceptContextWithStructArgs struct {
+	mock               *ContextAccepterMock
+	defaultExpectation *ContextAccepterMockAcceptContextWithStructArgsExpectation
+	expectations       []*ContextAccepterMockAcceptContextWithStructArgsExpectation
+
+	callArgs []*ContextAccepterMockAcceptContextWithStructArgsParams
+	mutex    sync.RWMutex
+}
+
+// ContextAccepterMockAcceptContextWithStructArgsExpectation specifies expectation struct of the contextAccepter.AcceptContextWithStructArgs
+type ContextAccepterMockAcceptContextWithStructArgsExpectation struct {
+	mock      *ContextAccepterMock
+	params    *ContextAccepterMockAcceptContextWithStructArgsParams
+	paramPtrs *ContextAccepterMockAcceptContextWithStructArgsParamPtrs
+	results   *ContextAccepterMockAcceptContextWithStructArgsResults
+	Counter   uint64
+}
+
+// ContextAccepterMockAcceptContextWithStructArgsParams contains parameters of the contextAccepter.AcceptContextWithStructArgs
+type ContextAccepterMockAcceptContextWithStructArgsParams struct {
+	ctx context.Context
+	s1  structArg
+}
+
+// ContextAccepterMockAcceptContextWithStructArgsParamPtrs contains pointers to parameters of the contextAccepter.AcceptContextWithStructArgs
+type ContextAccepterMockAcceptContextWithStructArgsParamPtrs struct {
+	ctx *context.Context
+	s1  *structArg
+}
+
+// ContextAccepterMockAcceptContextWithStructArgsResults contains results of the contextAccepter.AcceptContextWithStructArgs
+type ContextAccepterMockAcceptContextWithStructArgsResults struct {
+	i1  int
+	err error
+}
+
+// Expect sets up expected params for contextAccepter.AcceptContextWithStructArgs
+func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStructArgs) Expect(ctx context.Context, s1 structArg) *mContextAccepterMockAcceptContextWithStructArgs {
+	if mmAcceptContextWithStructArgs.mock.funcAcceptContextWithStructArgs != nil {
+		mmAcceptContextWithStructArgs.mock.t.Fatalf("ContextAccepterMock.AcceptContextWithStructArgs mock is already set by Set")
+	}
+
+	if mmAcceptContextWithStructArgs.defaultExpectation == nil {
+		mmAcceptContextWithStructArgs.defaultExpectation = &ContextAccepterMockAcceptContextWithStructArgsExpectation{}
+	}
+
+	if mmAcceptContextWithStructArgs.defaultExpectation.paramPtrs != nil {
+		mmAcceptContextWithStructArgs.mock.t.Fatalf("ContextAccepterMock.AcceptContextWithStructArgs mock is already set by ExpectParams functions")
+	}
+
+	mmAcceptContextWithStructArgs.defaultExpectation.params = &ContextAccepterMockAcceptContextWithStructArgsParams{ctx, s1}
+	for _, e := range mmAcceptContextWithStructArgs.expectations {
+		if minimock.Equal(e.params, mmAcceptContextWithStructArgs.defaultExpectation.params) {
+			mmAcceptContextWithStructArgs.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmAcceptContextWithStructArgs.defaultExpectation.params)
+		}
+	}
+
+	return mmAcceptContextWithStructArgs
+}
+
+// ExpectCtxParam1 sets up expected param ctx for contextAccepter.AcceptContextWithStructArgs
+func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStructArgs) ExpectCtxParam1(ctx context.Context) *mContextAccepterMockAcceptContextWithStructArgs {
+	if mmAcceptContextWithStructArgs.mock.funcAcceptContextWithStructArgs != nil {
+		mmAcceptContextWithStructArgs.mock.t.Fatalf("ContextAccepterMock.AcceptContextWithStructArgs mock is already set by Set")
+	}
+
+	if mmAcceptContextWithStructArgs.defaultExpectation == nil {
+		mmAcceptContextWithStructArgs.defaultExpectation = &ContextAccepterMockAcceptContextWithStructArgsExpectation{}
+	}
+
+	if mmAcceptContextWithStructArgs.defaultExpectation.params != nil {
+		mmAcceptContextWithStructArgs.mock.t.Fatalf("ContextAccepterMock.AcceptContextWithStructArgs mock is already set by Expect")
+	}
+
+	if mmAcceptContextWithStructArgs.defaultExpectation.paramPtrs == nil {
+		mmAcceptContextWithStructArgs.defaultExpectation.paramPtrs = &ContextAccepterMockAcceptContextWithStructArgsParamPtrs{}
+	}
+	mmAcceptContextWithStructArgs.defaultExpectation.paramPtrs.ctx = &ctx
+
+	return mmAcceptContextWithStructArgs
+}
+
+// ExpectS1Param2 sets up expected param s1 for contextAccepter.AcceptContextWithStructArgs
+func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStructArgs) ExpectS1Param2(s1 structArg) *mContextAccepterMockAcceptContextWithStructArgs {
+	if mmAcceptContextWithStructArgs.mock.funcAcceptContextWithStructArgs != nil {
+		mmAcceptContextWithStructArgs.mock.t.Fatalf("ContextAccepterMock.AcceptContextWithStructArgs mock is already set by Set")
+	}
+
+	if mmAcceptContextWithStructArgs.defaultExpectation == nil {
+		mmAcceptContextWithStructArgs.defaultExpectation = &ContextAccepterMockAcceptContextWithStructArgsExpectation{}
+	}
+
+	if mmAcceptContextWithStructArgs.defaultExpectation.params != nil {
+		mmAcceptContextWithStructArgs.mock.t.Fatalf("ContextAccepterMock.AcceptContextWithStructArgs mock is already set by Expect")
+	}
+
+	if mmAcceptContextWithStructArgs.defaultExpectation.paramPtrs == nil {
+		mmAcceptContextWithStructArgs.defaultExpectation.paramPtrs = &ContextAccepterMockAcceptContextWithStructArgsParamPtrs{}
+	}
+	mmAcceptContextWithStructArgs.defaultExpectation.paramPtrs.s1 = &s1
+
+	return mmAcceptContextWithStructArgs
+}
+
+// Inspect accepts an inspector function that has same arguments as the contextAccepter.AcceptContextWithStructArgs
+func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStructArgs) Inspect(f func(ctx context.Context, s1 structArg)) *mContextAccepterMockAcceptContextWithStructArgs {
+	if mmAcceptContextWithStructArgs.mock.inspectFuncAcceptContextWithStructArgs != nil {
+		mmAcceptContextWithStructArgs.mock.t.Fatalf("Inspect function is already set for ContextAccepterMock.AcceptContextWithStructArgs")
+	}
+
+	mmAcceptContextWithStructArgs.mock.inspectFuncAcceptContextWithStructArgs = f
+
+	return mmAcceptContextWithStructArgs
+}
+
+// Return sets up results that will be returned by contextAccepter.AcceptContextWithStructArgs
+func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStructArgs) Return(i1 int, err error) *ContextAccepterMock {
+	if mmAcceptContextWithStructArgs.mock.funcAcceptContextWithStructArgs != nil {
+		mmAcceptContextWithStructArgs.mock.t.Fatalf("ContextAccepterMock.AcceptContextWithStructArgs mock is already set by Set")
+	}
+
+	if mmAcceptContextWithStructArgs.defaultExpectation == nil {
+		mmAcceptContextWithStructArgs.defaultExpectation = &ContextAccepterMockAcceptContextWithStructArgsExpectation{mock: mmAcceptContextWithStructArgs.mock}
+	}
+	mmAcceptContextWithStructArgs.defaultExpectation.results = &ContextAccepterMockAcceptContextWithStructArgsResults{i1, err}
+	return mmAcceptContextWithStructArgs.mock
+}
+
+// Set uses given function f to mock the contextAccepter.AcceptContextWithStructArgs method
+func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStructArgs) Set(f func(ctx context.Context, s1 structArg) (i1 int, err error)) *ContextAccepterMock {
+	if mmAcceptContextWithStructArgs.defaultExpectation != nil {
+		mmAcceptContextWithStructArgs.mock.t.Fatalf("Default expectation is already set for the contextAccepter.AcceptContextWithStructArgs method")
+	}
+
+	if len(mmAcceptContextWithStructArgs.expectations) > 0 {
+		mmAcceptContextWithStructArgs.mock.t.Fatalf("Some expectations are already set for the contextAccepter.AcceptContextWithStructArgs method")
+	}
+
+	mmAcceptContextWithStructArgs.mock.funcAcceptContextWithStructArgs = f
+	return mmAcceptContextWithStructArgs.mock
+}
+
+// When sets expectation for the contextAccepter.AcceptContextWithStructArgs which will trigger the result defined by the following
+// Then helper
+func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStructArgs) When(ctx context.Context, s1 structArg) *ContextAccepterMockAcceptContextWithStructArgsExpectation {
+	if mmAcceptContextWithStructArgs.mock.funcAcceptContextWithStructArgs != nil {
+		mmAcceptContextWithStructArgs.mock.t.Fatalf("ContextAccepterMock.AcceptContextWithStructArgs mock is already set by Set")
+	}
+
+	expectation := &ContextAccepterMockAcceptContextWithStructArgsExpectation{
+		mock:   mmAcceptContextWithStructArgs.mock,
+		params: &ContextAccepterMockAcceptContextWithStructArgsParams{ctx, s1},
+	}
+	mmAcceptContextWithStructArgs.expectations = append(mmAcceptContextWithStructArgs.expectations, expectation)
+	return expectation
+}
+
+// Then sets up contextAccepter.AcceptContextWithStructArgs return parameters for the expectation previously defined by the When method
+func (e *ContextAccepterMockAcceptContextWithStructArgsExpectation) Then(i1 int, err error) *ContextAccepterMock {
+	e.results = &ContextAccepterMockAcceptContextWithStructArgsResults{i1, err}
+	return e.mock
+}
+
+// AcceptContextWithStructArgs implements contextAccepter
+func (mmAcceptContextWithStructArgs *ContextAccepterMock) AcceptContextWithStructArgs(ctx context.Context, s1 structArg) (i1 int, err error) {
+	mm_atomic.AddUint64(&mmAcceptContextWithStructArgs.beforeAcceptContextWithStructArgsCounter, 1)
+	defer mm_atomic.AddUint64(&mmAcceptContextWithStructArgs.afterAcceptContextWithStructArgsCounter, 1)
+
+	if mmAcceptContextWithStructArgs.inspectFuncAcceptContextWithStructArgs != nil {
+		mmAcceptContextWithStructArgs.inspectFuncAcceptContextWithStructArgs(ctx, s1)
+	}
+
+	mm_params := ContextAccepterMockAcceptContextWithStructArgsParams{ctx, s1}
+
+	// Record call args
+	mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.mutex.Lock()
+	mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.callArgs = append(mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.callArgs, &mm_params)
+	mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.mutex.Unlock()
+
+	for _, e := range mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.i1, e.results.err
+		}
+	}
+
+	if mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.defaultExpectation.Counter, 1)
+		mm_want := mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.defaultExpectation.params
+		mm_want_ptrs := mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.defaultExpectation.paramPtrs
+
+		mm_got := ContextAccepterMockAcceptContextWithStructArgsParams{ctx, s1}
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
+				mmAcceptContextWithStructArgs.t.Errorf("ContextAccepterMock.AcceptContextWithStructArgs got unexpected parameter ctx, want: %#v, got: %#v%s\n", *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
+			}
+
+			if mm_want_ptrs.s1 != nil && !minimock.Equal(*mm_want_ptrs.s1, mm_got.s1) {
+				mmAcceptContextWithStructArgs.t.Errorf("ContextAccepterMock.AcceptContextWithStructArgs got unexpected parameter s1, want: %#v, got: %#v%s\n", *mm_want_ptrs.s1, mm_got.s1, minimock.Diff(*mm_want_ptrs.s1, mm_got.s1))
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmAcceptContextWithStructArgs.t.Errorf("ContextAccepterMock.AcceptContextWithStructArgs got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.defaultExpectation.results
+		if mm_results == nil {
+			mmAcceptContextWithStructArgs.t.Fatal("No results are set for the ContextAccepterMock.AcceptContextWithStructArgs")
+		}
+		return (*mm_results).i1, (*mm_results).err
+	}
+	if mmAcceptContextWithStructArgs.funcAcceptContextWithStructArgs != nil {
+		return mmAcceptContextWithStructArgs.funcAcceptContextWithStructArgs(ctx, s1)
+	}
+	mmAcceptContextWithStructArgs.t.Fatalf("Unexpected call to ContextAccepterMock.AcceptContextWithStructArgs. %v %v", ctx, s1)
+	return
+}
+
+// AcceptContextWithStructArgsAfterCounter returns a count of finished ContextAccepterMock.AcceptContextWithStructArgs invocations
+func (mmAcceptContextWithStructArgs *ContextAccepterMock) AcceptContextWithStructArgsAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmAcceptContextWithStructArgs.afterAcceptContextWithStructArgsCounter)
+}
+
+// AcceptContextWithStructArgsBeforeCounter returns a count of ContextAccepterMock.AcceptContextWithStructArgs invocations
+func (mmAcceptContextWithStructArgs *ContextAccepterMock) AcceptContextWithStructArgsBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmAcceptContextWithStructArgs.beforeAcceptContextWithStructArgsCounter)
+}
+
+// Calls returns a list of arguments used in each call to ContextAccepterMock.AcceptContextWithStructArgs.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStructArgs) Calls() []*ContextAccepterMockAcceptContextWithStructArgsParams {
+	mmAcceptContextWithStructArgs.mutex.RLock()
+
+	argCopy := make([]*ContextAccepterMockAcceptContextWithStructArgsParams, len(mmAcceptContextWithStructArgs.callArgs))
+	copy(argCopy, mmAcceptContextWithStructArgs.callArgs)
+
+	mmAcceptContextWithStructArgs.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockAcceptContextWithStructArgsDone returns true if the count of the AcceptContextWithStructArgs invocations corresponds
+// the number of defined expectations
+func (m *ContextAccepterMock) MinimockAcceptContextWithStructArgsDone() bool {
+	for _, e := range m.AcceptContextWithStructArgsMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.AcceptContextWithStructArgsMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterAcceptContextWithStructArgsCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcAcceptContextWithStructArgs != nil && mm_atomic.LoadUint64(&m.afterAcceptContextWithStructArgsCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockAcceptContextWithStructArgsInspect logs each unmet expectation
+func (m *ContextAccepterMock) MinimockAcceptContextWithStructArgsInspect() {
+	for _, e := range m.AcceptContextWithStructArgsMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContextWithStructArgs with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.AcceptContextWithStructArgsMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterAcceptContextWithStructArgsCounter) < 1 {
+		if m.AcceptContextWithStructArgsMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to ContextAccepterMock.AcceptContextWithStructArgs")
+		} else {
+			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContextWithStructArgs with params: %#v", *m.AcceptContextWithStructArgsMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcAcceptContextWithStructArgs != nil && mm_atomic.LoadUint64(&m.afterAcceptContextWithStructArgsCounter) < 1 {
+		m.t.Error("Expected call to ContextAccepterMock.AcceptContextWithStructArgs")
+	}
+}
+
 // MinimockFinish checks that all mocked methods have been called the expected number of times
 func (m *ContextAccepterMock) MinimockFinish() {
 	m.finishOnce.Do(func() {
@@ -570,6 +864,8 @@ func (m *ContextAccepterMock) MinimockFinish() {
 			m.MinimockAcceptContextInspect()
 
 			m.MinimockAcceptContextWithOtherArgsInspect()
+
+			m.MinimockAcceptContextWithStructArgsInspect()
 			m.t.FailNow()
 		}
 	})
@@ -595,5 +891,6 @@ func (m *ContextAccepterMock) minimockDone() bool {
 	done := true
 	return done &&
 		m.MinimockAcceptContextDone() &&
-		m.MinimockAcceptContextWithOtherArgsDone()
+		m.MinimockAcceptContextWithOtherArgsDone() &&
+		m.MinimockAcceptContextWithStructArgsDone()
 }
