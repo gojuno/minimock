@@ -62,8 +62,7 @@ func TestContextAccepterMock_DiffWithoutAnyContext(t *testing.T) {
 				ctx: context.Background(),
 				i1:  123,
 			},
-			"\n\nDiff:\n--- Expected params\n+++ Actual params\n@@ -4,3 +4,3 @@\n  },\n- i1: (int) 24\n+ i1: (int) 123\n }\n").
-		Return()
+			"\n\nDiff:\n--- Expected params\n+++ Actual params\n@@ -4,3 +4,3 @@\n  },\n- i1: (int) 24\n+ i1: (int) 123\n }\n").Return()
 
 	mock := NewContextAccepterMock(tester).
 		AcceptContextWithOtherArgsMock.Expect(minimock.AnyContext, 24).Return(1, nil)
