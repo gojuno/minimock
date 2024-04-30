@@ -37,6 +37,8 @@ func init() {
 		return
 	}
 
+	// if installing directly with go build/install
+	// take version and commit from buildInfo
 	version = getVersion(version, buildInfo)
 	commit = getCommit(commit, buildInfo)
 }
