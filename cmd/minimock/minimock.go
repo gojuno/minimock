@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"text/template"
 	"time"
@@ -25,10 +26,44 @@ import (
 var (
 	//do not modify the following vars
 	//the values are being injected at the compile time by goreleaser
-	version   = "dev"
-	commit    = "dev"
+	version   string
+	commit    string
 	buildDate = time.Now().Format(time.RFC3339)
 )
+
+func init() {
+	buildInfo, ok := debug.ReadBuildInfo()
+	if !ok || buildInfo == nil {
+		return
+	}
+
+	version = getVersion(version, buildInfo)
+	commit = getCommit(commit, buildInfo)
+}
+
+func getCommit(commit string, buildInfo *debug.BuildInfo) string {
+	if commit != "" {
+		return commit
+	}
+	for _, setting := range buildInfo.Settings {
+		if setting.Key == "vcs.revision" {
+			return setting.Value
+		}
+	}
+
+	return "dev"
+}
+
+func getVersion(version string, buildInfo *debug.BuildInfo) string {
+	if version != "" {
+		return version
+	}
+	if buildInfo.Main.Version != "" {
+		return buildInfo.Main.Version
+	}
+
+	return "dev"
+}
 
 var helpers = template.FuncMap{
 	"title": strings.Title,
