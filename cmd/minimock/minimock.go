@@ -72,6 +72,16 @@ func init() {
 		version = getVersion(version, buildInfo)
 		commit = getCommit(commit, buildInfo)
 	}
+	// if goreleaser didnt set this vars
+	// and we didnt found buildInfo then set
+	// them to 'dev'
+	if version == "" {
+		version = devVersion
+	}
+	if commit == "" {
+		commit = devVersion
+	}
+
 }
 
 func getCommit(commit string, buildInfo *debug.BuildInfo) string {
@@ -84,7 +94,7 @@ func getCommit(commit string, buildInfo *debug.BuildInfo) string {
 		}
 	}
 
-	return devVersion
+	return ""
 }
 
 func getVersion(version string, buildInfo *debug.BuildInfo) string {
@@ -95,7 +105,7 @@ func getVersion(version string, buildInfo *debug.BuildInfo) string {
 		return buildInfo.Main.Version
 	}
 
-	return devVersion
+	return ""
 }
 
 func main() {
