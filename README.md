@@ -123,6 +123,22 @@ readCloserMock := NewReadCloserMock(mc).ReadMock.Inspect(func(p []byte){
 
 ```
 
+### Setting up a mock using ExpectParams helpers:
+
+Let's say we have a mocking interface with function that has many arguments:
+```go
+type If interface {
+	Do(intArg int, stringArg string, floatArg float)
+}
+```
+
+Imagine that you don't want to check all the arguments, just one or two of them.
+Then we can use ExpectParams helpers, which are generated for each argument:
+```go
+mc := minimock.NewController(t)
+ifMock := NewIfMock(mc).DoMock.ExpectIntArgParam1(10).ExpectFloatArgParam3(10.2).Return()
+```
+
 ### Setting up a mock using When/Then helpers:
 ```go
 mc := minimock.NewController(t)
