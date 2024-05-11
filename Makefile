@@ -14,7 +14,8 @@ generate:
 	go run ./cmd/minimock/minimock.go -i ./tests.genericSimpleUnion -o ./tests/generic_simple_union.go
 	go run ./cmd/minimock/minimock.go -i ./tests.genericComplexUnion -o ./tests/generic_complex_union.go
 	go run ./cmd/minimock/minimock.go -i ./tests.genericInlineUnion -o ./tests/generic_inline_union.go
-	go run ./cmd/minimock/minimock.go -i ./tests.genericInlineUnion -o ./tests/generic_inline_union.go
+	go run ./cmd/minimock/minimock.go -i ./tests.genericInlineUnionWithManyTypes -o ./tests/generic_inline_with_many_options.go
+	go run ./cmd/minimock/minimock.go -i ./tests.genericMultipleTypes -o ./tests/generic_multiple_args_with_different_types.go
 	go run ./cmd/minimock/minimock.go -i ./tests.contextAccepter -o ./tests/context_accepter_mock.go
 	go run ./cmd/minimock/minimock.go -i github.com/gojuno/minimock/v3.Tester -o ./tests/package_name_specified_test.go -p tests_test
 	go run ./cmd/minimock/minimock.go -i ./tests.actor -o ./tests/actor_mock.go

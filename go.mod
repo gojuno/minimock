@@ -2,7 +2,7 @@ module github.com/gojuno/minimock/v3
 
 require (
 	github.com/davecgh/go-spew v1.1.1
-	github.com/hexdigest/gowrap v1.3.6
+	github.com/hexdigest/gowrap v1.3.7
 	github.com/pkg/errors v0.9.1
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/stretchr/testify v1.8.4

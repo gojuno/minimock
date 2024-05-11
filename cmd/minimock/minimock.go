@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"text/template"
 	"time"
@@ -22,11 +23,13 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+const devVersion = "dev"
+
 var (
 	//do not modify the following vars
 	//the values are being injected at the compile time by goreleaser
-	version   = "dev"
-	commit    = "dev"
+	version   string
+	commit    string
 	buildDate = time.Now().Format(time.RFC3339)
 )
 
@@ -61,6 +64,49 @@ type (
 		WriteTo    string
 	}
 )
+
+func init() {
+	if buildInfo, ok := debug.ReadBuildInfo(); ok {
+		// if installing directly with go build/install
+		// take version and commit from buildInfo
+		version = getVersion(version, buildInfo)
+		commit = getCommit(commit, buildInfo)
+	}
+	// if goreleaser didn't set these vars,
+	// and we didn't find buildInfo then set
+	// them to 'dev'
+	if version == "" {
+		version = devVersion
+	}
+	if commit == "" {
+		commit = devVersion
+	}
+
+}
+
+func getCommit(commit string, buildInfo *debug.BuildInfo) string {
+	if commit != "" {
+		return commit
+	}
+	for _, setting := range buildInfo.Settings {
+		if setting.Key == "vcs.revision" {
+			return setting.Value
+		}
+	}
+
+	return ""
+}
+
+func getVersion(version string, buildInfo *debug.BuildInfo) string {
+	if version != "" {
+		return version
+	}
+	if buildInfo.Main.Version != "" {
+		return buildInfo.Main.Version
+	}
+
+	return ""
+}
 
 func main() {
 	opts, err := processArgs(os.Args[1:], os.Stdout, os.Stderr)
