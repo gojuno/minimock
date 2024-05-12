@@ -91,6 +91,8 @@ type mTesterMockCleanup struct {
 
 	callArgs []*TesterMockCleanupParams
 	mutex    sync.RWMutex
+
+	expectedInvocations uint64
 }
 
 // TesterMockCleanupExpectation specifies expectation struct of the Tester.Cleanup
@@ -196,6 +198,32 @@ func (mmCleanup *mTesterMockCleanup) Set(f func(f func())) *TesterMock {
 	return mmCleanup.mock
 }
 
+func (mmCleanup *mTesterMockCleanup) Times(n uint64) *mTesterMockCleanup {
+	if n == 0 {
+		mmCleanup.mock.t.Fatalf("Times of TesterMock.Cleanup mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmCleanup.expectedInvocations, n)
+	return mmCleanup
+}
+
+func (mmCleanup *mTesterMockCleanup) invocationsDone() bool {
+	if len(mmCleanup.expectations) == 0 && mmCleanup.defaultExpectation == nil && mmCleanup.mock.funcCleanup == nil {
+		// does not need to check invocations if no expectations, defaultExpectation or funcCleanup set
+		return true
+	}
+
+	// if expectations were set we check total invocations
+	// if default expectation was set then invocations count should be greater than zero
+	// if func was set then invocations count should be greater than zero
+	totalInvocations := mm_atomic.LoadUint64(&mmCleanup.mock.afterCleanupCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmCleanup.expectedInvocations)
+	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
+		return false
+	}
+
+	return true
+}
+
 // Cleanup implements minimock.Tester
 func (mmCleanup *TesterMock) Cleanup(f func()) {
 	mm_atomic.AddUint64(&mmCleanup.beforeCleanupCounter, 1)
@@ -279,15 +307,7 @@ func (m *TesterMock) MinimockCleanupDone() bool {
 		}
 	}
 
-	// if default expectation was set then invocations count should be greater than zero
-	if m.CleanupMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterCleanupCounter) < 1 {
-		return false
-	}
-	// if func was set then invocations count should be greater than zero
-	if m.funcCleanup != nil && mm_atomic.LoadUint64(&m.afterCleanupCounter) < 1 {
-		return false
-	}
-	return true
+	return m.CleanupMock.invocationsDone()
 }
 
 // MinimockCleanupInspect logs each unmet expectation
@@ -298,8 +318,9 @@ func (m *TesterMock) MinimockCleanupInspect() {
 		}
 	}
 
+	afterCleanupCounter := mm_atomic.LoadUint64(&m.afterCleanupCounter)
 	// if default expectation was set then invocations count should be greater than zero
-	if m.CleanupMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterCleanupCounter) < 1 {
+	if m.CleanupMock.defaultExpectation != nil && afterCleanupCounter < 1 {
 		if m.CleanupMock.defaultExpectation.params == nil {
 			m.t.Error("Expected call to TesterMock.Cleanup")
 		} else {
@@ -307,8 +328,13 @@ func (m *TesterMock) MinimockCleanupInspect() {
 		}
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcCleanup != nil && mm_atomic.LoadUint64(&m.afterCleanupCounter) < 1 {
+	if m.funcCleanup != nil && afterCleanupCounter < 1 {
 		m.t.Error("Expected call to TesterMock.Cleanup")
+	}
+
+	if !m.CleanupMock.invocationsDone() && afterCleanupCounter > 0 {
+		m.t.Errorf("Expected %d calls to TesterMock.Cleanup but found %d calls",
+			mm_atomic.LoadUint64(&m.CleanupMock.expectedInvocations), afterCleanupCounter)
 	}
 }
 
@@ -319,6 +345,8 @@ type mTesterMockError struct {
 
 	callArgs []*TesterMockErrorParams
 	mutex    sync.RWMutex
+
+	expectedInvocations uint64
 }
 
 // TesterMockErrorExpectation specifies expectation struct of the Tester.Error
@@ -424,6 +452,32 @@ func (mmError *mTesterMockError) Set(f func(p1 ...interface{})) *TesterMock {
 	return mmError.mock
 }
 
+func (mmError *mTesterMockError) Times(n uint64) *mTesterMockError {
+	if n == 0 {
+		mmError.mock.t.Fatalf("Times of TesterMock.Error mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmError.expectedInvocations, n)
+	return mmError
+}
+
+func (mmError *mTesterMockError) invocationsDone() bool {
+	if len(mmError.expectations) == 0 && mmError.defaultExpectation == nil && mmError.mock.funcError == nil {
+		// does not need to check invocations if no expectations, defaultExpectation or funcError set
+		return true
+	}
+
+	// if expectations were set we check total invocations
+	// if default expectation was set then invocations count should be greater than zero
+	// if func was set then invocations count should be greater than zero
+	totalInvocations := mm_atomic.LoadUint64(&mmError.mock.afterErrorCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmError.expectedInvocations)
+	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
+		return false
+	}
+
+	return true
+}
+
 // Error implements minimock.Tester
 func (mmError *TesterMock) Error(p1 ...interface{}) {
 	mm_atomic.AddUint64(&mmError.beforeErrorCounter, 1)
@@ -507,15 +561,7 @@ func (m *TesterMock) MinimockErrorDone() bool {
 		}
 	}
 
-	// if default expectation was set then invocations count should be greater than zero
-	if m.ErrorMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterErrorCounter) < 1 {
-		return false
-	}
-	// if func was set then invocations count should be greater than zero
-	if m.funcError != nil && mm_atomic.LoadUint64(&m.afterErrorCounter) < 1 {
-		return false
-	}
-	return true
+	return m.ErrorMock.invocationsDone()
 }
 
 // MinimockErrorInspect logs each unmet expectation
@@ -526,8 +572,9 @@ func (m *TesterMock) MinimockErrorInspect() {
 		}
 	}
 
+	afterErrorCounter := mm_atomic.LoadUint64(&m.afterErrorCounter)
 	// if default expectation was set then invocations count should be greater than zero
-	if m.ErrorMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterErrorCounter) < 1 {
+	if m.ErrorMock.defaultExpectation != nil && afterErrorCounter < 1 {
 		if m.ErrorMock.defaultExpectation.params == nil {
 			m.t.Error("Expected call to TesterMock.Error")
 		} else {
@@ -535,8 +582,13 @@ func (m *TesterMock) MinimockErrorInspect() {
 		}
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcError != nil && mm_atomic.LoadUint64(&m.afterErrorCounter) < 1 {
+	if m.funcError != nil && afterErrorCounter < 1 {
 		m.t.Error("Expected call to TesterMock.Error")
+	}
+
+	if !m.ErrorMock.invocationsDone() && afterErrorCounter > 0 {
+		m.t.Errorf("Expected %d calls to TesterMock.Error but found %d calls",
+			mm_atomic.LoadUint64(&m.ErrorMock.expectedInvocations), afterErrorCounter)
 	}
 }
 
@@ -547,6 +599,8 @@ type mTesterMockErrorf struct {
 
 	callArgs []*TesterMockErrorfParams
 	mutex    sync.RWMutex
+
+	expectedInvocations uint64
 }
 
 // TesterMockErrorfExpectation specifies expectation struct of the Tester.Errorf
@@ -676,6 +730,32 @@ func (mmErrorf *mTesterMockErrorf) Set(f func(format string, args ...interface{}
 	return mmErrorf.mock
 }
 
+func (mmErrorf *mTesterMockErrorf) Times(n uint64) *mTesterMockErrorf {
+	if n == 0 {
+		mmErrorf.mock.t.Fatalf("Times of TesterMock.Errorf mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmErrorf.expectedInvocations, n)
+	return mmErrorf
+}
+
+func (mmErrorf *mTesterMockErrorf) invocationsDone() bool {
+	if len(mmErrorf.expectations) == 0 && mmErrorf.defaultExpectation == nil && mmErrorf.mock.funcErrorf == nil {
+		// does not need to check invocations if no expectations, defaultExpectation or funcErrorf set
+		return true
+	}
+
+	// if expectations were set we check total invocations
+	// if default expectation was set then invocations count should be greater than zero
+	// if func was set then invocations count should be greater than zero
+	totalInvocations := mm_atomic.LoadUint64(&mmErrorf.mock.afterErrorfCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmErrorf.expectedInvocations)
+	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
+		return false
+	}
+
+	return true
+}
+
 // Errorf implements minimock.Tester
 func (mmErrorf *TesterMock) Errorf(format string, args ...interface{}) {
 	mm_atomic.AddUint64(&mmErrorf.beforeErrorfCounter, 1)
@@ -763,15 +843,7 @@ func (m *TesterMock) MinimockErrorfDone() bool {
 		}
 	}
 
-	// if default expectation was set then invocations count should be greater than zero
-	if m.ErrorfMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterErrorfCounter) < 1 {
-		return false
-	}
-	// if func was set then invocations count should be greater than zero
-	if m.funcErrorf != nil && mm_atomic.LoadUint64(&m.afterErrorfCounter) < 1 {
-		return false
-	}
-	return true
+	return m.ErrorfMock.invocationsDone()
 }
 
 // MinimockErrorfInspect logs each unmet expectation
@@ -782,8 +854,9 @@ func (m *TesterMock) MinimockErrorfInspect() {
 		}
 	}
 
+	afterErrorfCounter := mm_atomic.LoadUint64(&m.afterErrorfCounter)
 	// if default expectation was set then invocations count should be greater than zero
-	if m.ErrorfMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterErrorfCounter) < 1 {
+	if m.ErrorfMock.defaultExpectation != nil && afterErrorfCounter < 1 {
 		if m.ErrorfMock.defaultExpectation.params == nil {
 			m.t.Error("Expected call to TesterMock.Errorf")
 		} else {
@@ -791,8 +864,13 @@ func (m *TesterMock) MinimockErrorfInspect() {
 		}
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcErrorf != nil && mm_atomic.LoadUint64(&m.afterErrorfCounter) < 1 {
+	if m.funcErrorf != nil && afterErrorfCounter < 1 {
 		m.t.Error("Expected call to TesterMock.Errorf")
+	}
+
+	if !m.ErrorfMock.invocationsDone() && afterErrorfCounter > 0 {
+		m.t.Errorf("Expected %d calls to TesterMock.Errorf but found %d calls",
+			mm_atomic.LoadUint64(&m.ErrorfMock.expectedInvocations), afterErrorfCounter)
 	}
 }
 
@@ -800,6 +878,8 @@ type mTesterMockFailNow struct {
 	mock               *TesterMock
 	defaultExpectation *TesterMockFailNowExpectation
 	expectations       []*TesterMockFailNowExpectation
+
+	expectedInvocations uint64
 }
 
 // TesterMockFailNowExpectation specifies expectation struct of the Tester.FailNow
@@ -860,6 +940,32 @@ func (mmFailNow *mTesterMockFailNow) Set(f func()) *TesterMock {
 	return mmFailNow.mock
 }
 
+func (mmFailNow *mTesterMockFailNow) Times(n uint64) *mTesterMockFailNow {
+	if n == 0 {
+		mmFailNow.mock.t.Fatalf("Times of TesterMock.FailNow mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmFailNow.expectedInvocations, n)
+	return mmFailNow
+}
+
+func (mmFailNow *mTesterMockFailNow) invocationsDone() bool {
+	if len(mmFailNow.expectations) == 0 && mmFailNow.defaultExpectation == nil && mmFailNow.mock.funcFailNow == nil {
+		// does not need to check invocations if no expectations, defaultExpectation or funcFailNow set
+		return true
+	}
+
+	// if expectations were set we check total invocations
+	// if default expectation was set then invocations count should be greater than zero
+	// if func was set then invocations count should be greater than zero
+	totalInvocations := mm_atomic.LoadUint64(&mmFailNow.mock.afterFailNowCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmFailNow.expectedInvocations)
+	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
+		return false
+	}
+
+	return true
+}
+
 // FailNow implements minimock.Tester
 func (mmFailNow *TesterMock) FailNow() {
 	mm_atomic.AddUint64(&mmFailNow.beforeFailNowCounter, 1)
@@ -902,15 +1008,7 @@ func (m *TesterMock) MinimockFailNowDone() bool {
 		}
 	}
 
-	// if default expectation was set then invocations count should be greater than zero
-	if m.FailNowMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFailNowCounter) < 1 {
-		return false
-	}
-	// if func was set then invocations count should be greater than zero
-	if m.funcFailNow != nil && mm_atomic.LoadUint64(&m.afterFailNowCounter) < 1 {
-		return false
-	}
-	return true
+	return m.FailNowMock.invocationsDone()
 }
 
 // MinimockFailNowInspect logs each unmet expectation
@@ -921,13 +1019,19 @@ func (m *TesterMock) MinimockFailNowInspect() {
 		}
 	}
 
+	afterFailNowCounter := mm_atomic.LoadUint64(&m.afterFailNowCounter)
 	// if default expectation was set then invocations count should be greater than zero
-	if m.FailNowMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFailNowCounter) < 1 {
+	if m.FailNowMock.defaultExpectation != nil && afterFailNowCounter < 1 {
 		m.t.Error("Expected call to TesterMock.FailNow")
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcFailNow != nil && mm_atomic.LoadUint64(&m.afterFailNowCounter) < 1 {
+	if m.funcFailNow != nil && afterFailNowCounter < 1 {
 		m.t.Error("Expected call to TesterMock.FailNow")
+	}
+
+	if !m.FailNowMock.invocationsDone() && afterFailNowCounter > 0 {
+		m.t.Errorf("Expected %d calls to TesterMock.FailNow but found %d calls",
+			mm_atomic.LoadUint64(&m.FailNowMock.expectedInvocations), afterFailNowCounter)
 	}
 }
 
@@ -938,6 +1042,8 @@ type mTesterMockFatal struct {
 
 	callArgs []*TesterMockFatalParams
 	mutex    sync.RWMutex
+
+	expectedInvocations uint64
 }
 
 // TesterMockFatalExpectation specifies expectation struct of the Tester.Fatal
@@ -1043,6 +1149,32 @@ func (mmFatal *mTesterMockFatal) Set(f func(args ...interface{})) *TesterMock {
 	return mmFatal.mock
 }
 
+func (mmFatal *mTesterMockFatal) Times(n uint64) *mTesterMockFatal {
+	if n == 0 {
+		mmFatal.mock.t.Fatalf("Times of TesterMock.Fatal mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmFatal.expectedInvocations, n)
+	return mmFatal
+}
+
+func (mmFatal *mTesterMockFatal) invocationsDone() bool {
+	if len(mmFatal.expectations) == 0 && mmFatal.defaultExpectation == nil && mmFatal.mock.funcFatal == nil {
+		// does not need to check invocations if no expectations, defaultExpectation or funcFatal set
+		return true
+	}
+
+	// if expectations were set we check total invocations
+	// if default expectation was set then invocations count should be greater than zero
+	// if func was set then invocations count should be greater than zero
+	totalInvocations := mm_atomic.LoadUint64(&mmFatal.mock.afterFatalCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmFatal.expectedInvocations)
+	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
+		return false
+	}
+
+	return true
+}
+
 // Fatal implements minimock.Tester
 func (mmFatal *TesterMock) Fatal(args ...interface{}) {
 	mm_atomic.AddUint64(&mmFatal.beforeFatalCounter, 1)
@@ -1126,15 +1258,7 @@ func (m *TesterMock) MinimockFatalDone() bool {
 		}
 	}
 
-	// if default expectation was set then invocations count should be greater than zero
-	if m.FatalMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFatalCounter) < 1 {
-		return false
-	}
-	// if func was set then invocations count should be greater than zero
-	if m.funcFatal != nil && mm_atomic.LoadUint64(&m.afterFatalCounter) < 1 {
-		return false
-	}
-	return true
+	return m.FatalMock.invocationsDone()
 }
 
 // MinimockFatalInspect logs each unmet expectation
@@ -1145,8 +1269,9 @@ func (m *TesterMock) MinimockFatalInspect() {
 		}
 	}
 
+	afterFatalCounter := mm_atomic.LoadUint64(&m.afterFatalCounter)
 	// if default expectation was set then invocations count should be greater than zero
-	if m.FatalMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFatalCounter) < 1 {
+	if m.FatalMock.defaultExpectation != nil && afterFatalCounter < 1 {
 		if m.FatalMock.defaultExpectation.params == nil {
 			m.t.Error("Expected call to TesterMock.Fatal")
 		} else {
@@ -1154,8 +1279,13 @@ func (m *TesterMock) MinimockFatalInspect() {
 		}
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcFatal != nil && mm_atomic.LoadUint64(&m.afterFatalCounter) < 1 {
+	if m.funcFatal != nil && afterFatalCounter < 1 {
 		m.t.Error("Expected call to TesterMock.Fatal")
+	}
+
+	if !m.FatalMock.invocationsDone() && afterFatalCounter > 0 {
+		m.t.Errorf("Expected %d calls to TesterMock.Fatal but found %d calls",
+			mm_atomic.LoadUint64(&m.FatalMock.expectedInvocations), afterFatalCounter)
 	}
 }
 
@@ -1166,6 +1296,8 @@ type mTesterMockFatalf struct {
 
 	callArgs []*TesterMockFatalfParams
 	mutex    sync.RWMutex
+
+	expectedInvocations uint64
 }
 
 // TesterMockFatalfExpectation specifies expectation struct of the Tester.Fatalf
@@ -1295,6 +1427,32 @@ func (mmFatalf *mTesterMockFatalf) Set(f func(format string, args ...interface{}
 	return mmFatalf.mock
 }
 
+func (mmFatalf *mTesterMockFatalf) Times(n uint64) *mTesterMockFatalf {
+	if n == 0 {
+		mmFatalf.mock.t.Fatalf("Times of TesterMock.Fatalf mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmFatalf.expectedInvocations, n)
+	return mmFatalf
+}
+
+func (mmFatalf *mTesterMockFatalf) invocationsDone() bool {
+	if len(mmFatalf.expectations) == 0 && mmFatalf.defaultExpectation == nil && mmFatalf.mock.funcFatalf == nil {
+		// does not need to check invocations if no expectations, defaultExpectation or funcFatalf set
+		return true
+	}
+
+	// if expectations were set we check total invocations
+	// if default expectation was set then invocations count should be greater than zero
+	// if func was set then invocations count should be greater than zero
+	totalInvocations := mm_atomic.LoadUint64(&mmFatalf.mock.afterFatalfCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmFatalf.expectedInvocations)
+	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
+		return false
+	}
+
+	return true
+}
+
 // Fatalf implements minimock.Tester
 func (mmFatalf *TesterMock) Fatalf(format string, args ...interface{}) {
 	mm_atomic.AddUint64(&mmFatalf.beforeFatalfCounter, 1)
@@ -1382,15 +1540,7 @@ func (m *TesterMock) MinimockFatalfDone() bool {
 		}
 	}
 
-	// if default expectation was set then invocations count should be greater than zero
-	if m.FatalfMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFatalfCounter) < 1 {
-		return false
-	}
-	// if func was set then invocations count should be greater than zero
-	if m.funcFatalf != nil && mm_atomic.LoadUint64(&m.afterFatalfCounter) < 1 {
-		return false
-	}
-	return true
+	return m.FatalfMock.invocationsDone()
 }
 
 // MinimockFatalfInspect logs each unmet expectation
@@ -1401,8 +1551,9 @@ func (m *TesterMock) MinimockFatalfInspect() {
 		}
 	}
 
+	afterFatalfCounter := mm_atomic.LoadUint64(&m.afterFatalfCounter)
 	// if default expectation was set then invocations count should be greater than zero
-	if m.FatalfMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFatalfCounter) < 1 {
+	if m.FatalfMock.defaultExpectation != nil && afterFatalfCounter < 1 {
 		if m.FatalfMock.defaultExpectation.params == nil {
 			m.t.Error("Expected call to TesterMock.Fatalf")
 		} else {
@@ -1410,8 +1561,13 @@ func (m *TesterMock) MinimockFatalfInspect() {
 		}
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcFatalf != nil && mm_atomic.LoadUint64(&m.afterFatalfCounter) < 1 {
+	if m.funcFatalf != nil && afterFatalfCounter < 1 {
 		m.t.Error("Expected call to TesterMock.Fatalf")
+	}
+
+	if !m.FatalfMock.invocationsDone() && afterFatalfCounter > 0 {
+		m.t.Errorf("Expected %d calls to TesterMock.Fatalf but found %d calls",
+			mm_atomic.LoadUint64(&m.FatalfMock.expectedInvocations), afterFatalfCounter)
 	}
 }
 

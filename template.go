@@ -72,6 +72,8 @@ const (
 					callArgs []*{{$mock}}{{$method.Name}}Params{{(paramsRef)}}
 					mutex sync.RWMutex
 				{{ end }}
+
+				expectedInvocations uint64
 			}
 
 			// {{$mock}}{{$method.Name}}Expectation specifies expectation struct of the {{$.Interface.Name}}.{{$method.Name}}
@@ -207,6 +209,32 @@ const (
 				}
 			{{end}}
 
+			func ({{$m}} *m{{$mock}}{{$method.Name}}{{(paramsRef)}}) Times(n uint64) *m{{$mock}}{{$method.Name}}{{(paramsRef)}} {
+				if n == 0 {
+					{{$m}}.mock.t.Fatalf("Times of {{$mock}}.{{$method.Name}} mock can not be zero")
+				}
+				mm_atomic.StoreUint64(&{{$m}}.expectedInvocations, n)
+				return {{$m}}
+			}
+
+			func ({{$m}} *m{{$mock}}{{$method.Name}}{{(paramsRef)}}) invocationsDone() bool {
+				if len({{$m}}.expectations) == 0 && {{$m}}.defaultExpectation == nil && {{$m}}.mock.func{{$method.Name}} == nil {
+					// does not need to check invocations if no expectations, defaultExpectation or func{{$method.Name}} set
+					return true
+				}
+
+				// if expectations were set we check total invocations
+				// if default expectation was set then invocations count should be greater than zero
+				// if func was set then invocations count should be greater than zero
+				totalInvocations := mm_atomic.LoadUint64(&{{$m}}.mock.after{{$method.Name}}Counter)
+				expectedInvocations := mm_atomic.LoadUint64(&{{$m}}.expectedInvocations)
+				if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
+					return false
+				}
+
+				return true
+			}
+
 			// {{$method.Name}} implements {{$.Interface.Type}}
 			func ({{$m}} *{{$mock}}{{(paramsRef)}}) {{$method.Declaration}} {
 				mm_atomic.AddUint64(&{{$m}}.before{{$method.Name}}Counter, 1)
@@ -301,15 +329,7 @@ const (
 					}
 				}
 
-				// if default expectation was set then invocations count should be greater than zero
-				if m.{{$method.Name}}Mock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.after{{$method.Name}}Counter) < 1 {
-					return false
-				}
-				// if func was set then invocations count should be greater than zero
-				if m.func{{$method.Name}} != nil && mm_atomic.LoadUint64(&m.after{{$method.Name}}Counter) < 1  {
-					return false
-				}
-				return true
+				return m.{{$method.Name}}Mock.invocationsDone()
 			}
 
 			// Minimock{{$method.Name}}Inspect logs each unmet expectation
@@ -324,8 +344,9 @@ const (
 					}
 				}
 
+				after{{$method.Name}}Counter := mm_atomic.LoadUint64(&m.after{{$method.Name}}Counter)
 				// if default expectation was set then invocations count should be greater than zero
-				if m.{{$method.Name}}Mock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.after{{$method.Name}}Counter) < 1 {
+				if m.{{$method.Name}}Mock.defaultExpectation != nil && after{{$method.Name}}Counter < 1 {
 					{{- if $method.HasParams}}
 						if m.{{$method.Name}}Mock.defaultExpectation.params == nil {
 							m.t.Error("Expected call to {{$mock}}.{{$method.Name}}")
@@ -337,8 +358,13 @@ const (
 					{{end -}}
 				}
 				// if func was set then invocations count should be greater than zero
-				if m.func{{$method.Name}} != nil && mm_atomic.LoadUint64(&m.after{{$method.Name}}Counter) < 1  {
+				if m.func{{$method.Name}} != nil && after{{$method.Name}}Counter < 1  {
 					m.t.Error("Expected call to {{$mock}}.{{$method.Name}}")
+				}
+
+				if !m.{{$method.Name}}Mock.invocationsDone() && after{{$method.Name}}Counter > 0 {
+					m.t.Errorf("Expected %d calls to {{$mock}}.{{$method.Name}} but found %d calls",
+						mm_atomic.LoadUint64(&m.{{$method.Name}}Mock.expectedInvocations), after{{$method.Name}}Counter)
 				}
 			}
 		{{end}}

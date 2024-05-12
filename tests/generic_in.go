@@ -47,6 +47,8 @@ type mGenericInMockName[T any] struct {
 
 	callArgs []*GenericInMockNameParams[T]
 	mutex    sync.RWMutex
+
+	expectedInvocations uint64
 }
 
 // GenericInMockNameExpectation specifies expectation struct of the genericIn.Name
@@ -152,6 +154,32 @@ func (mmName *mGenericInMockName[T]) Set(f func(t1 T)) *GenericInMock[T] {
 	return mmName.mock
 }
 
+func (mmName *mGenericInMockName[T]) Times(n uint64) *mGenericInMockName[T] {
+	if n == 0 {
+		mmName.mock.t.Fatalf("Times of GenericInMock.Name mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmName.expectedInvocations, n)
+	return mmName
+}
+
+func (mmName *mGenericInMockName[T]) invocationsDone() bool {
+	if len(mmName.expectations) == 0 && mmName.defaultExpectation == nil && mmName.mock.funcName == nil {
+		// does not need to check invocations if no expectations, defaultExpectation or funcName set
+		return true
+	}
+
+	// if expectations were set we check total invocations
+	// if default expectation was set then invocations count should be greater than zero
+	// if func was set then invocations count should be greater than zero
+	totalInvocations := mm_atomic.LoadUint64(&mmName.mock.afterNameCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmName.expectedInvocations)
+	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
+		return false
+	}
+
+	return true
+}
+
 // Name implements genericIn
 func (mmName *GenericInMock[T]) Name(t1 T) {
 	mm_atomic.AddUint64(&mmName.beforeNameCounter, 1)
@@ -235,15 +263,7 @@ func (m *GenericInMock[T]) MinimockNameDone() bool {
 		}
 	}
 
-	// if default expectation was set then invocations count should be greater than zero
-	if m.NameMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterNameCounter) < 1 {
-		return false
-	}
-	// if func was set then invocations count should be greater than zero
-	if m.funcName != nil && mm_atomic.LoadUint64(&m.afterNameCounter) < 1 {
-		return false
-	}
-	return true
+	return m.NameMock.invocationsDone()
 }
 
 // MinimockNameInspect logs each unmet expectation
@@ -254,8 +274,9 @@ func (m *GenericInMock[T]) MinimockNameInspect() {
 		}
 	}
 
+	afterNameCounter := mm_atomic.LoadUint64(&m.afterNameCounter)
 	// if default expectation was set then invocations count should be greater than zero
-	if m.NameMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterNameCounter) < 1 {
+	if m.NameMock.defaultExpectation != nil && afterNameCounter < 1 {
 		if m.NameMock.defaultExpectation.params == nil {
 			m.t.Error("Expected call to GenericInMock.Name")
 		} else {
@@ -263,8 +284,13 @@ func (m *GenericInMock[T]) MinimockNameInspect() {
 		}
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcName != nil && mm_atomic.LoadUint64(&m.afterNameCounter) < 1 {
+	if m.funcName != nil && afterNameCounter < 1 {
 		m.t.Error("Expected call to GenericInMock.Name")
+	}
+
+	if !m.NameMock.invocationsDone() && afterNameCounter > 0 {
+		m.t.Errorf("Expected %d calls to GenericInMock.Name but found %d calls",
+			mm_atomic.LoadUint64(&m.NameMock.expectedInvocations), afterNameCounter)
 	}
 }
 

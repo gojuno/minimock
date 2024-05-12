@@ -47,6 +47,8 @@ type mFormatterMockFormat struct {
 
 	callArgs []*FormatterMockFormatParams
 	mutex    sync.RWMutex
+
+	expectedInvocations uint64
 }
 
 // FormatterMockFormatExpectation specifies expectation struct of the Formatter.Format
@@ -202,6 +204,32 @@ func (e *FormatterMockFormatExpectation) Then(s2 string) *FormatterMock {
 	return e.mock
 }
 
+func (mmFormat *mFormatterMockFormat) Times(n uint64) *mFormatterMockFormat {
+	if n == 0 {
+		mmFormat.mock.t.Fatalf("Times of FormatterMock.Format mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmFormat.expectedInvocations, n)
+	return mmFormat
+}
+
+func (mmFormat *mFormatterMockFormat) invocationsDone() bool {
+	if len(mmFormat.expectations) == 0 && mmFormat.defaultExpectation == nil && mmFormat.mock.funcFormat == nil {
+		// does not need to check invocations if no expectations, defaultExpectation or funcFormat set
+		return true
+	}
+
+	// if expectations were set we check total invocations
+	// if default expectation was set then invocations count should be greater than zero
+	// if func was set then invocations count should be greater than zero
+	totalInvocations := mm_atomic.LoadUint64(&mmFormat.mock.afterFormatCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmFormat.expectedInvocations)
+	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
+		return false
+	}
+
+	return true
+}
+
 // Format implements Formatter
 func (mmFormat *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) {
 	mm_atomic.AddUint64(&mmFormat.beforeFormatCounter, 1)
@@ -291,15 +319,7 @@ func (m *FormatterMock) MinimockFormatDone() bool {
 		}
 	}
 
-	// if default expectation was set then invocations count should be greater than zero
-	if m.FormatMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFormatCounter) < 1 {
-		return false
-	}
-	// if func was set then invocations count should be greater than zero
-	if m.funcFormat != nil && mm_atomic.LoadUint64(&m.afterFormatCounter) < 1 {
-		return false
-	}
-	return true
+	return m.FormatMock.invocationsDone()
 }
 
 // MinimockFormatInspect logs each unmet expectation
@@ -310,8 +330,9 @@ func (m *FormatterMock) MinimockFormatInspect() {
 		}
 	}
 
+	afterFormatCounter := mm_atomic.LoadUint64(&m.afterFormatCounter)
 	// if default expectation was set then invocations count should be greater than zero
-	if m.FormatMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFormatCounter) < 1 {
+	if m.FormatMock.defaultExpectation != nil && afterFormatCounter < 1 {
 		if m.FormatMock.defaultExpectation.params == nil {
 			m.t.Error("Expected call to FormatterMock.Format")
 		} else {
@@ -319,8 +340,13 @@ func (m *FormatterMock) MinimockFormatInspect() {
 		}
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcFormat != nil && mm_atomic.LoadUint64(&m.afterFormatCounter) < 1 {
+	if m.funcFormat != nil && afterFormatCounter < 1 {
 		m.t.Error("Expected call to FormatterMock.Format")
+	}
+
+	if !m.FormatMock.invocationsDone() && afterFormatCounter > 0 {
+		m.t.Errorf("Expected %d calls to FormatterMock.Format but found %d calls",
+			mm_atomic.LoadUint64(&m.FormatMock.expectedInvocations), afterFormatCounter)
 	}
 }
 
