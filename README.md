@@ -171,9 +171,9 @@ formatterMock.FormatMock.Set(func(string, ...interface{}) string {
 ```
 
 ### Setting up expected times mock was called:
-
 Imagine you expect mock to be called exactly 10 times. 
-Then you can set `Times` helper to check how many times mock was invoked. 
+Then you can set `Times` helper to check how many times mock was invoked.
+
 ```go
 mc := minimock.NewController(t)
 formatterMock := NewFormatterMock(mc).FormatMock.Times(10).Expect("hello %s!", "world").Return("hello world!")
