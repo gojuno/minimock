@@ -111,6 +111,7 @@ func (mmName *mGenericOutMockName[T]) Set(f func() (t1 T)) *GenericOutMock[T] {
 	return mmName.mock
 }
 
+// Times sets number of times genericOut.Name should be invoked
 func (mmName *mGenericOutMockName[T]) Times(n uint64) *mGenericOutMockName[T] {
 	if n == 0 {
 		mmName.mock.t.Fatalf("Times of GenericOutMock.Name mock can not be zero")
@@ -121,13 +122,9 @@ func (mmName *mGenericOutMockName[T]) Times(n uint64) *mGenericOutMockName[T] {
 
 func (mmName *mGenericOutMockName[T]) invocationsDone() bool {
 	if len(mmName.expectations) == 0 && mmName.defaultExpectation == nil && mmName.mock.funcName == nil {
-		// does not need to check invocations if no expectations, defaultExpectation or funcName set
 		return true
 	}
 
-	// if expectations were set we check total invocations
-	// if default expectation was set then invocations count should be greater than zero
-	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmName.mock.afterNameCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmName.expectedInvocations)
 

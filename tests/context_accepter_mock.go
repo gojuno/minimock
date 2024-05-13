@@ -173,6 +173,7 @@ func (mmAcceptContext *mContextAccepterMockAcceptContext) Set(f func(ctx context
 	return mmAcceptContext.mock
 }
 
+// Times sets number of times contextAccepter.AcceptContext should be invoked
 func (mmAcceptContext *mContextAccepterMockAcceptContext) Times(n uint64) *mContextAccepterMockAcceptContext {
 	if n == 0 {
 		mmAcceptContext.mock.t.Fatalf("Times of ContextAccepterMock.AcceptContext mock can not be zero")
@@ -183,13 +184,9 @@ func (mmAcceptContext *mContextAccepterMockAcceptContext) Times(n uint64) *mCont
 
 func (mmAcceptContext *mContextAccepterMockAcceptContext) invocationsDone() bool {
 	if len(mmAcceptContext.expectations) == 0 && mmAcceptContext.defaultExpectation == nil && mmAcceptContext.mock.funcAcceptContext == nil {
-		// does not need to check invocations if no expectations, defaultExpectation or funcAcceptContext set
 		return true
 	}
 
-	// if expectations were set we check total invocations
-	// if default expectation was set then invocations count should be greater than zero
-	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmAcceptContext.mock.afterAcceptContextCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmAcceptContext.expectedInvocations)
 
@@ -475,6 +472,7 @@ func (e *ContextAccepterMockAcceptContextWithOtherArgsExpectation) Then(i2 int, 
 	return e.mock
 }
 
+// Times sets number of times contextAccepter.AcceptContextWithOtherArgs should be invoked
 func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherArgs) Times(n uint64) *mContextAccepterMockAcceptContextWithOtherArgs {
 	if n == 0 {
 		mmAcceptContextWithOtherArgs.mock.t.Fatalf("Times of ContextAccepterMock.AcceptContextWithOtherArgs mock can not be zero")
@@ -485,13 +483,9 @@ func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherAr
 
 func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherArgs) invocationsDone() bool {
 	if len(mmAcceptContextWithOtherArgs.expectations) == 0 && mmAcceptContextWithOtherArgs.defaultExpectation == nil && mmAcceptContextWithOtherArgs.mock.funcAcceptContextWithOtherArgs == nil {
-		// does not need to check invocations if no expectations, defaultExpectation or funcAcceptContextWithOtherArgs set
 		return true
 	}
 
-	// if expectations were set we check total invocations
-	// if default expectation was set then invocations count should be greater than zero
-	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmAcceptContextWithOtherArgs.mock.afterAcceptContextWithOtherArgsCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmAcceptContextWithOtherArgs.expectedInvocations)
 
@@ -783,6 +777,7 @@ func (e *ContextAccepterMockAcceptContextWithStructArgsExpectation) Then(i1 int,
 	return e.mock
 }
 
+// Times sets number of times contextAccepter.AcceptContextWithStructArgs should be invoked
 func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStructArgs) Times(n uint64) *mContextAccepterMockAcceptContextWithStructArgs {
 	if n == 0 {
 		mmAcceptContextWithStructArgs.mock.t.Fatalf("Times of ContextAccepterMock.AcceptContextWithStructArgs mock can not be zero")
@@ -793,13 +788,9 @@ func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStruct
 
 func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStructArgs) invocationsDone() bool {
 	if len(mmAcceptContextWithStructArgs.expectations) == 0 && mmAcceptContextWithStructArgs.defaultExpectation == nil && mmAcceptContextWithStructArgs.mock.funcAcceptContextWithStructArgs == nil {
-		// does not need to check invocations if no expectations, defaultExpectation or funcAcceptContextWithStructArgs set
 		return true
 	}
 
-	// if expectations were set we check total invocations
-	// if default expectation was set then invocations count should be greater than zero
-	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmAcceptContextWithStructArgs.mock.afterAcceptContextWithStructArgsCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmAcceptContextWithStructArgs.expectedInvocations)
 

@@ -154,6 +154,7 @@ func (mmName *mGenericInlineUnionMockName[T]) Set(f func(t1 T)) *GenericInlineUn
 	return mmName.mock
 }
 
+// Times sets number of times genericInlineUnion.Name should be invoked
 func (mmName *mGenericInlineUnionMockName[T]) Times(n uint64) *mGenericInlineUnionMockName[T] {
 	if n == 0 {
 		mmName.mock.t.Fatalf("Times of GenericInlineUnionMock.Name mock can not be zero")
@@ -164,13 +165,9 @@ func (mmName *mGenericInlineUnionMockName[T]) Times(n uint64) *mGenericInlineUni
 
 func (mmName *mGenericInlineUnionMockName[T]) invocationsDone() bool {
 	if len(mmName.expectations) == 0 && mmName.defaultExpectation == nil && mmName.mock.funcName == nil {
-		// does not need to check invocations if no expectations, defaultExpectation or funcName set
 		return true
 	}
 
-	// if expectations were set we check total invocations
-	// if default expectation was set then invocations count should be greater than zero
-	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmName.mock.afterNameCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmName.expectedInvocations)
 

@@ -209,6 +209,7 @@ const (
 				}
 			{{end}}
 
+			// Times sets number of times {{$.Interface.Name}}.{{$method.Name}} should be invoked
 			func ({{$m}} *m{{$mock}}{{$method.Name}}{{(paramsRef)}}) Times(n uint64) *m{{$mock}}{{$method.Name}}{{(paramsRef)}} {
 				if n == 0 {
 					{{$m}}.mock.t.Fatalf("Times of {{$mock}}.{{$method.Name}} mock can not be zero")
@@ -219,13 +220,9 @@ const (
 
 			func ({{$m}} *m{{$mock}}{{$method.Name}}{{(paramsRef)}}) invocationsDone() bool {
 				if len({{$m}}.expectations) == 0 && {{$m}}.defaultExpectation == nil && {{$m}}.mock.func{{$method.Name}} == nil {
-					// does not need to check invocations if no expectations, defaultExpectation or func{{$method.Name}} set
 					return true
 				}
 
-				// if expectations were set we check total invocations
-				// if default expectation was set then invocations count should be greater than zero
-				// if func was set then invocations count should be greater than zero
 				totalInvocations := mm_atomic.LoadUint64(&{{$m}}.mock.after{{$method.Name}}Counter)
 				expectedInvocations := mm_atomic.LoadUint64(&{{$m}}.expectedInvocations)
 

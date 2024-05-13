@@ -204,6 +204,7 @@ func (e *FormatterMockFormatExpectation) Then(s2 string) *FormatterMock {
 	return e.mock
 }
 
+// Times sets number of times Formatter.Format should be invoked
 func (mmFormat *mFormatterMockFormat) Times(n uint64) *mFormatterMockFormat {
 	if n == 0 {
 		mmFormat.mock.t.Fatalf("Times of FormatterMock.Format mock can not be zero")
@@ -214,13 +215,9 @@ func (mmFormat *mFormatterMockFormat) Times(n uint64) *mFormatterMockFormat {
 
 func (mmFormat *mFormatterMockFormat) invocationsDone() bool {
 	if len(mmFormat.expectations) == 0 && mmFormat.defaultExpectation == nil && mmFormat.mock.funcFormat == nil {
-		// does not need to check invocations if no expectations, defaultExpectation or funcFormat set
 		return true
 	}
 
-	// if expectations were set we check total invocations
-	// if default expectation was set then invocations count should be greater than zero
-	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmFormat.mock.afterFormatCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmFormat.expectedInvocations)
 

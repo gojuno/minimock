@@ -205,6 +205,7 @@ func (e *ActorMockActionExpectation) Then(i1 int, err error) *ActorMock {
 	return e.mock
 }
 
+// Times sets number of times actor.Action should be invoked
 func (mmAction *mActorMockAction) Times(n uint64) *mActorMockAction {
 	if n == 0 {
 		mmAction.mock.t.Fatalf("Times of ActorMock.Action mock can not be zero")
@@ -215,13 +216,9 @@ func (mmAction *mActorMockAction) Times(n uint64) *mActorMockAction {
 
 func (mmAction *mActorMockAction) invocationsDone() bool {
 	if len(mmAction.expectations) == 0 && mmAction.defaultExpectation == nil && mmAction.mock.funcAction == nil {
-		// does not need to check invocations if no expectations, defaultExpectation or funcAction set
 		return true
 	}
 
-	// if expectations were set we check total invocations
-	// if default expectation was set then invocations count should be greater than zero
-	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmAction.mock.afterActionCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmAction.expectedInvocations)
 

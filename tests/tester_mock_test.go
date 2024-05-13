@@ -198,6 +198,7 @@ func (mmCleanup *mTesterMockCleanup) Set(f func(f func())) *TesterMock {
 	return mmCleanup.mock
 }
 
+// Times sets number of times Tester.Cleanup should be invoked
 func (mmCleanup *mTesterMockCleanup) Times(n uint64) *mTesterMockCleanup {
 	if n == 0 {
 		mmCleanup.mock.t.Fatalf("Times of TesterMock.Cleanup mock can not be zero")
@@ -208,13 +209,9 @@ func (mmCleanup *mTesterMockCleanup) Times(n uint64) *mTesterMockCleanup {
 
 func (mmCleanup *mTesterMockCleanup) invocationsDone() bool {
 	if len(mmCleanup.expectations) == 0 && mmCleanup.defaultExpectation == nil && mmCleanup.mock.funcCleanup == nil {
-		// does not need to check invocations if no expectations, defaultExpectation or funcCleanup set
 		return true
 	}
 
-	// if expectations were set we check total invocations
-	// if default expectation was set then invocations count should be greater than zero
-	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmCleanup.mock.afterCleanupCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmCleanup.expectedInvocations)
 
@@ -449,6 +446,7 @@ func (mmError *mTesterMockError) Set(f func(p1 ...interface{})) *TesterMock {
 	return mmError.mock
 }
 
+// Times sets number of times Tester.Error should be invoked
 func (mmError *mTesterMockError) Times(n uint64) *mTesterMockError {
 	if n == 0 {
 		mmError.mock.t.Fatalf("Times of TesterMock.Error mock can not be zero")
@@ -459,13 +457,9 @@ func (mmError *mTesterMockError) Times(n uint64) *mTesterMockError {
 
 func (mmError *mTesterMockError) invocationsDone() bool {
 	if len(mmError.expectations) == 0 && mmError.defaultExpectation == nil && mmError.mock.funcError == nil {
-		// does not need to check invocations if no expectations, defaultExpectation or funcError set
 		return true
 	}
 
-	// if expectations were set we check total invocations
-	// if default expectation was set then invocations count should be greater than zero
-	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmError.mock.afterErrorCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmError.expectedInvocations)
 
@@ -724,6 +718,7 @@ func (mmErrorf *mTesterMockErrorf) Set(f func(format string, args ...interface{}
 	return mmErrorf.mock
 }
 
+// Times sets number of times Tester.Errorf should be invoked
 func (mmErrorf *mTesterMockErrorf) Times(n uint64) *mTesterMockErrorf {
 	if n == 0 {
 		mmErrorf.mock.t.Fatalf("Times of TesterMock.Errorf mock can not be zero")
@@ -734,13 +729,9 @@ func (mmErrorf *mTesterMockErrorf) Times(n uint64) *mTesterMockErrorf {
 
 func (mmErrorf *mTesterMockErrorf) invocationsDone() bool {
 	if len(mmErrorf.expectations) == 0 && mmErrorf.defaultExpectation == nil && mmErrorf.mock.funcErrorf == nil {
-		// does not need to check invocations if no expectations, defaultExpectation or funcErrorf set
 		return true
 	}
 
-	// if expectations were set we check total invocations
-	// if default expectation was set then invocations count should be greater than zero
-	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmErrorf.mock.afterErrorfCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmErrorf.expectedInvocations)
 
@@ -931,6 +922,7 @@ func (mmFailNow *mTesterMockFailNow) Set(f func()) *TesterMock {
 	return mmFailNow.mock
 }
 
+// Times sets number of times Tester.FailNow should be invoked
 func (mmFailNow *mTesterMockFailNow) Times(n uint64) *mTesterMockFailNow {
 	if n == 0 {
 		mmFailNow.mock.t.Fatalf("Times of TesterMock.FailNow mock can not be zero")
@@ -941,13 +933,9 @@ func (mmFailNow *mTesterMockFailNow) Times(n uint64) *mTesterMockFailNow {
 
 func (mmFailNow *mTesterMockFailNow) invocationsDone() bool {
 	if len(mmFailNow.expectations) == 0 && mmFailNow.defaultExpectation == nil && mmFailNow.mock.funcFailNow == nil {
-		// does not need to check invocations if no expectations, defaultExpectation or funcFailNow set
 		return true
 	}
 
-	// if expectations were set we check total invocations
-	// if default expectation was set then invocations count should be greater than zero
-	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmFailNow.mock.afterFailNowCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmFailNow.expectedInvocations)
 
@@ -1137,6 +1125,7 @@ func (mmFatal *mTesterMockFatal) Set(f func(args ...interface{})) *TesterMock {
 	return mmFatal.mock
 }
 
+// Times sets number of times Tester.Fatal should be invoked
 func (mmFatal *mTesterMockFatal) Times(n uint64) *mTesterMockFatal {
 	if n == 0 {
 		mmFatal.mock.t.Fatalf("Times of TesterMock.Fatal mock can not be zero")
@@ -1147,13 +1136,9 @@ func (mmFatal *mTesterMockFatal) Times(n uint64) *mTesterMockFatal {
 
 func (mmFatal *mTesterMockFatal) invocationsDone() bool {
 	if len(mmFatal.expectations) == 0 && mmFatal.defaultExpectation == nil && mmFatal.mock.funcFatal == nil {
-		// does not need to check invocations if no expectations, defaultExpectation or funcFatal set
 		return true
 	}
 
-	// if expectations were set we check total invocations
-	// if default expectation was set then invocations count should be greater than zero
-	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmFatal.mock.afterFatalCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmFatal.expectedInvocations)
 
@@ -1412,6 +1397,7 @@ func (mmFatalf *mTesterMockFatalf) Set(f func(format string, args ...interface{}
 	return mmFatalf.mock
 }
 
+// Times sets number of times Tester.Fatalf should be invoked
 func (mmFatalf *mTesterMockFatalf) Times(n uint64) *mTesterMockFatalf {
 	if n == 0 {
 		mmFatalf.mock.t.Fatalf("Times of TesterMock.Fatalf mock can not be zero")
@@ -1422,13 +1408,9 @@ func (mmFatalf *mTesterMockFatalf) Times(n uint64) *mTesterMockFatalf {
 
 func (mmFatalf *mTesterMockFatalf) invocationsDone() bool {
 	if len(mmFatalf.expectations) == 0 && mmFatalf.defaultExpectation == nil && mmFatalf.mock.funcFatalf == nil {
-		// does not need to check invocations if no expectations, defaultExpectation or funcFatalf set
 		return true
 	}
 
-	// if expectations were set we check total invocations
-	// if default expectation was set then invocations count should be greater than zero
-	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmFatalf.mock.afterFatalfCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmFatalf.expectedInvocations)
 
