@@ -228,11 +228,8 @@ const (
 				// if func was set then invocations count should be greater than zero
 				totalInvocations := mm_atomic.LoadUint64(&{{$m}}.mock.after{{$method.Name}}Counter)
 				expectedInvocations := mm_atomic.LoadUint64(&{{$m}}.expectedInvocations)
-				if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
-					return false
-				}
 
-				return true
+				return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 			}
 
 			// {{$method.Name}} implements {{$.Interface.Type}}

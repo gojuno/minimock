@@ -192,11 +192,8 @@ func (mmAcceptContext *mContextAccepterMockAcceptContext) invocationsDone() bool
 	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmAcceptContext.mock.afterAcceptContextCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmAcceptContext.expectedInvocations)
-	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
-		return false
-	}
 
-	return true
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
 // AcceptContext implements contextAccepter
@@ -497,11 +494,8 @@ func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherAr
 	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmAcceptContextWithOtherArgs.mock.afterAcceptContextWithOtherArgsCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmAcceptContextWithOtherArgs.expectedInvocations)
-	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
-		return false
-	}
 
-	return true
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
 // AcceptContextWithOtherArgs implements contextAccepter
@@ -808,11 +802,8 @@ func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStruct
 	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmAcceptContextWithStructArgs.mock.afterAcceptContextWithStructArgsCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmAcceptContextWithStructArgs.expectedInvocations)
-	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
-		return false
-	}
 
-	return true
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
 // AcceptContextWithStructArgs implements contextAccepter

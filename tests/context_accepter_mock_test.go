@@ -174,8 +174,21 @@ func TestContextAccepterMock_TimesZero(t *testing.T) {
 		FatalfMock.Expect("Times of ContextAccepterMock.AcceptContextWithStructArgs mock can not be zero").
 		Return()
 
-	// Expected 1 calls to ContextAccepterMock.AcceptContextWithStructArgs but found 2 calls
 	_ = NewContextAccepterMock(tester).
 		AcceptContextWithStructArgsMock.Times(0).
 		Return(1, nil)
+}
+
+func TestContextAccepterMock_ExpectedCall(t *testing.T) {
+	tester := NewTesterMock(t)
+	tester.CleanupMock.Times(1).Return().
+		ErrorMock.Expect("Expected call to ContextAccepterMock.AcceptContext").Times(1).
+		Return().
+		FailNowMock.Times(1).Return()
+
+	mock := NewContextAccepterMock(tester).AcceptContextMock.Return()
+
+	// explicitly call MinimockFinish here to imitate call of t.Cleanup(m.MinimockFinish)
+	// as we mocked Cleanup call
+	mock.MinimockFinish()
 }

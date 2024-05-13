@@ -173,11 +173,8 @@ func (mmName *mGenericComplexUnionMockName[T]) invocationsDone() bool {
 	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmName.mock.afterNameCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmName.expectedInvocations)
-	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
-		return false
-	}
 
-	return true
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
 // Name implements genericComplexUnion

@@ -217,11 +217,8 @@ func (mmCleanup *mTesterMockCleanup) invocationsDone() bool {
 	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmCleanup.mock.afterCleanupCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmCleanup.expectedInvocations)
-	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
-		return false
-	}
 
-	return true
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
 // Cleanup implements minimock.Tester
@@ -471,11 +468,8 @@ func (mmError *mTesterMockError) invocationsDone() bool {
 	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmError.mock.afterErrorCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmError.expectedInvocations)
-	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
-		return false
-	}
 
-	return true
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
 // Error implements minimock.Tester
@@ -749,11 +743,8 @@ func (mmErrorf *mTesterMockErrorf) invocationsDone() bool {
 	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmErrorf.mock.afterErrorfCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmErrorf.expectedInvocations)
-	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
-		return false
-	}
 
-	return true
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
 // Errorf implements minimock.Tester
@@ -959,11 +950,8 @@ func (mmFailNow *mTesterMockFailNow) invocationsDone() bool {
 	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmFailNow.mock.afterFailNowCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmFailNow.expectedInvocations)
-	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
-		return false
-	}
 
-	return true
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
 // FailNow implements minimock.Tester
@@ -1168,11 +1156,8 @@ func (mmFatal *mTesterMockFatal) invocationsDone() bool {
 	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmFatal.mock.afterFatalCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmFatal.expectedInvocations)
-	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
-		return false
-	}
 
-	return true
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
 // Fatal implements minimock.Tester
@@ -1446,11 +1431,8 @@ func (mmFatalf *mTesterMockFatalf) invocationsDone() bool {
 	// if func was set then invocations count should be greater than zero
 	totalInvocations := mm_atomic.LoadUint64(&mmFatalf.mock.afterFatalfCounter)
 	expectedInvocations := mm_atomic.LoadUint64(&mmFatalf.expectedInvocations)
-	if totalInvocations < 1 || expectedInvocations != 0 && expectedInvocations != totalInvocations {
-		return false
-	}
 
-	return true
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
 // Fatalf implements minimock.Tester
