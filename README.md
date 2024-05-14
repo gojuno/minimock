@@ -170,6 +170,15 @@ formatterMock.FormatMock.Set(func(string, ...interface{}) string {
 })
 ```
 
+### Setting up expected times mock was called:
+Imagine you expect mock to be called exactly 10 times. 
+Then you can set `Times` helper to check how many times mock was invoked.
+
+```go
+mc := minimock.NewController(t)
+formatterMock := NewFormatterMock(mc).FormatMock.Times(10).Expect("hello %s!", "world").Return("hello world!")
+```
+
 ### Mocking context
 Sometimes context gets modified by the time the mocked method is being called.
 However, in most cases you don't really care about the exact value of the context argument.

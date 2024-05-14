@@ -68,7 +68,7 @@ func TestContextAccepterMock_DiffWithoutAnyContext(t *testing.T) {
 	mock := NewContextAccepterMock(tester).
 		AcceptContextWithOtherArgsMock.Expect(minimock.AnyContext, 24).Return(1, nil)
 
-	mock.AcceptContextWithOtherArgs(context.Background(), 123)
+	_, _ = mock.AcceptContextWithOtherArgs(context.Background(), 123)
 }
 
 func TestContextAccepterMock_DiffInStructArgWithoutAnyContext(t *testing.T) {
@@ -101,8 +101,94 @@ func TestContextAccepterMock_DiffInStructArgWithoutAnyContext(t *testing.T) {
 	}).
 		Return(1, nil)
 
-	mock.AcceptContextWithStructArgs(context.Background(), structArg{
+	_, _ = mock.AcceptContextWithStructArgs(context.Background(), structArg{
 		a: 123,
 		b: "abcd",
 	})
+}
+
+func TestContextAccepterMock_TimesSuccess(t *testing.T) {
+	tester := NewTesterMock(t)
+	tester.CleanupMock.Return()
+
+	mock := NewContextAccepterMock(tester).
+		AcceptContextWithStructArgsMock.Times(2).Expect(minimock.AnyContext, structArg{
+		a: 124,
+		b: "abcd",
+	}).
+		Return(1, nil).
+		AcceptContextMock.Return()
+
+	_, _ = mock.AcceptContextWithStructArgs(context.Background(), structArg{
+		a: 124,
+		b: "abcd",
+	})
+	_, _ = mock.AcceptContextWithStructArgs(context.Background(), structArg{
+		a: 124,
+		b: "abcd",
+	})
+
+	mock.AcceptContext(context.TODO())
+
+	// explicitly call MinimockFinish here to imitate call of t.Cleanup(m.MinimockFinish)
+	// as we mocked Cleanup call
+	mock.MinimockFinish()
+}
+
+func TestContextAccepterMock_TimesFailure(t *testing.T) {
+	tester := NewTesterMock(t)
+	tester.CleanupMock.Return().
+		ErrorfMock.Expect("Expected %d calls to ContextAccepterMock.AcceptContextWithStructArgs but found %d calls", uint64(1), uint64(2)).
+		Return().
+		FailNowMock.Return()
+
+	// Expected 1 calls to ContextAccepterMock.AcceptContextWithStructArgs but found 2 calls
+	mock := NewContextAccepterMock(tester).
+		AcceptContextWithStructArgsMock.Times(1).Expect(minimock.AnyContext, structArg{
+		a: 124,
+		b: "abcd",
+	}).
+		Return(1, nil).
+		AcceptContextMock.
+		Times(1).Return()
+
+	_, _ = mock.AcceptContextWithStructArgs(context.Background(), structArg{
+		a: 124,
+		b: "abcd",
+	})
+	_, _ = mock.AcceptContextWithStructArgs(context.Background(), structArg{
+		a: 124,
+		b: "abcd",
+	})
+
+	mock.AcceptContext(context.TODO())
+
+	// explicitly call MinimockFinish here to imitate call of t.Cleanup(m.MinimockFinish)
+	// as we mocked Cleanup call
+	mock.MinimockFinish()
+}
+
+func TestContextAccepterMock_TimesZero(t *testing.T) {
+	tester := NewTesterMock(t)
+	tester.CleanupMock.Return().
+		FatalfMock.Expect("Times of ContextAccepterMock.AcceptContextWithStructArgs mock can not be zero").
+		Return()
+
+	_ = NewContextAccepterMock(tester).
+		AcceptContextWithStructArgsMock.Times(0).
+		Return(1, nil)
+}
+
+func TestContextAccepterMock_ExpectedCall(t *testing.T) {
+	tester := NewTesterMock(t)
+	tester.CleanupMock.Times(1).Return().
+		ErrorMock.Expect("Expected call to ContextAccepterMock.AcceptContext").Times(1).
+		Return().
+		FailNowMock.Times(1).Return()
+
+	mock := NewContextAccepterMock(tester).AcceptContextMock.Return()
+
+	// explicitly call MinimockFinish here to imitate call of t.Cleanup(m.MinimockFinish)
+	// as we mocked Cleanup call
+	mock.MinimockFinish()
 }

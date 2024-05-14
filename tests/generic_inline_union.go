@@ -47,6 +47,8 @@ type mGenericInlineUnionMockName[T int | float64] struct {
 
 	callArgs []*GenericInlineUnionMockNameParams[T]
 	mutex    sync.RWMutex
+
+	expectedInvocations uint64
 }
 
 // GenericInlineUnionMockNameExpectation specifies expectation struct of the genericInlineUnion.Name
@@ -152,6 +154,26 @@ func (mmName *mGenericInlineUnionMockName[T]) Set(f func(t1 T)) *GenericInlineUn
 	return mmName.mock
 }
 
+// Times sets number of times genericInlineUnion.Name should be invoked
+func (mmName *mGenericInlineUnionMockName[T]) Times(n uint64) *mGenericInlineUnionMockName[T] {
+	if n == 0 {
+		mmName.mock.t.Fatalf("Times of GenericInlineUnionMock.Name mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmName.expectedInvocations, n)
+	return mmName
+}
+
+func (mmName *mGenericInlineUnionMockName[T]) invocationsDone() bool {
+	if len(mmName.expectations) == 0 && mmName.defaultExpectation == nil && mmName.mock.funcName == nil {
+		return true
+	}
+
+	totalInvocations := mm_atomic.LoadUint64(&mmName.mock.afterNameCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmName.expectedInvocations)
+
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
+}
+
 // Name implements genericInlineUnion
 func (mmName *GenericInlineUnionMock[T]) Name(t1 T) {
 	mm_atomic.AddUint64(&mmName.beforeNameCounter, 1)
@@ -235,15 +257,7 @@ func (m *GenericInlineUnionMock[T]) MinimockNameDone() bool {
 		}
 	}
 
-	// if default expectation was set then invocations count should be greater than zero
-	if m.NameMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterNameCounter) < 1 {
-		return false
-	}
-	// if func was set then invocations count should be greater than zero
-	if m.funcName != nil && mm_atomic.LoadUint64(&m.afterNameCounter) < 1 {
-		return false
-	}
-	return true
+	return m.NameMock.invocationsDone()
 }
 
 // MinimockNameInspect logs each unmet expectation
@@ -254,8 +268,9 @@ func (m *GenericInlineUnionMock[T]) MinimockNameInspect() {
 		}
 	}
 
+	afterNameCounter := mm_atomic.LoadUint64(&m.afterNameCounter)
 	// if default expectation was set then invocations count should be greater than zero
-	if m.NameMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterNameCounter) < 1 {
+	if m.NameMock.defaultExpectation != nil && afterNameCounter < 1 {
 		if m.NameMock.defaultExpectation.params == nil {
 			m.t.Error("Expected call to GenericInlineUnionMock.Name")
 		} else {
@@ -263,8 +278,13 @@ func (m *GenericInlineUnionMock[T]) MinimockNameInspect() {
 		}
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcName != nil && mm_atomic.LoadUint64(&m.afterNameCounter) < 1 {
+	if m.funcName != nil && afterNameCounter < 1 {
 		m.t.Error("Expected call to GenericInlineUnionMock.Name")
+	}
+
+	if !m.NameMock.invocationsDone() && afterNameCounter > 0 {
+		m.t.Errorf("Expected %d calls to GenericInlineUnionMock.Name but found %d calls",
+			mm_atomic.LoadUint64(&m.NameMock.expectedInvocations), afterNameCounter)
 	}
 }
 

@@ -47,6 +47,8 @@ type mActorMockAction struct {
 
 	callArgs []*ActorMockActionParams
 	mutex    sync.RWMutex
+
+	expectedInvocations uint64
 }
 
 // ActorMockActionExpectation specifies expectation struct of the actor.Action
@@ -203,6 +205,26 @@ func (e *ActorMockActionExpectation) Then(i1 int, err error) *ActorMock {
 	return e.mock
 }
 
+// Times sets number of times actor.Action should be invoked
+func (mmAction *mActorMockAction) Times(n uint64) *mActorMockAction {
+	if n == 0 {
+		mmAction.mock.t.Fatalf("Times of ActorMock.Action mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmAction.expectedInvocations, n)
+	return mmAction
+}
+
+func (mmAction *mActorMockAction) invocationsDone() bool {
+	if len(mmAction.expectations) == 0 && mmAction.defaultExpectation == nil && mmAction.mock.funcAction == nil {
+		return true
+	}
+
+	totalInvocations := mm_atomic.LoadUint64(&mmAction.mock.afterActionCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmAction.expectedInvocations)
+
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
+}
+
 // Action implements actor
 func (mmAction *ActorMock) Action(firstParam string, secondParam int) (i1 int, err error) {
 	mm_atomic.AddUint64(&mmAction.beforeActionCounter, 1)
@@ -292,15 +314,7 @@ func (m *ActorMock) MinimockActionDone() bool {
 		}
 	}
 
-	// if default expectation was set then invocations count should be greater than zero
-	if m.ActionMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterActionCounter) < 1 {
-		return false
-	}
-	// if func was set then invocations count should be greater than zero
-	if m.funcAction != nil && mm_atomic.LoadUint64(&m.afterActionCounter) < 1 {
-		return false
-	}
-	return true
+	return m.ActionMock.invocationsDone()
 }
 
 // MinimockActionInspect logs each unmet expectation
@@ -311,8 +325,9 @@ func (m *ActorMock) MinimockActionInspect() {
 		}
 	}
 
+	afterActionCounter := mm_atomic.LoadUint64(&m.afterActionCounter)
 	// if default expectation was set then invocations count should be greater than zero
-	if m.ActionMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterActionCounter) < 1 {
+	if m.ActionMock.defaultExpectation != nil && afterActionCounter < 1 {
 		if m.ActionMock.defaultExpectation.params == nil {
 			m.t.Error("Expected call to ActorMock.Action")
 		} else {
@@ -320,8 +335,13 @@ func (m *ActorMock) MinimockActionInspect() {
 		}
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcAction != nil && mm_atomic.LoadUint64(&m.afterActionCounter) < 1 {
+	if m.funcAction != nil && afterActionCounter < 1 {
 		m.t.Error("Expected call to ActorMock.Action")
+	}
+
+	if !m.ActionMock.invocationsDone() && afterActionCounter > 0 {
+		m.t.Errorf("Expected %d calls to ActorMock.Action but found %d calls",
+			mm_atomic.LoadUint64(&m.ActionMock.expectedInvocations), afterActionCounter)
 	}
 }
 
