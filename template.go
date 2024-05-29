@@ -65,6 +65,7 @@ const (
 			{{ $m := (printf "mm%s" $method.Name) }}
 
 			type m{{$mock}}{{$method.Name}}{{(params)}} struct {
+				optional             bool
 				mock              *{{$mock}}{{(paramsRef)}}
 				defaultExpectation   *{{$mock}}{{$method.Name}}Expectation{{(paramsRef)}}
 				expectations []*{{$mock}}{{$method.Name}}Expectation{{(paramsRef)}}
@@ -99,6 +100,16 @@ const (
 				// {{$mock}}{{$method.Name}}Results contains results of the {{$.Interface.Name}}.{{$method.Name}}
 				type {{$mock}}{{$method.Name}}Results{{(params)}} {{$method.ResultsStruct}}
 			{{end}}
+
+			// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+			// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+			// Optional() makes method check to work in '0 or more' mode.
+			// It is NOT RECOMMENDED to use this option by default unless you really need it, as it helps to
+			// catch the problems when the expected method call is totally skipped during test run.
+			func ({{$m}} *m{{$mock}}{{$method.Name}}{{(paramsRef)}}) Optional() *m{{$mock}}{{$method.Name}}{{(paramsRef)}} {
+				{{$m}}.optional = true
+				return {{$m}}
+			}
 
 			// Expect sets up expected params for {{$.Interface.Name}}.{{$method.Name}}
 			func ({{$m}} *m{{$mock}}{{$method.Name}}{{(paramsRef)}}) Expect({{$method.Params}}) *m{{$mock}}{{$method.Name}}{{(paramsRef)}} {
@@ -317,6 +328,11 @@ const (
 			// Minimock{{$method.Name}}Done returns true if the count of the {{$method.Name}} invocations corresponds
 			// the number of defined expectations
 			func (m *{{$mock}}{{(paramsRef)}}) Minimock{{$method.Name}}Done() bool {
+				if m.{{$method.Name}}Mock.optional {
+					// Optional methods provide '0 or more' call count restriction.
+					return true
+				}
+
 				for _, e := range m.{{$method.Name}}Mock.expectations {
 					if mm_atomic.LoadUint64(&e.Counter) < 1 {
 						return false
