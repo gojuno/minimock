@@ -43,9 +43,6 @@ install:
 test:
 	go test -race ./... -v
 
-release: ./bin/goreleaser
-	./bin/goreleaser release --rm-dist
-
 build: ./bin/goreleaser
 	./bin/goreleaser build --snapshot --rm-dist
 
