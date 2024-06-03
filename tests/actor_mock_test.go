@@ -83,3 +83,12 @@ func TestActorMock_FailedToUseExpectParamsAfterSet(t *testing.T) {
 		return
 	}).ActionMock.ExpectFirstParamParam1("abc").Return(1, nil)
 }
+
+func TestActorMock_Optional(t *testing.T) {
+	tester := NewTesterMock(t)
+	tester.CleanupMock.Return()
+
+	mock := NewActorMock(tester).ActionMock.Optional().Return(1, nil)
+
+	mock.MinimockFinish()
+}

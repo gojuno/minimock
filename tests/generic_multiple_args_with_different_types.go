@@ -42,6 +42,7 @@ func NewGenericMultipleTypesMock[T proto.Message, K any](t minimock.Tester) *Gen
 }
 
 type mGenericMultipleTypesMockName[T proto.Message, K any] struct {
+	optional           bool
 	mock               *GenericMultipleTypesMock[T, K]
 	defaultExpectation *GenericMultipleTypesMockNameExpectation[T, K]
 	expectations       []*GenericMultipleTypesMockNameExpectation[T, K]
@@ -71,6 +72,16 @@ type GenericMultipleTypesMockNameParams[T proto.Message, K any] struct {
 type GenericMultipleTypesMockNameParamPtrs[T proto.Message, K any] struct {
 	t1 *T
 	k1 *K
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmName *mGenericMultipleTypesMockName[T, K]) Optional() *mGenericMultipleTypesMockName[T, K] {
+	mmName.optional = true
+	return mmName
 }
 
 // Expect sets up expected params for genericMultipleTypes.Name
@@ -280,6 +291,11 @@ func (mmName *mGenericMultipleTypesMockName[T, K]) Calls() []*GenericMultipleTyp
 // MinimockNameDone returns true if the count of the Name invocations corresponds
 // the number of defined expectations
 func (m *GenericMultipleTypesMock[T, K]) MinimockNameDone() bool {
+	if m.NameMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
 	for _, e := range m.NameMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
@@ -322,7 +338,6 @@ func (m *GenericMultipleTypesMock[T, K]) MinimockFinish() {
 	m.finishOnce.Do(func() {
 		if !m.minimockDone() {
 			m.MinimockNameInspect()
-			m.t.FailNow()
 		}
 	})
 }

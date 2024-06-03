@@ -26,7 +26,6 @@ func TestFormatterMock_CleanupIsCalled(t *testing.T) {
 	tester := NewTesterMock(t)
 	tester.CleanupMock.Set(t.Cleanup)
 	tester.ErrorMock.Expect("Expected call to FormatterMock.Format").Return()
-	tester.FailNowMock.Return()
 
 	NewFormatterMock(tester).FormatMock.Return("")
 }
@@ -154,7 +153,6 @@ func TestFormatterMock_ReturnWithoutExpectForFixedArgsMethod(t *testing.T) {
 	tester := NewTesterMock(t).CleanupMock.Return()
 
 	tester.ErrorMock.Expect("Expected call to FormatterMock.Format")
-	tester.FailNowMock.Expect()
 
 	formatterMock := NewFormatterMock(tester)
 	formatterMock.FormatMock.Return("")
@@ -232,7 +230,6 @@ func TestFormatterMock_MinimockFinish(t *testing.T) {
 	tester := NewTesterMock(t).CleanupMock.Return()
 
 	tester.ErrorMock.Expect("Expected call to FormatterMock.Format").Return()
-	tester.FailNowMock.Expect().Return()
 
 	formatterMock := NewFormatterMock(tester)
 	formatterMock.FormatMock.Set(func(string, ...interface{}) string { return "" })
@@ -246,7 +243,6 @@ func TestFormatterMock_MinimockFinish_WithNoMetExpectations(t *testing.T) {
 	tester.ErrorfMock.Set(func(m string, args ...interface{}) {
 		assert.Equal(t, m, "Expected call to FormatterMock.Format with params: %#v")
 	})
-	tester.FailNowMock.Expect().Return()
 
 	formatterMock := NewFormatterMock(tester)
 	formatterMock.FormatMock.Expect("a").Return("a")
@@ -259,7 +255,6 @@ func TestFormatterMock_MinimockWait(t *testing.T) {
 	tester := NewTesterMock(t).CleanupMock.Return()
 
 	tester.ErrorMock.Expect("Expected call to FormatterMock.Format").Return()
-	tester.FailNowMock.Expect().Return()
 
 	formatterMock := NewFormatterMock(tester)
 	formatterMock.FormatMock.Set(func(string, ...interface{}) string { return "" })

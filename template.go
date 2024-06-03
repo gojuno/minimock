@@ -104,7 +104,7 @@ const (
 			// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
 			// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
 			// Optional() makes method check to work in '0 or more' mode.
-			// It is NOT RECOMMENDED to use this option by default unless you really need it, as it helps to
+			// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
 			// catch the problems when the expected method call is totally skipped during test run.
 			func ({{$m}} *m{{$mock}}{{$method.Name}}{{(paramsRef)}}) Optional() *m{{$mock}}{{$method.Name}}{{(paramsRef)}} {
 				{{$m}}.optional = true
@@ -386,7 +386,6 @@ const (
 					{{- range $method := $.Interface.Methods }}
 						m.Minimock{{$method.Name}}Inspect()
 					{{ end -}}
-					m.t.FailNow()
 				}
 			})
 		}

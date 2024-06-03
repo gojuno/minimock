@@ -60,6 +60,7 @@ func NewContextAccepterMock(t minimock.Tester) *ContextAccepterMock {
 }
 
 type mContextAccepterMockAcceptContext struct {
+	optional           bool
 	mock               *ContextAccepterMock
 	defaultExpectation *ContextAccepterMockAcceptContextExpectation
 	expectations       []*ContextAccepterMockAcceptContextExpectation
@@ -87,6 +88,16 @@ type ContextAccepterMockAcceptContextParams struct {
 // ContextAccepterMockAcceptContextParamPtrs contains pointers to parameters of the contextAccepter.AcceptContext
 type ContextAccepterMockAcceptContextParamPtrs struct {
 	ctx *context.Context
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmAcceptContext *mContextAccepterMockAcceptContext) Optional() *mContextAccepterMockAcceptContext {
+	mmAcceptContext.optional = true
+	return mmAcceptContext
 }
 
 // Expect sets up expected params for contextAccepter.AcceptContext
@@ -270,6 +281,11 @@ func (mmAcceptContext *mContextAccepterMockAcceptContext) Calls() []*ContextAcce
 // MinimockAcceptContextDone returns true if the count of the AcceptContext invocations corresponds
 // the number of defined expectations
 func (m *ContextAccepterMock) MinimockAcceptContextDone() bool {
+	if m.AcceptContextMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
 	for _, e := range m.AcceptContextMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
@@ -308,6 +324,7 @@ func (m *ContextAccepterMock) MinimockAcceptContextInspect() {
 }
 
 type mContextAccepterMockAcceptContextWithOtherArgs struct {
+	optional           bool
 	mock               *ContextAccepterMock
 	defaultExpectation *ContextAccepterMockAcceptContextWithOtherArgsExpectation
 	expectations       []*ContextAccepterMockAcceptContextWithOtherArgsExpectation
@@ -343,6 +360,16 @@ type ContextAccepterMockAcceptContextWithOtherArgsParamPtrs struct {
 type ContextAccepterMockAcceptContextWithOtherArgsResults struct {
 	i2  int
 	err error
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherArgs) Optional() *mContextAccepterMockAcceptContextWithOtherArgs {
+	mmAcceptContextWithOtherArgs.optional = true
+	return mmAcceptContextWithOtherArgs
 }
 
 // Expect sets up expected params for contextAccepter.AcceptContextWithOtherArgs
@@ -575,6 +602,11 @@ func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherAr
 // MinimockAcceptContextWithOtherArgsDone returns true if the count of the AcceptContextWithOtherArgs invocations corresponds
 // the number of defined expectations
 func (m *ContextAccepterMock) MinimockAcceptContextWithOtherArgsDone() bool {
+	if m.AcceptContextWithOtherArgsMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
 	for _, e := range m.AcceptContextWithOtherArgsMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
@@ -613,6 +645,7 @@ func (m *ContextAccepterMock) MinimockAcceptContextWithOtherArgsInspect() {
 }
 
 type mContextAccepterMockAcceptContextWithStructArgs struct {
+	optional           bool
 	mock               *ContextAccepterMock
 	defaultExpectation *ContextAccepterMockAcceptContextWithStructArgsExpectation
 	expectations       []*ContextAccepterMockAcceptContextWithStructArgsExpectation
@@ -648,6 +681,16 @@ type ContextAccepterMockAcceptContextWithStructArgsParamPtrs struct {
 type ContextAccepterMockAcceptContextWithStructArgsResults struct {
 	i1  int
 	err error
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStructArgs) Optional() *mContextAccepterMockAcceptContextWithStructArgs {
+	mmAcceptContextWithStructArgs.optional = true
+	return mmAcceptContextWithStructArgs
 }
 
 // Expect sets up expected params for contextAccepter.AcceptContextWithStructArgs
@@ -880,6 +923,11 @@ func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStruct
 // MinimockAcceptContextWithStructArgsDone returns true if the count of the AcceptContextWithStructArgs invocations corresponds
 // the number of defined expectations
 func (m *ContextAccepterMock) MinimockAcceptContextWithStructArgsDone() bool {
+	if m.AcceptContextWithStructArgsMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
 	for _, e := range m.AcceptContextWithStructArgsMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
@@ -926,7 +974,6 @@ func (m *ContextAccepterMock) MinimockFinish() {
 			m.MinimockAcceptContextWithOtherArgsInspect()
 
 			m.MinimockAcceptContextWithStructArgsInspect()
-			m.t.FailNow()
 		}
 	})
 }
