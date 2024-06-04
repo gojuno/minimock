@@ -179,6 +179,16 @@ mc := minimock.NewController(t)
 formatterMock := NewFormatterMock(mc).FormatMock.Times(10).Expect("hello %s!", "world").Return("hello world!")
 ```
 
+There are also cases, when you don't know for sure if the mocking method would be called or not. 
+But you still want to mock it, if it will be called. This is where "Optional" option comes into play:
+
+```go
+mc := minimock.NewController(t)
+formatterMock := NewFormatterMock(mc).FormatMock.Optional().Expect("hello %s!", "world").Return("hello world!")
+```
+
+When this option is set, it disables checking the call of mocking method. 
+
 ### Mocking context
 Sometimes context gets modified by the time the mocked method is being called.
 However, in most cases you don't really care about the exact value of the context argument.
