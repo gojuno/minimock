@@ -35,12 +35,6 @@ type TesterMock struct {
 	beforeErrorfCounter uint64
 	ErrorfMock          mTesterMockErrorf
 
-	funcFailNow          func()
-	inspectFuncFailNow   func()
-	afterFailNowCounter  uint64
-	beforeFailNowCounter uint64
-	FailNowMock          mTesterMockFailNow
-
 	funcFatal          func(args ...interface{})
 	inspectFuncFatal   func(args ...interface{})
 	afterFatalCounter  uint64
@@ -71,8 +65,6 @@ func NewTesterMock(t minimock.Tester) *TesterMock {
 	m.ErrorfMock = mTesterMockErrorf{mock: m}
 	m.ErrorfMock.callArgs = []*TesterMockErrorfParams{}
 
-	m.FailNowMock = mTesterMockFailNow{mock: m}
-
 	m.FatalMock = mTesterMockFatal{mock: m}
 	m.FatalMock.callArgs = []*TesterMockFatalParams{}
 
@@ -85,6 +77,7 @@ func NewTesterMock(t minimock.Tester) *TesterMock {
 }
 
 type mTesterMockCleanup struct {
+	optional           bool
 	mock               *TesterMock
 	defaultExpectation *TesterMockCleanupExpectation
 	expectations       []*TesterMockCleanupExpectation
@@ -112,6 +105,16 @@ type TesterMockCleanupParams struct {
 // TesterMockCleanupParamPtrs contains pointers to parameters of the Tester.Cleanup
 type TesterMockCleanupParamPtrs struct {
 	f *func()
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmCleanup *mTesterMockCleanup) Optional() *mTesterMockCleanup {
+	mmCleanup.optional = true
+	return mmCleanup
 }
 
 // Expect sets up expected params for Tester.Cleanup
@@ -295,6 +298,11 @@ func (mmCleanup *mTesterMockCleanup) Calls() []*TesterMockCleanupParams {
 // MinimockCleanupDone returns true if the count of the Cleanup invocations corresponds
 // the number of defined expectations
 func (m *TesterMock) MinimockCleanupDone() bool {
+	if m.CleanupMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
 	for _, e := range m.CleanupMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
@@ -333,6 +341,7 @@ func (m *TesterMock) MinimockCleanupInspect() {
 }
 
 type mTesterMockError struct {
+	optional           bool
 	mock               *TesterMock
 	defaultExpectation *TesterMockErrorExpectation
 	expectations       []*TesterMockErrorExpectation
@@ -360,6 +369,16 @@ type TesterMockErrorParams struct {
 // TesterMockErrorParamPtrs contains pointers to parameters of the Tester.Error
 type TesterMockErrorParamPtrs struct {
 	p1 *[]interface{}
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmError *mTesterMockError) Optional() *mTesterMockError {
+	mmError.optional = true
+	return mmError
 }
 
 // Expect sets up expected params for Tester.Error
@@ -543,6 +562,11 @@ func (mmError *mTesterMockError) Calls() []*TesterMockErrorParams {
 // MinimockErrorDone returns true if the count of the Error invocations corresponds
 // the number of defined expectations
 func (m *TesterMock) MinimockErrorDone() bool {
+	if m.ErrorMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
 	for _, e := range m.ErrorMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
@@ -581,6 +605,7 @@ func (m *TesterMock) MinimockErrorInspect() {
 }
 
 type mTesterMockErrorf struct {
+	optional           bool
 	mock               *TesterMock
 	defaultExpectation *TesterMockErrorfExpectation
 	expectations       []*TesterMockErrorfExpectation
@@ -610,6 +635,16 @@ type TesterMockErrorfParams struct {
 type TesterMockErrorfParamPtrs struct {
 	format *string
 	args   *[]interface{}
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmErrorf *mTesterMockErrorf) Optional() *mTesterMockErrorf {
+	mmErrorf.optional = true
+	return mmErrorf
 }
 
 // Expect sets up expected params for Tester.Errorf
@@ -819,6 +854,11 @@ func (mmErrorf *mTesterMockErrorf) Calls() []*TesterMockErrorfParams {
 // MinimockErrorfDone returns true if the count of the Errorf invocations corresponds
 // the number of defined expectations
 func (m *TesterMock) MinimockErrorfDone() bool {
+	if m.ErrorfMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
 	for _, e := range m.ErrorfMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
@@ -856,162 +896,8 @@ func (m *TesterMock) MinimockErrorfInspect() {
 	}
 }
 
-type mTesterMockFailNow struct {
-	mock               *TesterMock
-	defaultExpectation *TesterMockFailNowExpectation
-	expectations       []*TesterMockFailNowExpectation
-
-	expectedInvocations uint64
-}
-
-// TesterMockFailNowExpectation specifies expectation struct of the Tester.FailNow
-type TesterMockFailNowExpectation struct {
-	mock *TesterMock
-
-	Counter uint64
-}
-
-// Expect sets up expected params for Tester.FailNow
-func (mmFailNow *mTesterMockFailNow) Expect() *mTesterMockFailNow {
-	if mmFailNow.mock.funcFailNow != nil {
-		mmFailNow.mock.t.Fatalf("TesterMock.FailNow mock is already set by Set")
-	}
-
-	if mmFailNow.defaultExpectation == nil {
-		mmFailNow.defaultExpectation = &TesterMockFailNowExpectation{}
-	}
-
-	return mmFailNow
-}
-
-// Inspect accepts an inspector function that has same arguments as the Tester.FailNow
-func (mmFailNow *mTesterMockFailNow) Inspect(f func()) *mTesterMockFailNow {
-	if mmFailNow.mock.inspectFuncFailNow != nil {
-		mmFailNow.mock.t.Fatalf("Inspect function is already set for TesterMock.FailNow")
-	}
-
-	mmFailNow.mock.inspectFuncFailNow = f
-
-	return mmFailNow
-}
-
-// Return sets up results that will be returned by Tester.FailNow
-func (mmFailNow *mTesterMockFailNow) Return() *TesterMock {
-	if mmFailNow.mock.funcFailNow != nil {
-		mmFailNow.mock.t.Fatalf("TesterMock.FailNow mock is already set by Set")
-	}
-
-	if mmFailNow.defaultExpectation == nil {
-		mmFailNow.defaultExpectation = &TesterMockFailNowExpectation{mock: mmFailNow.mock}
-	}
-
-	return mmFailNow.mock
-}
-
-// Set uses given function f to mock the Tester.FailNow method
-func (mmFailNow *mTesterMockFailNow) Set(f func()) *TesterMock {
-	if mmFailNow.defaultExpectation != nil {
-		mmFailNow.mock.t.Fatalf("Default expectation is already set for the Tester.FailNow method")
-	}
-
-	if len(mmFailNow.expectations) > 0 {
-		mmFailNow.mock.t.Fatalf("Some expectations are already set for the Tester.FailNow method")
-	}
-
-	mmFailNow.mock.funcFailNow = f
-	return mmFailNow.mock
-}
-
-// Times sets number of times Tester.FailNow should be invoked
-func (mmFailNow *mTesterMockFailNow) Times(n uint64) *mTesterMockFailNow {
-	if n == 0 {
-		mmFailNow.mock.t.Fatalf("Times of TesterMock.FailNow mock can not be zero")
-	}
-	mm_atomic.StoreUint64(&mmFailNow.expectedInvocations, n)
-	return mmFailNow
-}
-
-func (mmFailNow *mTesterMockFailNow) invocationsDone() bool {
-	if len(mmFailNow.expectations) == 0 && mmFailNow.defaultExpectation == nil && mmFailNow.mock.funcFailNow == nil {
-		return true
-	}
-
-	totalInvocations := mm_atomic.LoadUint64(&mmFailNow.mock.afterFailNowCounter)
-	expectedInvocations := mm_atomic.LoadUint64(&mmFailNow.expectedInvocations)
-
-	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
-}
-
-// FailNow implements minimock.Tester
-func (mmFailNow *TesterMock) FailNow() {
-	mm_atomic.AddUint64(&mmFailNow.beforeFailNowCounter, 1)
-	defer mm_atomic.AddUint64(&mmFailNow.afterFailNowCounter, 1)
-
-	if mmFailNow.inspectFuncFailNow != nil {
-		mmFailNow.inspectFuncFailNow()
-	}
-
-	if mmFailNow.FailNowMock.defaultExpectation != nil {
-		mm_atomic.AddUint64(&mmFailNow.FailNowMock.defaultExpectation.Counter, 1)
-
-		return
-
-	}
-	if mmFailNow.funcFailNow != nil {
-		mmFailNow.funcFailNow()
-		return
-	}
-	mmFailNow.t.Fatalf("Unexpected call to TesterMock.FailNow.")
-
-}
-
-// FailNowAfterCounter returns a count of finished TesterMock.FailNow invocations
-func (mmFailNow *TesterMock) FailNowAfterCounter() uint64 {
-	return mm_atomic.LoadUint64(&mmFailNow.afterFailNowCounter)
-}
-
-// FailNowBeforeCounter returns a count of TesterMock.FailNow invocations
-func (mmFailNow *TesterMock) FailNowBeforeCounter() uint64 {
-	return mm_atomic.LoadUint64(&mmFailNow.beforeFailNowCounter)
-}
-
-// MinimockFailNowDone returns true if the count of the FailNow invocations corresponds
-// the number of defined expectations
-func (m *TesterMock) MinimockFailNowDone() bool {
-	for _, e := range m.FailNowMock.expectations {
-		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			return false
-		}
-	}
-
-	return m.FailNowMock.invocationsDone()
-}
-
-// MinimockFailNowInspect logs each unmet expectation
-func (m *TesterMock) MinimockFailNowInspect() {
-	for _, e := range m.FailNowMock.expectations {
-		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Error("Expected call to TesterMock.FailNow")
-		}
-	}
-
-	afterFailNowCounter := mm_atomic.LoadUint64(&m.afterFailNowCounter)
-	// if default expectation was set then invocations count should be greater than zero
-	if m.FailNowMock.defaultExpectation != nil && afterFailNowCounter < 1 {
-		m.t.Error("Expected call to TesterMock.FailNow")
-	}
-	// if func was set then invocations count should be greater than zero
-	if m.funcFailNow != nil && afterFailNowCounter < 1 {
-		m.t.Error("Expected call to TesterMock.FailNow")
-	}
-
-	if !m.FailNowMock.invocationsDone() && afterFailNowCounter > 0 {
-		m.t.Errorf("Expected %d calls to TesterMock.FailNow but found %d calls",
-			mm_atomic.LoadUint64(&m.FailNowMock.expectedInvocations), afterFailNowCounter)
-	}
-}
-
 type mTesterMockFatal struct {
+	optional           bool
 	mock               *TesterMock
 	defaultExpectation *TesterMockFatalExpectation
 	expectations       []*TesterMockFatalExpectation
@@ -1039,6 +925,16 @@ type TesterMockFatalParams struct {
 // TesterMockFatalParamPtrs contains pointers to parameters of the Tester.Fatal
 type TesterMockFatalParamPtrs struct {
 	args *[]interface{}
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmFatal *mTesterMockFatal) Optional() *mTesterMockFatal {
+	mmFatal.optional = true
+	return mmFatal
 }
 
 // Expect sets up expected params for Tester.Fatal
@@ -1222,6 +1118,11 @@ func (mmFatal *mTesterMockFatal) Calls() []*TesterMockFatalParams {
 // MinimockFatalDone returns true if the count of the Fatal invocations corresponds
 // the number of defined expectations
 func (m *TesterMock) MinimockFatalDone() bool {
+	if m.FatalMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
 	for _, e := range m.FatalMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
@@ -1260,6 +1161,7 @@ func (m *TesterMock) MinimockFatalInspect() {
 }
 
 type mTesterMockFatalf struct {
+	optional           bool
 	mock               *TesterMock
 	defaultExpectation *TesterMockFatalfExpectation
 	expectations       []*TesterMockFatalfExpectation
@@ -1289,6 +1191,16 @@ type TesterMockFatalfParams struct {
 type TesterMockFatalfParamPtrs struct {
 	format *string
 	args   *[]interface{}
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmFatalf *mTesterMockFatalf) Optional() *mTesterMockFatalf {
+	mmFatalf.optional = true
+	return mmFatalf
 }
 
 // Expect sets up expected params for Tester.Fatalf
@@ -1498,6 +1410,11 @@ func (mmFatalf *mTesterMockFatalf) Calls() []*TesterMockFatalfParams {
 // MinimockFatalfDone returns true if the count of the Fatalf invocations corresponds
 // the number of defined expectations
 func (m *TesterMock) MinimockFatalfDone() bool {
+	if m.FatalfMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
 	for _, e := range m.FatalfMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
@@ -1545,12 +1462,9 @@ func (m *TesterMock) MinimockFinish() {
 
 			m.MinimockErrorfInspect()
 
-			m.MinimockFailNowInspect()
-
 			m.MinimockFatalInspect()
 
 			m.MinimockFatalfInspect()
-			m.t.FailNow()
 		}
 	})
 }
@@ -1577,7 +1491,6 @@ func (m *TesterMock) minimockDone() bool {
 		m.MinimockCleanupDone() &&
 		m.MinimockErrorDone() &&
 		m.MinimockErrorfDone() &&
-		m.MinimockFailNowDone() &&
 		m.MinimockFatalDone() &&
 		m.MinimockFatalfDone()
 }

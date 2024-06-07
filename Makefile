@@ -7,6 +7,7 @@ all: install test lint
 generate:
 	go run ./cmd/minimock/minimock.go -i github.com/gojuno/minimock/v3.Tester -o ./tests
 	go run ./cmd/minimock/minimock.go -i ./tests.Formatter -o ./tests/formatter_mock.go
+	go run ./cmd/minimock/minimock.go -i ./tests.Formatter -o ./tests/formatter_with_custom_name_mock.go -n CustomFormatterNameMock
 	go run ./cmd/minimock/minimock.go -i ./tests.genericInout -o ./tests/generic_inout.go
 	go run ./cmd/minimock/minimock.go -i ./tests.genericOut -o ./tests/generic_out.go
 	go run ./cmd/minimock/minimock.go -i ./tests.genericIn -o ./tests/generic_in.go

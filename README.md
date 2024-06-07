@@ -16,7 +16,7 @@ The main features of minimock are:
 * It supports generics.
 * It works well with [table driven tests](https://dave.cheney.net/2013/06/09/writing-table-driven-tests-in-go) because you can set up mocks for several methods in one line of code using the builder pattern.
 * It can generate several mocks in one run.
-* It generates code that passes [gometalinter](https://github.com/alecthomas/gometalinter) checks.
+* It generates code that passes default set of [golangci-lint](https://github.com/golangci/golangci-lint) checks.
 * It puts //go:generate instruction into the generated code, so all you need to do when the source interface is updated is to run the `go generate ./...` command from within the project's directory.
 * It makes sure that all mocked methods have been called during the test and keeps your test code clean and up to date.
 * It provides When and Then helpers to set up several expectations and results for any method.
@@ -178,6 +178,16 @@ Then you can set `Times` helper to check how many times mock was invoked.
 mc := minimock.NewController(t)
 formatterMock := NewFormatterMock(mc).FormatMock.Times(10).Expect("hello %s!", "world").Return("hello world!")
 ```
+
+There are also cases, when you don't know for sure if the mocking method would be called or not. 
+But you still want to mock it, if it will be called. This is where "Optional" option comes into play:
+
+```go
+mc := minimock.NewController(t)
+formatterMock := NewFormatterMock(mc).FormatMock.Optional().Expect("hello %s!", "world").Return("hello world!")
+```
+
+When this option is set, it disables checking the call of mocking method. 
 
 ### Mocking context
 Sometimes context gets modified by the time the mocked method is being called.

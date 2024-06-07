@@ -41,6 +41,7 @@ func NewGenericInlineUnionMock[T int | float64](t minimock.Tester) *GenericInlin
 }
 
 type mGenericInlineUnionMockName[T int | float64] struct {
+	optional           bool
 	mock               *GenericInlineUnionMock[T]
 	defaultExpectation *GenericInlineUnionMockNameExpectation[T]
 	expectations       []*GenericInlineUnionMockNameExpectation[T]
@@ -68,6 +69,16 @@ type GenericInlineUnionMockNameParams[T int | float64] struct {
 // GenericInlineUnionMockNameParamPtrs contains pointers to parameters of the genericInlineUnion.Name
 type GenericInlineUnionMockNameParamPtrs[T int | float64] struct {
 	t1 *T
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmName *mGenericInlineUnionMockName[T]) Optional() *mGenericInlineUnionMockName[T] {
+	mmName.optional = true
+	return mmName
 }
 
 // Expect sets up expected params for genericInlineUnion.Name
@@ -251,6 +262,11 @@ func (mmName *mGenericInlineUnionMockName[T]) Calls() []*GenericInlineUnionMockN
 // MinimockNameDone returns true if the count of the Name invocations corresponds
 // the number of defined expectations
 func (m *GenericInlineUnionMock[T]) MinimockNameDone() bool {
+	if m.NameMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
 	for _, e := range m.NameMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
@@ -293,7 +309,6 @@ func (m *GenericInlineUnionMock[T]) MinimockFinish() {
 	m.finishOnce.Do(func() {
 		if !m.minimockDone() {
 			m.MinimockNameInspect()
-			m.t.FailNow()
 		}
 	})
 }

@@ -139,8 +139,7 @@ func TestContextAccepterMock_TimesFailure(t *testing.T) {
 	tester := NewTesterMock(t)
 	tester.CleanupMock.Return().
 		ErrorfMock.Expect("Expected %d calls to ContextAccepterMock.AcceptContextWithStructArgs but found %d calls", uint64(1), uint64(2)).
-		Return().
-		FailNowMock.Return()
+		Return()
 
 	// Expected 1 calls to ContextAccepterMock.AcceptContextWithStructArgs but found 2 calls
 	mock := NewContextAccepterMock(tester).
@@ -183,8 +182,7 @@ func TestContextAccepterMock_ExpectedCall(t *testing.T) {
 	tester := NewTesterMock(t)
 	tester.CleanupMock.Times(1).Return().
 		ErrorMock.Expect("Expected call to ContextAccepterMock.AcceptContext").Times(1).
-		Return().
-		FailNowMock.Times(1).Return()
+		Return()
 
 	mock := NewContextAccepterMock(tester).AcceptContextMock.Return()
 

@@ -41,6 +41,7 @@ func NewFormatterMock(t minimock.Tester) *FormatterMock {
 }
 
 type mFormatterMockFormat struct {
+	optional           bool
 	mock               *FormatterMock
 	defaultExpectation *FormatterMockFormatExpectation
 	expectations       []*FormatterMockFormatExpectation
@@ -75,6 +76,16 @@ type FormatterMockFormatParamPtrs struct {
 // FormatterMockFormatResults contains results of the Formatter.Format
 type FormatterMockFormatResults struct {
 	s2 string
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmFormat *mFormatterMockFormat) Optional() *mFormatterMockFormat {
+	mmFormat.optional = true
+	return mmFormat
 }
 
 // Expect sets up expected params for Formatter.Format
@@ -307,6 +318,11 @@ func (mmFormat *mFormatterMockFormat) Calls() []*FormatterMockFormatParams {
 // MinimockFormatDone returns true if the count of the Format invocations corresponds
 // the number of defined expectations
 func (m *FormatterMock) MinimockFormatDone() bool {
+	if m.FormatMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
 	for _, e := range m.FormatMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
@@ -349,7 +365,6 @@ func (m *FormatterMock) MinimockFinish() {
 	m.finishOnce.Do(func() {
 		if !m.minimockDone() {
 			m.MinimockFormatInspect()
-			m.t.FailNow()
 		}
 	})
 }

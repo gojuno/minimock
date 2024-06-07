@@ -41,6 +41,7 @@ func NewActorMock(t minimock.Tester) *ActorMock {
 }
 
 type mActorMockAction struct {
+	optional           bool
 	mock               *ActorMock
 	defaultExpectation *ActorMockActionExpectation
 	expectations       []*ActorMockActionExpectation
@@ -76,6 +77,16 @@ type ActorMockActionParamPtrs struct {
 type ActorMockActionResults struct {
 	i1  int
 	err error
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmAction *mActorMockAction) Optional() *mActorMockAction {
+	mmAction.optional = true
+	return mmAction
 }
 
 // Expect sets up expected params for actor.Action
@@ -308,6 +319,11 @@ func (mmAction *mActorMockAction) Calls() []*ActorMockActionParams {
 // MinimockActionDone returns true if the count of the Action invocations corresponds
 // the number of defined expectations
 func (m *ActorMock) MinimockActionDone() bool {
+	if m.ActionMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
 	for _, e := range m.ActionMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
@@ -350,7 +366,6 @@ func (m *ActorMock) MinimockFinish() {
 	m.finishOnce.Do(func() {
 		if !m.minimockDone() {
 			m.MinimockActionInspect()
-			m.t.FailNow()
 		}
 	})
 }
