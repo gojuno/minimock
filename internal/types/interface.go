@@ -5,6 +5,9 @@ import (
 	"go/ast"
 	"go/printer"
 	"go/token"
+	"strings"
+
+	"github.com/hexdigest/gowrap/pkg"
 )
 
 // InterfaceSpecification represents abstraction over interface type. It contains all the metadata
@@ -22,18 +25,14 @@ type InterfaceSpecificationParam struct {
 	ParamType  string
 }
 
-func FindAllInterfaces(p *ast.Package, pattern string) []InterfaceSpecification {
-	// Find all declared types in a single package
-	types := []*ast.TypeSpec{}
-	for _, file := range p.Files {
-		types = append(types, findAllTypeSpecsInFile(file)...)
-	}
-
+func FindAllInterfaces(p *ast.Package, pattern string, withAliases bool) []InterfaceSpecification {
 	// Filter interfaces from all the declarations
 	interfaces := []*ast.TypeSpec{}
-	for _, typeSpec := range types {
-		if isInterface(typeSpec) {
-			interfaces = append(interfaces, typeSpec)
+	for _, file := range p.Files {
+		for _, typeSpec := range findAllTypeSpecsInFile(file) {
+			if isInterface(typeSpec, file.Imports, withAliases) {
+				interfaces = append(interfaces, typeSpec)
+			}
 		}
 	}
 
@@ -57,8 +56,128 @@ func FindAllInterfaces(p *ast.Package, pattern string) []InterfaceSpecification 
 	return interfaceSpecifications
 }
 
-func isInterface(typeSpec *ast.TypeSpec) bool {
-	// Check if this type declaration is specifically an interface declaration
+func isInterface(typeSpec *ast.TypeSpec, fileImports []*ast.ImportSpec, withAliases bool) bool {
+	// we are generating mocks for interfaces,
+	// interface aliases to types from the same package
+	// and aliases to types from another package
+	if !withAliases {
+		return isInterfaceType(typeSpec)
+	}
+	return isInterfaceOrAlias(typeSpec, fileImports)
+}
+
+func isInterfaceOrAlias(typeSpec *ast.TypeSpec, fileImports []*ast.ImportSpec) bool {
+	return isInterfaceType(typeSpec) ||
+		isInterfaceAlias(typeSpec, fileImports) ||
+		isExportedInterfaceAlias(typeSpec, fileImports)
+}
+
+// isInterfaceAlias checks if type is an alias to other
+// interface type that is in the same package
+func isInterfaceAlias(typeSpec *ast.TypeSpec, fileImports []*ast.ImportSpec) bool {
+	ident, ok := typeSpec.Type.(*ast.Ident)
+	if !ok {
+		return false
+	}
+
+	if ident.Obj == nil {
+		return false
+	}
+
+	if ts, ok := ident.Obj.Decl.(*ast.TypeSpec); ok {
+		return isInterfaceOrAlias(ts, fileImports)
+	}
+
+	return false
+}
+
+// isExportedInterfaceAlias checks if type is an alias to other
+// interface type that is in other exported package
+func isExportedInterfaceAlias(typeSpec *ast.TypeSpec, fileImports []*ast.ImportSpec) bool {
+	selector, ok := typeSpec.Type.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+
+	ident, ok := selector.X.(*ast.Ident)
+	if !ok {
+		return false
+	}
+
+	srcPkgPath := findSourcePackage(ident, fileImports)
+	srcAst, err := getPackageAst(srcPkgPath)
+	if err != nil {
+		return false
+	}
+
+	typeSpec, imports := findTypeSoecInPackage(srcAst, selector.Sel.Name)
+
+	// we have to check recursively because checked typed might be
+	// another alias to other interface
+	return isInterfaceOrAlias(typeSpec, imports)
+}
+
+func getPackageAst(packagePath string) (*ast.Package, error) {
+	srcPkg, err := pkg.Load(packagePath)
+	if err != nil {
+		return nil, err
+	}
+
+	fs := token.NewFileSet()
+	srcAst, err := pkg.AST(fs, srcPkg)
+	if err != nil {
+		return nil, err
+	}
+
+	return srcAst, nil
+}
+
+func findTypeSoecInPackage(p *ast.Package, name string) (typeSpec *ast.TypeSpec, imports []*ast.ImportSpec) {
+	for _, f := range p.Files {
+		if f == nil {
+			continue
+		}
+		types := findAllTypeSpecsInFile(f)
+		typeSpec, found := findTypeByName(types, name)
+		if found {
+			return typeSpec, f.Imports
+		}
+	}
+
+	return
+}
+
+func findTypeByName(types []*ast.TypeSpec, name string) (*ast.TypeSpec, bool) {
+	for _, ts := range types {
+		if ts.Name.Name == name {
+			return ts, true
+		}
+	}
+
+	return nil, false
+}
+
+func findSourcePackage(ident *ast.Ident, imports []*ast.ImportSpec) string {
+	for _, imp := range imports {
+		cleanPath := strings.Trim(imp.Path.Value, "\"")
+		if imp.Name != nil {
+			if ident.Name == imp.Name.Name {
+				return cleanPath
+			}
+
+			continue
+		}
+
+		slash := strings.LastIndex(cleanPath, "/")
+		if ident.Name == cleanPath[slash+1:] {
+			return cleanPath
+		}
+	}
+
+	return ""
+}
+
+func isInterfaceType(typeSpec *ast.TypeSpec) bool {
 	_, ok := typeSpec.Type.(*ast.InterfaceType)
 	return ok
 }
