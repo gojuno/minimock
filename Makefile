@@ -20,9 +20,9 @@ generate:
 	go run ./cmd/minimock/minimock.go -i ./tests.contextAccepter -o ./tests/context_accepter_mock.go
 	go run ./cmd/minimock/minimock.go -i github.com/gojuno/minimock/v3.Tester -o ./tests/package_name_specified_test.go -p tests_test
 	go run ./cmd/minimock/minimock.go -i ./tests.actor -o ./tests/actor_mock.go
-	go run ./cmd/minimock/minimock.go -i ./tests.formatterAlias -o ./tests/formatter_alias_mock.go -from-aliases
-	go run ./cmd/minimock/minimock.go -i ./tests.formatterType -o ./tests/formatter_type_mock.go -from-aliases
-	go run ./cmd/minimock/minimock.go -i ./tests.reader -o ./tests/reader_mock.go -from-aliases
+	go run ./cmd/minimock/minimock.go -i ./tests.formatterAlias -o ./tests/formatter_alias_mock.go
+	go run ./cmd/minimock/minimock.go -i ./tests.formatterType -o ./tests/formatter_type_mock.go
+	go run ./cmd/minimock/minimock.go -i ./tests.reader -o ./tests/reader_mock.go
 
 ./bin:
 	mkdir ./bin
