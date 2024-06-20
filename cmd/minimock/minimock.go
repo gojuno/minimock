@@ -51,12 +51,11 @@ var helpers = template.FuncMap{
 
 type (
 	options struct {
-		interfaces          []interfaceInfo
-		noGenerate          bool
-		generateFromAliases bool
-		suffix              string
-		mockNames           []string
-		packageNames        []string
+		interfaces   []interfaceInfo
+		noGenerate   bool
+		suffix       string
+		mockNames    []string
+		packageNames []string
 	}
 
 	interfaceInfo struct {
@@ -147,7 +146,7 @@ func run(opts *options) (err error) {
 			}
 		}
 
-		interfaces := types.FindAllInterfaces(astPackage, in.Type, opts.generateFromAliases)
+		interfaces := types.FindAllInterfaces(astPackage, in.Type)
 
 		packageName := ""
 		if len(opts.interfaces) == len(opts.packageNames) {
@@ -384,7 +383,6 @@ func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
 
 	fs.BoolVar(&opts.noGenerate, "g", false, "don't put go:generate instruction into the generated code")
 	fs.StringVar(&opts.suffix, "s", "_mock_test.go", "mock file suffix")
-	fs.BoolVar(&opts.generateFromAliases, "from-aliases", false, "generate mocks from interface aliases as well")
 
 	input := fs.String("i", "*", "comma-separated names of the interfaces to mock, i.e fmt.Stringer,io.Reader\nuse io.* notation to generate mocks for all interfaces in the \"io\" package")
 	output := fs.String("o", "", "comma-separated destination file names or packages to put the generated mocks in,\nby default the generated mock is placed in the source package directory")

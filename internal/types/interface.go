@@ -25,12 +25,12 @@ type InterfaceSpecificationParam struct {
 	ParamType  string
 }
 
-func FindAllInterfaces(p *ast.Package, pattern string, withAliases bool) []InterfaceSpecification {
+func FindAllInterfaces(p *ast.Package, pattern string) []InterfaceSpecification {
 	// Filter interfaces from all the declarations
 	interfaces := []*ast.TypeSpec{}
 	for _, file := range p.Files {
 		for _, typeSpec := range findAllTypeSpecsInFile(file) {
-			if isInterface(typeSpec, file.Imports, withAliases) {
+			if isInterface(typeSpec, file.Imports) {
 				interfaces = append(interfaces, typeSpec)
 			}
 		}
@@ -56,17 +56,10 @@ func FindAllInterfaces(p *ast.Package, pattern string, withAliases bool) []Inter
 	return interfaceSpecifications
 }
 
-func isInterface(typeSpec *ast.TypeSpec, fileImports []*ast.ImportSpec, withAliases bool) bool {
+func isInterface(typeSpec *ast.TypeSpec, fileImports []*ast.ImportSpec) bool {
 	// we are generating mocks for interfaces,
 	// interface aliases to types from the same package
 	// and aliases to types from another package
-	if !withAliases {
-		return isInterfaceType(typeSpec)
-	}
-	return isInterfaceOrAlias(typeSpec, fileImports)
-}
-
-func isInterfaceOrAlias(typeSpec *ast.TypeSpec, fileImports []*ast.ImportSpec) bool {
 	return isInterfaceType(typeSpec) ||
 		isInterfaceAlias(typeSpec, fileImports) ||
 		isExportedInterfaceAlias(typeSpec, fileImports)
@@ -85,7 +78,7 @@ func isInterfaceAlias(typeSpec *ast.TypeSpec, fileImports []*ast.ImportSpec) boo
 	}
 
 	if ts, ok := ident.Obj.Decl.(*ast.TypeSpec); ok {
-		return isInterfaceOrAlias(ts, fileImports)
+		return isInterface(ts, fileImports)
 	}
 
 	return false
@@ -110,11 +103,11 @@ func isExportedInterfaceAlias(typeSpec *ast.TypeSpec, fileImports []*ast.ImportS
 		return false
 	}
 
-	typeSpec, imports := findTypeSoecInPackage(srcAst, selector.Sel.Name)
+	typeSpec, imports := findTypeSpecInPackage(srcAst, selector.Sel.Name)
 
 	// we have to check recursively because checked typed might be
 	// another alias to other interface
-	return isInterfaceOrAlias(typeSpec, imports)
+	return isInterface(typeSpec, imports)
 }
 
 func getPackageAst(packagePath string) (*ast.Package, error) {
@@ -132,7 +125,7 @@ func getPackageAst(packagePath string) (*ast.Package, error) {
 	return srcAst, nil
 }
 
-func findTypeSoecInPackage(p *ast.Package, name string) (typeSpec *ast.TypeSpec, imports []*ast.ImportSpec) {
+func findTypeSpecInPackage(p *ast.Package, name string) (typeSpec *ast.TypeSpec, imports []*ast.ImportSpec) {
 	for _, f := range p.Files {
 		if f == nil {
 			continue
