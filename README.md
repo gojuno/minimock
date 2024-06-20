@@ -16,6 +16,7 @@ The main features of minimock are:
 * It supports generics.
 * It works well with [table driven tests](https://dave.cheney.net/2013/06/09/writing-table-driven-tests-in-go) because you can set up mocks for several methods in one line of code using the builder pattern.
 * It can generate several mocks in one run.
+* It can generate mocks from interface aliases.
 * It generates code that passes default set of [golangci-lint](https://github.com/golangci/golangci-lint) checks.
 * It puts //go:generate instruction into the generated code, so all you need to do when the source interface is updated is to run the `go generate ./...` command from within the project's directory.
 * It makes sure that all mocked methods have been called during the test and keeps your test code clean and up to date.
