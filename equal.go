@@ -64,6 +64,7 @@ func Diff(e, a interface{}) string {
 		return ""
 	}
 
+	initialKind := k
 	if k == reflect.Ptr {
 		t = t.Elem()
 		k = t.Kind()
@@ -73,7 +74,7 @@ func Diff(e, a interface{}) string {
 		return ""
 	}
 
-	if k == reflect.Struct {
+	if initialKind == reflect.Struct {
 		a = setAnyContext(e, a)
 	}
 
