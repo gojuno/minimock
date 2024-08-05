@@ -3,6 +3,7 @@ package tests
 
 import (
 	"context"
+	"io"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -67,6 +68,12 @@ type (
 	genericMultipleTypes[T proto.Message, K any] interface {
 		Name(T, K)
 	}
+
+	formatterAlias = Formatter
+
+	formatterType Formatter
+
+	reader = io.Reader
 
 	structArg struct {
 		a int
