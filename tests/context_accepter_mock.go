@@ -209,6 +209,10 @@ func (mmAcceptContext *ContextAccepterMock) AcceptContext(ctx context.Context) {
 	mm_atomic.AddUint64(&mmAcceptContext.beforeAcceptContextCounter, 1)
 	defer mm_atomic.AddUint64(&mmAcceptContext.afterAcceptContextCounter, 1)
 
+	if helper, ok := mmAcceptContext.t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	if mmAcceptContext.inspectFuncAcceptContext != nil {
 		mmAcceptContext.inspectFuncAcceptContext(ctx)
 	}
@@ -523,6 +527,10 @@ func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherAr
 func (mmAcceptContextWithOtherArgs *ContextAccepterMock) AcceptContextWithOtherArgs(ctx context.Context, i1 int) (i2 int, err error) {
 	mm_atomic.AddUint64(&mmAcceptContextWithOtherArgs.beforeAcceptContextWithOtherArgsCounter, 1)
 	defer mm_atomic.AddUint64(&mmAcceptContextWithOtherArgs.afterAcceptContextWithOtherArgsCounter, 1)
+
+	if helper, ok := mmAcceptContextWithOtherArgs.t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
 
 	if mmAcceptContextWithOtherArgs.inspectFuncAcceptContextWithOtherArgs != nil {
 		mmAcceptContextWithOtherArgs.inspectFuncAcceptContextWithOtherArgs(ctx, i1)
@@ -844,6 +852,10 @@ func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStruct
 func (mmAcceptContextWithStructArgs *ContextAccepterMock) AcceptContextWithStructArgs(ctx context.Context, s1 structArg) (i1 int, err error) {
 	mm_atomic.AddUint64(&mmAcceptContextWithStructArgs.beforeAcceptContextWithStructArgsCounter, 1)
 	defer mm_atomic.AddUint64(&mmAcceptContextWithStructArgs.afterAcceptContextWithStructArgsCounter, 1)
+
+	if helper, ok := mmAcceptContextWithStructArgs.t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
 
 	if mmAcceptContextWithStructArgs.inspectFuncAcceptContextWithStructArgs != nil {
 		mmAcceptContextWithStructArgs.inspectFuncAcceptContextWithStructArgs(ctx, s1)

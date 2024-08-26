@@ -241,6 +241,10 @@ func (mmAction *ActorMock) Action(firstParam string, secondParam int) (i1 int, e
 	mm_atomic.AddUint64(&mmAction.beforeActionCounter, 1)
 	defer mm_atomic.AddUint64(&mmAction.afterActionCounter, 1)
 
+	if helper, ok := mmAction.t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	if mmAction.inspectFuncAction != nil {
 		mmAction.inspectFuncAction(firstParam, secondParam)
 	}

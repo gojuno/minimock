@@ -8,7 +8,7 @@ import (
 
 func TestActorMock_TestPassedWithBothExpectedParams(t *testing.T) {
 	tester := NewTesterMock(t)
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 
 	mock := NewActorMock(tester).
 		ActionMock.ExpectFirstParamParam1("abc").
@@ -21,7 +21,7 @@ func TestActorMock_TestPassedWithBothExpectedParams(t *testing.T) {
 
 func TestActorMock_TestPassedWithOneExpectedParams(t *testing.T) {
 	tester := NewTesterMock(t)
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 
 	mock := NewActorMock(tester).
 		ActionMock.ExpectFirstParamParam1("abc").Return(1, nil)
@@ -33,7 +33,7 @@ func TestActorMock_TestPassedWithOneExpectedParams(t *testing.T) {
 
 func TestActorMock_TestFailedWithExpectedParams(t *testing.T) {
 	tester := NewTesterMock(t)
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 	tester.ErrorfMock.
 		Expect("ActorMock.Action got unexpected parameter secondParam, want: %#v, got: %#v%s\n", 24, 25, "").
 		Return()

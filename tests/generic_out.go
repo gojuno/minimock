@@ -147,6 +147,10 @@ func (mmName *GenericOutMock[T]) Name() (t1 T) {
 	mm_atomic.AddUint64(&mmName.beforeNameCounter, 1)
 	defer mm_atomic.AddUint64(&mmName.afterNameCounter, 1)
 
+	if helper, ok := mmName.t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	if mmName.inspectFuncName != nil {
 		mmName.inspectFuncName()
 	}

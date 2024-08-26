@@ -16,7 +16,7 @@ func TestContextAccepterMock_AnyContext(t *testing.T) {
 		assert.Equal(t, "ContextAccepterMock.AcceptContext got unexpected parameters, want: %#v, got: %#v%s\n", s)
 
 		mockCalled = true
-	}).CleanupMock.Return()
+	}).CleanupMock.Return().HelperMock.Return()
 
 	mock := NewContextAccepterMock(tester).
 		AcceptContextMock.Expect(context.Background()).Return()
@@ -28,7 +28,7 @@ func TestContextAccepterMock_AnyContext(t *testing.T) {
 
 func TestContextAccepterMock_TodoContextMatchesAnycontext(t *testing.T) {
 	tester := NewTesterMock(t)
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 
 	mock := NewContextAccepterMock(tester).
 		AcceptContextMock.Expect(minimock.AnyContext).Return()
@@ -38,7 +38,7 @@ func TestContextAccepterMock_TodoContextMatchesAnycontext(t *testing.T) {
 
 func TestContextAccepterMock_WhenThenMatchAnycontext(t *testing.T) {
 	tester := NewTesterMock(t)
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 
 	mock := NewContextAccepterMock(tester).
 		AcceptContextWithOtherArgsMock.When(minimock.AnyContext, 1).Then(42, nil)
@@ -50,7 +50,7 @@ func TestContextAccepterMock_WhenThenMatchAnycontext(t *testing.T) {
 
 func TestContextAccepterMock_DiffWithoutAnyContext(t *testing.T) {
 	tester := NewTesterMock(t)
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 
 	tester.ErrorfMock.
 		Expect("ContextAccepterMock.AcceptContextWithOtherArgs got unexpected parameters, want: %#v, got: %#v%s\n",
@@ -73,7 +73,7 @@ func TestContextAccepterMock_DiffWithoutAnyContext(t *testing.T) {
 
 func TestContextAccepterMock_DiffInStructArgWithoutAnyContext(t *testing.T) {
 	tester := NewTesterMock(t)
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 
 	tester.ErrorfMock.
 		Expect("ContextAccepterMock.AcceptContextWithStructArgs got unexpected parameters, want: %#v, got: %#v%s\n",
@@ -109,7 +109,7 @@ func TestContextAccepterMock_DiffInStructArgWithoutAnyContext(t *testing.T) {
 
 func TestContextAccepterMock_TimesSuccess(t *testing.T) {
 	tester := NewTesterMock(t)
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 
 	mock := NewContextAccepterMock(tester).
 		AcceptContextWithStructArgsMock.Times(2).Expect(minimock.AnyContext, structArg{
@@ -137,7 +137,7 @@ func TestContextAccepterMock_TimesSuccess(t *testing.T) {
 
 func TestContextAccepterMock_TimesFailure(t *testing.T) {
 	tester := NewTesterMock(t)
-	tester.CleanupMock.Return().
+	tester.CleanupMock.Return().HelperMock.Return().
 		ErrorfMock.Expect("Expected %d calls to ContextAccepterMock.AcceptContextWithStructArgs but found %d calls", uint64(1), uint64(2)).
 		Return()
 

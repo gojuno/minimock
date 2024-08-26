@@ -217,6 +217,10 @@ func (mmRead *ReaderMock) Read(p []byte) (n int, err error) {
 	mm_atomic.AddUint64(&mmRead.beforeReadCounter, 1)
 	defer mm_atomic.AddUint64(&mmRead.afterReadCounter, 1)
 
+	if helper, ok := mmRead.t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	if mmRead.inspectFuncRead != nil {
 		mmRead.inspectFuncRead(p)
 	}

@@ -12,7 +12,7 @@ import (
 	"github.com/gojuno/minimock/v3"
 )
 
-// TesterMock implements minimock.Tester
+// TesterMock implements mm_minimock.Tester
 type TesterMock struct {
 	t          minimock.Tester
 	finishOnce sync.Once
@@ -52,9 +52,15 @@ type TesterMock struct {
 	afterFatalfCounter  uint64
 	beforeFatalfCounter uint64
 	FatalfMock          mTesterMockFatalf
+
+	funcHelper          func()
+	inspectFuncHelper   func()
+	afterHelperCounter  uint64
+	beforeHelperCounter uint64
+	HelperMock          mTesterMockHelper
 }
 
-// NewTesterMock returns a mock for minimock.Tester
+// NewTesterMock returns a mock for mm_minimock.Tester
 func NewTesterMock(t minimock.Tester) *TesterMock {
 	m := &TesterMock{t: t}
 
@@ -78,6 +84,8 @@ func NewTesterMock(t minimock.Tester) *TesterMock {
 
 	m.FatalfMock = mTesterMockFatalf{mock: m}
 	m.FatalfMock.callArgs = []*TesterMockFatalfParams{}
+
+	m.HelperMock = mTesterMockHelper{mock: m}
 
 	t.Cleanup(m.MinimockFinish)
 
@@ -229,10 +237,14 @@ func (mmCleanup *mTesterMockCleanup) invocationsDone() bool {
 	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
-// Cleanup implements minimock.Tester
+// Cleanup implements mm_minimock.Tester
 func (mmCleanup *TesterMock) Cleanup(f func()) {
 	mm_atomic.AddUint64(&mmCleanup.beforeCleanupCounter, 1)
 	defer mm_atomic.AddUint64(&mmCleanup.afterCleanupCounter, 1)
+
+	if helper, ok := mmCleanup.t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
 
 	if mmCleanup.inspectFuncCleanup != nil {
 		mmCleanup.inspectFuncCleanup(f)
@@ -493,10 +505,14 @@ func (mmError *mTesterMockError) invocationsDone() bool {
 	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
-// Error implements minimock.Tester
+// Error implements mm_minimock.Tester
 func (mmError *TesterMock) Error(p1 ...interface{}) {
 	mm_atomic.AddUint64(&mmError.beforeErrorCounter, 1)
 	defer mm_atomic.AddUint64(&mmError.afterErrorCounter, 1)
+
+	if helper, ok := mmError.t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
 
 	if mmError.inspectFuncError != nil {
 		mmError.inspectFuncError(p1...)
@@ -781,10 +797,14 @@ func (mmErrorf *mTesterMockErrorf) invocationsDone() bool {
 	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
-// Errorf implements minimock.Tester
+// Errorf implements mm_minimock.Tester
 func (mmErrorf *TesterMock) Errorf(format string, args ...interface{}) {
 	mm_atomic.AddUint64(&mmErrorf.beforeErrorfCounter, 1)
 	defer mm_atomic.AddUint64(&mmErrorf.afterErrorfCounter, 1)
+
+	if helper, ok := mmErrorf.t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
 
 	if mmErrorf.inspectFuncErrorf != nil {
 		mmErrorf.inspectFuncErrorf(format, args...)
@@ -1001,10 +1021,14 @@ func (mmFailNow *mTesterMockFailNow) invocationsDone() bool {
 	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
-// FailNow implements minimock.Tester
+// FailNow implements mm_minimock.Tester
 func (mmFailNow *TesterMock) FailNow() {
 	mm_atomic.AddUint64(&mmFailNow.beforeFailNowCounter, 1)
 	defer mm_atomic.AddUint64(&mmFailNow.afterFailNowCounter, 1)
+
+	if helper, ok := mmFailNow.t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
 
 	if mmFailNow.inspectFuncFailNow != nil {
 		mmFailNow.inspectFuncFailNow()
@@ -1220,10 +1244,14 @@ func (mmFatal *mTesterMockFatal) invocationsDone() bool {
 	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
-// Fatal implements minimock.Tester
+// Fatal implements mm_minimock.Tester
 func (mmFatal *TesterMock) Fatal(args ...interface{}) {
 	mm_atomic.AddUint64(&mmFatal.beforeFatalCounter, 1)
 	defer mm_atomic.AddUint64(&mmFatal.afterFatalCounter, 1)
+
+	if helper, ok := mmFatal.t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
 
 	if mmFatal.inspectFuncFatal != nil {
 		mmFatal.inspectFuncFatal(args...)
@@ -1508,10 +1536,14 @@ func (mmFatalf *mTesterMockFatalf) invocationsDone() bool {
 	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
-// Fatalf implements minimock.Tester
+// Fatalf implements mm_minimock.Tester
 func (mmFatalf *TesterMock) Fatalf(format string, args ...interface{}) {
 	mm_atomic.AddUint64(&mmFatalf.beforeFatalfCounter, 1)
 	defer mm_atomic.AddUint64(&mmFatalf.afterFatalfCounter, 1)
+
+	if helper, ok := mmFatalf.t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
 
 	if mmFatalf.inspectFuncFatalf != nil {
 		mmFatalf.inspectFuncFatalf(format, args...)
@@ -1631,6 +1663,181 @@ func (m *TesterMock) MinimockFatalfInspect() {
 	}
 }
 
+type mTesterMockHelper struct {
+	optional           bool
+	mock               *TesterMock
+	defaultExpectation *TesterMockHelperExpectation
+	expectations       []*TesterMockHelperExpectation
+
+	expectedInvocations uint64
+}
+
+// TesterMockHelperExpectation specifies expectation struct of the Tester.Helper
+type TesterMockHelperExpectation struct {
+	mock *TesterMock
+
+	Counter uint64
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmHelper *mTesterMockHelper) Optional() *mTesterMockHelper {
+	mmHelper.optional = true
+	return mmHelper
+}
+
+// Expect sets up expected params for Tester.Helper
+func (mmHelper *mTesterMockHelper) Expect() *mTesterMockHelper {
+	if mmHelper.mock.funcHelper != nil {
+		mmHelper.mock.t.Fatalf("TesterMock.Helper mock is already set by Set")
+	}
+
+	if mmHelper.defaultExpectation == nil {
+		mmHelper.defaultExpectation = &TesterMockHelperExpectation{}
+	}
+
+	return mmHelper
+}
+
+// Inspect accepts an inspector function that has same arguments as the Tester.Helper
+func (mmHelper *mTesterMockHelper) Inspect(f func()) *mTesterMockHelper {
+	if mmHelper.mock.inspectFuncHelper != nil {
+		mmHelper.mock.t.Fatalf("Inspect function is already set for TesterMock.Helper")
+	}
+
+	mmHelper.mock.inspectFuncHelper = f
+
+	return mmHelper
+}
+
+// Return sets up results that will be returned by Tester.Helper
+func (mmHelper *mTesterMockHelper) Return() *TesterMock {
+	if mmHelper.mock.funcHelper != nil {
+		mmHelper.mock.t.Fatalf("TesterMock.Helper mock is already set by Set")
+	}
+
+	if mmHelper.defaultExpectation == nil {
+		mmHelper.defaultExpectation = &TesterMockHelperExpectation{mock: mmHelper.mock}
+	}
+
+	return mmHelper.mock
+}
+
+// Set uses given function f to mock the Tester.Helper method
+func (mmHelper *mTesterMockHelper) Set(f func()) *TesterMock {
+	if mmHelper.defaultExpectation != nil {
+		mmHelper.mock.t.Fatalf("Default expectation is already set for the Tester.Helper method")
+	}
+
+	if len(mmHelper.expectations) > 0 {
+		mmHelper.mock.t.Fatalf("Some expectations are already set for the Tester.Helper method")
+	}
+
+	mmHelper.mock.funcHelper = f
+	return mmHelper.mock
+}
+
+// Times sets number of times Tester.Helper should be invoked
+func (mmHelper *mTesterMockHelper) Times(n uint64) *mTesterMockHelper {
+	if n == 0 {
+		mmHelper.mock.t.Fatalf("Times of TesterMock.Helper mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmHelper.expectedInvocations, n)
+	return mmHelper
+}
+
+func (mmHelper *mTesterMockHelper) invocationsDone() bool {
+	if len(mmHelper.expectations) == 0 && mmHelper.defaultExpectation == nil && mmHelper.mock.funcHelper == nil {
+		return true
+	}
+
+	totalInvocations := mm_atomic.LoadUint64(&mmHelper.mock.afterHelperCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmHelper.expectedInvocations)
+
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
+}
+
+// Helper implements mm_minimock.Tester
+func (mmHelper *TesterMock) Helper() {
+	mm_atomic.AddUint64(&mmHelper.beforeHelperCounter, 1)
+	defer mm_atomic.AddUint64(&mmHelper.afterHelperCounter, 1)
+
+	if helper, ok := mmHelper.t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
+	if mmHelper.inspectFuncHelper != nil {
+		mmHelper.inspectFuncHelper()
+	}
+
+	if mmHelper.HelperMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmHelper.HelperMock.defaultExpectation.Counter, 1)
+
+		return
+
+	}
+	if mmHelper.funcHelper != nil {
+		mmHelper.funcHelper()
+		return
+	}
+	mmHelper.t.Fatalf("Unexpected call to TesterMock.Helper.")
+
+}
+
+// HelperAfterCounter returns a count of finished TesterMock.Helper invocations
+func (mmHelper *TesterMock) HelperAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmHelper.afterHelperCounter)
+}
+
+// HelperBeforeCounter returns a count of TesterMock.Helper invocations
+func (mmHelper *TesterMock) HelperBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmHelper.beforeHelperCounter)
+}
+
+// MinimockHelperDone returns true if the count of the Helper invocations corresponds
+// the number of defined expectations
+func (m *TesterMock) MinimockHelperDone() bool {
+	if m.HelperMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
+	for _, e := range m.HelperMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	return m.HelperMock.invocationsDone()
+}
+
+// MinimockHelperInspect logs each unmet expectation
+func (m *TesterMock) MinimockHelperInspect() {
+	for _, e := range m.HelperMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Error("Expected call to TesterMock.Helper")
+		}
+	}
+
+	afterHelperCounter := mm_atomic.LoadUint64(&m.afterHelperCounter)
+	// if default expectation was set then invocations count should be greater than zero
+	if m.HelperMock.defaultExpectation != nil && afterHelperCounter < 1 {
+		m.t.Error("Expected call to TesterMock.Helper")
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcHelper != nil && afterHelperCounter < 1 {
+		m.t.Error("Expected call to TesterMock.Helper")
+	}
+
+	if !m.HelperMock.invocationsDone() && afterHelperCounter > 0 {
+		m.t.Errorf("Expected %d calls to TesterMock.Helper but found %d calls",
+			mm_atomic.LoadUint64(&m.HelperMock.expectedInvocations), afterHelperCounter)
+	}
+}
+
 // MinimockFinish checks that all mocked methods have been called the expected number of times
 func (m *TesterMock) MinimockFinish() {
 	m.finishOnce.Do(func() {
@@ -1646,6 +1853,8 @@ func (m *TesterMock) MinimockFinish() {
 			m.MinimockFatalInspect()
 
 			m.MinimockFatalfInspect()
+
+			m.MinimockHelperInspect()
 		}
 	})
 }
@@ -1674,5 +1883,6 @@ func (m *TesterMock) minimockDone() bool {
 		m.MinimockErrorfDone() &&
 		m.MinimockFailNowDone() &&
 		m.MinimockFatalDone() &&
-		m.MinimockFatalfDone()
+		m.MinimockFatalfDone() &&
+		m.MinimockHelperDone()
 }

@@ -20,7 +20,7 @@ func TestCustomFormatterNameMock_ImplementsStringer(t *testing.T) {
 func TestCustomFormatterNameMock_UnmockedCallFailsTest(t *testing.T) {
 	var mockCalled bool
 	tester := NewTesterMock(t)
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 
 	tester.FatalfMock.Set(func(s string, args ...interface{}) {
 		assert.Equal(t, "Unexpected call to CustomFormatterNameMock.Format. %v %v", s)
@@ -38,7 +38,7 @@ func TestCustomFormatterNameMock_UnmockedCallFailsTest(t *testing.T) {
 
 func TestCustomFormatterNameMock_MockedCallSucceeds(t *testing.T) {
 	tester := NewTesterMock(t)
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 
 	formatterMock := NewCustomFormatterNameMock(tester)
 	formatterMock.FormatMock.Set(func(format string, args ...interface{}) string {
@@ -52,7 +52,7 @@ func TestCustomFormatterNameMock_MockedCallSucceeds(t *testing.T) {
 
 func TestCustomFormatterNameMock_Wait(t *testing.T) {
 	tester := NewTesterMock(t)
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 
 	formatterMock := NewCustomFormatterNameMock(tester)
 	formatterMock.FormatMock.Set(func(format string, args ...interface{}) string {
@@ -69,7 +69,7 @@ func TestCustomFormatterNameMock_Wait(t *testing.T) {
 
 func TestCustomFormatterNameMock_Expect(t *testing.T) {
 	tester := NewTesterMock(t)
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 
 	formatterMock := NewCustomFormatterNameMock(tester).FormatMock.Expect("Hello", "world", "!").Return("")
 
@@ -83,7 +83,7 @@ func TestCustomFormatterNameMock_Expect(t *testing.T) {
 func TestCustomFormatterNameMock_ExpectDifferentArguments(t *testing.T) {
 	assert.Panics(t, func() {
 		tester := NewTesterMock(t)
-		tester.CleanupMock.Return()
+		tester.CleanupMock.Return().HelperMock.Return()
 
 		defer tester.MinimockFinish()
 
@@ -120,7 +120,7 @@ func TestCustomFormatterNameMock_ExpectAfterWhen(t *testing.T) {
 	tester := NewTesterMock(t)
 	defer tester.MinimockFinish()
 
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 
 	tester.FatalfMock.Expect("Expectation set by When has same params: %#v", CustomFormatterNameMockFormatParams{s1: "Should not work", p1: nil}).Return()
 
@@ -134,7 +134,7 @@ func TestCustomFormatterNameMock_ExpectAfterWhen(t *testing.T) {
 
 func TestCustomFormatterNameMock_Return(t *testing.T) {
 	tester := NewTesterMock(t)
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 
 	formatterMock := NewCustomFormatterNameMock(tester).FormatMock.Return("Hello world!")
 	df := dummyFormatter{formatterMock}
@@ -172,7 +172,7 @@ func TestCustomFormatterNameMock_ReturnWithoutExpectForFixedArgsMethod(t *testin
 
 func TestCustomFormatterNameMock_Set(t *testing.T) {
 	tester := NewTesterMock(t)
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 
 	formatterMock := NewCustomFormatterNameMock(tester).FormatMock.Set(func(string, ...interface{}) string {
 		return "set"
@@ -313,7 +313,7 @@ func TestCustomFormatterNameMock_Calls(t *testing.T) {
 	tester := NewTesterMock(t)
 	defer tester.MinimockFinish()
 
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 
 	// Arguments used for each mock call
 	expected := []*CustomFormatterNameMockFormatParams{
@@ -338,7 +338,7 @@ func TestCustomFormatterNameMock_CallsReturnsCopy(t *testing.T) {
 	tester := NewTesterMock(t)
 	defer tester.MinimockFinish()
 
-	tester.CleanupMock.Return()
+	tester.CleanupMock.Return().HelperMock.Return()
 
 	expected := []*CustomFormatterNameMockFormatParams{
 		{"a1", []interface{}{"a1"}},

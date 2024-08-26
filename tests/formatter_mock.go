@@ -240,6 +240,10 @@ func (mmFormat *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) 
 	mm_atomic.AddUint64(&mmFormat.beforeFormatCounter, 1)
 	defer mm_atomic.AddUint64(&mmFormat.afterFormatCounter, 1)
 
+	if helper, ok := mmFormat.t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	if mmFormat.inspectFuncFormat != nil {
 		mmFormat.inspectFuncFormat(s1, p1...)
 	}

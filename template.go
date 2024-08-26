@@ -245,6 +245,10 @@ const (
 				mm_atomic.AddUint64(&{{$m}}.before{{$method.Name}}Counter, 1)
 				defer mm_atomic.AddUint64(&{{$m}}.after{{$method.Name}}Counter, 1)
 
+				if helper, ok := {{$m}}.t.(interface{ Helper() }); ok {
+					helper.Helper()
+				}
+
 				if {{$m}}.inspectFunc{{$method.Name}} != nil {
 					{{$m}}.inspectFunc{{$method.Name}}({{$method.Params.Pass}})
 				}

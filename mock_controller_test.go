@@ -85,3 +85,7 @@ type unsafeTester struct {
 func (u *unsafeTester) Fatal(...interface{}) {
 	u.finished = true
 }
+
+func (u *unsafeTester) Helper() {
+
+}
