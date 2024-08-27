@@ -58,6 +58,7 @@ type GenericSpecificMockNameExpectation[T proto.Message] struct {
 	mock      *GenericSpecificMock[T]
 	params    *GenericSpecificMockNameParams[T]
 	paramPtrs *GenericSpecificMockNameParamPtrs[T]
+	origins   GenericSpecificMockNameOrigins
 
 	Counter uint64
 }
@@ -70,6 +71,12 @@ type GenericSpecificMockNameParams[T proto.Message] struct {
 // GenericSpecificMockNameParamPtrs contains pointers to parameters of the genericSpecific.Name
 type GenericSpecificMockNameParamPtrs[T proto.Message] struct {
 	t1 *T
+}
+
+// GenericSpecificMockNameOrigins contains origins of expectations of the genericSpecific.Name
+type GenericSpecificMockNameOrigins struct {
+	origin   string
+	originT1 string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -97,6 +104,7 @@ func (mmName *mGenericSpecificMockName[T]) Expect(t1 T) *mGenericSpecificMockNam
 	}
 
 	mmName.defaultExpectation.params = &GenericSpecificMockNameParams[T]{t1}
+	mmName.defaultExpectation.origins.origin = minimock.CallerInfo(1)
 	for _, e := range mmName.expectations {
 		if minimock.Equal(e.params, mmName.defaultExpectation.params) {
 			mmName.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmName.defaultExpectation.params)
@@ -124,6 +132,7 @@ func (mmName *mGenericSpecificMockName[T]) ExpectT1Param1(t1 T) *mGenericSpecifi
 		mmName.defaultExpectation.paramPtrs = &GenericSpecificMockNameParamPtrs[T]{}
 	}
 	mmName.defaultExpectation.paramPtrs.t1 = &t1
+	mmName.defaultExpectation.origins.originT1 = minimock.CallerInfo(1)
 
 	return mmName
 }
@@ -223,11 +232,13 @@ func (mmName *GenericSpecificMock[T]) Name(t1 T) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.t1 != nil && !minimock.Equal(*mm_want_ptrs.t1, mm_got.t1) {
-				mmName.t.Errorf("GenericSpecificMock.Name got unexpected parameter t1, want: %#v, got: %#v%s\n", *mm_want_ptrs.t1, mm_got.t1, minimock.Diff(*mm_want_ptrs.t1, mm_got.t1))
+				mmName.t.Errorf("GenericSpecificMock.Name got unexpected parameter t1 expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmName.NameMock.defaultExpectation.origins.originT1, *mm_want_ptrs.t1, mm_got.t1, minimock.Diff(*mm_want_ptrs.t1, mm_got.t1))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmName.t.Errorf("GenericSpecificMock.Name got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmName.t.Errorf("GenericSpecificMock.Name got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmName.NameMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return

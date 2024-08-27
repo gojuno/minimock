@@ -57,6 +57,7 @@ type CustomFormatterNameMockFormatExpectation struct {
 	mock      *CustomFormatterNameMock
 	params    *CustomFormatterNameMockFormatParams
 	paramPtrs *CustomFormatterNameMockFormatParamPtrs
+	origins   CustomFormatterNameMockFormatOrigins
 	results   *CustomFormatterNameMockFormatResults
 	Counter   uint64
 }
@@ -76,6 +77,13 @@ type CustomFormatterNameMockFormatParamPtrs struct {
 // CustomFormatterNameMockFormatResults contains results of the Formatter.Format
 type CustomFormatterNameMockFormatResults struct {
 	s2 string
+}
+
+// CustomFormatterNameMockFormatOrigins contains origins of expectations of the Formatter.Format
+type CustomFormatterNameMockFormatOrigins struct {
+	origin   string
+	originS1 string
+	originP1 string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -103,6 +111,7 @@ func (mmFormat *mCustomFormatterNameMockFormat) Expect(s1 string, p1 ...interfac
 	}
 
 	mmFormat.defaultExpectation.params = &CustomFormatterNameMockFormatParams{s1, p1}
+	mmFormat.defaultExpectation.origins.origin = minimock.CallerInfo(1)
 	for _, e := range mmFormat.expectations {
 		if minimock.Equal(e.params, mmFormat.defaultExpectation.params) {
 			mmFormat.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmFormat.defaultExpectation.params)
@@ -130,6 +139,7 @@ func (mmFormat *mCustomFormatterNameMockFormat) ExpectS1Param1(s1 string) *mCust
 		mmFormat.defaultExpectation.paramPtrs = &CustomFormatterNameMockFormatParamPtrs{}
 	}
 	mmFormat.defaultExpectation.paramPtrs.s1 = &s1
+	mmFormat.defaultExpectation.origins.originS1 = minimock.CallerInfo(1)
 
 	return mmFormat
 }
@@ -152,6 +162,7 @@ func (mmFormat *mCustomFormatterNameMockFormat) ExpectP1Param2(p1 ...interface{}
 		mmFormat.defaultExpectation.paramPtrs = &CustomFormatterNameMockFormatParamPtrs{}
 	}
 	mmFormat.defaultExpectation.paramPtrs.p1 = &p1
+	mmFormat.defaultExpectation.origins.originP1 = minimock.CallerInfo(1)
 
 	return mmFormat
 }
@@ -272,15 +283,18 @@ func (mmFormat *CustomFormatterNameMock) Format(s1 string, p1 ...interface{}) (s
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.s1 != nil && !minimock.Equal(*mm_want_ptrs.s1, mm_got.s1) {
-				mmFormat.t.Errorf("CustomFormatterNameMock.Format got unexpected parameter s1, want: %#v, got: %#v%s\n", *mm_want_ptrs.s1, mm_got.s1, minimock.Diff(*mm_want_ptrs.s1, mm_got.s1))
+				mmFormat.t.Errorf("CustomFormatterNameMock.Format got unexpected parameter s1 expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmFormat.FormatMock.defaultExpectation.origins.originS1, *mm_want_ptrs.s1, mm_got.s1, minimock.Diff(*mm_want_ptrs.s1, mm_got.s1))
 			}
 
 			if mm_want_ptrs.p1 != nil && !minimock.Equal(*mm_want_ptrs.p1, mm_got.p1) {
-				mmFormat.t.Errorf("CustomFormatterNameMock.Format got unexpected parameter p1, want: %#v, got: %#v%s\n", *mm_want_ptrs.p1, mm_got.p1, minimock.Diff(*mm_want_ptrs.p1, mm_got.p1))
+				mmFormat.t.Errorf("CustomFormatterNameMock.Format got unexpected parameter p1 expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmFormat.FormatMock.defaultExpectation.origins.originP1, *mm_want_ptrs.p1, mm_got.p1, minimock.Diff(*mm_want_ptrs.p1, mm_got.p1))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmFormat.t.Errorf("CustomFormatterNameMock.Format got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmFormat.t.Errorf("CustomFormatterNameMock.Format got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmFormat.FormatMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		mm_results := mmFormat.FormatMock.defaultExpectation.results

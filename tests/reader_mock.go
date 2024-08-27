@@ -57,6 +57,7 @@ type ReaderMockReadExpectation struct {
 	mock      *ReaderMock
 	params    *ReaderMockReadParams
 	paramPtrs *ReaderMockReadParamPtrs
+	origins   ReaderMockReadOrigins
 	results   *ReaderMockReadResults
 	Counter   uint64
 }
@@ -75,6 +76,12 @@ type ReaderMockReadParamPtrs struct {
 type ReaderMockReadResults struct {
 	n   int
 	err error
+}
+
+// ReaderMockReadOrigins contains origins of expectations of the reader.Read
+type ReaderMockReadOrigins struct {
+	origin  string
+	originP string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -102,6 +109,7 @@ func (mmRead *mReaderMockRead) Expect(p []byte) *mReaderMockRead {
 	}
 
 	mmRead.defaultExpectation.params = &ReaderMockReadParams{p}
+	mmRead.defaultExpectation.origins.origin = minimock.CallerInfo(1)
 	for _, e := range mmRead.expectations {
 		if minimock.Equal(e.params, mmRead.defaultExpectation.params) {
 			mmRead.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmRead.defaultExpectation.params)
@@ -129,6 +137,7 @@ func (mmRead *mReaderMockRead) ExpectPParam1(p []byte) *mReaderMockRead {
 		mmRead.defaultExpectation.paramPtrs = &ReaderMockReadParamPtrs{}
 	}
 	mmRead.defaultExpectation.paramPtrs.p = &p
+	mmRead.defaultExpectation.origins.originP = minimock.CallerInfo(1)
 
 	return mmRead
 }
@@ -249,11 +258,13 @@ func (mmRead *ReaderMock) Read(p []byte) (n int, err error) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.p != nil && !minimock.Equal(*mm_want_ptrs.p, mm_got.p) {
-				mmRead.t.Errorf("ReaderMock.Read got unexpected parameter p, want: %#v, got: %#v%s\n", *mm_want_ptrs.p, mm_got.p, minimock.Diff(*mm_want_ptrs.p, mm_got.p))
+				mmRead.t.Errorf("ReaderMock.Read got unexpected parameter p expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmRead.ReadMock.defaultExpectation.origins.originP, *mm_want_ptrs.p, mm_got.p, minimock.Diff(*mm_want_ptrs.p, mm_got.p))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmRead.t.Errorf("ReaderMock.Read got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmRead.t.Errorf("ReaderMock.Read got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmRead.ReadMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		mm_results := mmRead.ReadMock.defaultExpectation.results

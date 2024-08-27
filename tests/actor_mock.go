@@ -57,6 +57,7 @@ type ActorMockActionExpectation struct {
 	mock      *ActorMock
 	params    *ActorMockActionParams
 	paramPtrs *ActorMockActionParamPtrs
+	origins   ActorMockActionOrigins
 	results   *ActorMockActionResults
 	Counter   uint64
 }
@@ -77,6 +78,13 @@ type ActorMockActionParamPtrs struct {
 type ActorMockActionResults struct {
 	i1  int
 	err error
+}
+
+// ActorMockActionOrigins contains origins of expectations of the actor.Action
+type ActorMockActionOrigins struct {
+	origin            string
+	originFirstParam  string
+	originSecondParam string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -104,6 +112,7 @@ func (mmAction *mActorMockAction) Expect(firstParam string, secondParam int) *mA
 	}
 
 	mmAction.defaultExpectation.params = &ActorMockActionParams{firstParam, secondParam}
+	mmAction.defaultExpectation.origins.origin = minimock.CallerInfo(1)
 	for _, e := range mmAction.expectations {
 		if minimock.Equal(e.params, mmAction.defaultExpectation.params) {
 			mmAction.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmAction.defaultExpectation.params)
@@ -131,6 +140,7 @@ func (mmAction *mActorMockAction) ExpectFirstParamParam1(firstParam string) *mAc
 		mmAction.defaultExpectation.paramPtrs = &ActorMockActionParamPtrs{}
 	}
 	mmAction.defaultExpectation.paramPtrs.firstParam = &firstParam
+	mmAction.defaultExpectation.origins.originFirstParam = minimock.CallerInfo(1)
 
 	return mmAction
 }
@@ -153,6 +163,7 @@ func (mmAction *mActorMockAction) ExpectSecondParamParam2(secondParam int) *mAct
 		mmAction.defaultExpectation.paramPtrs = &ActorMockActionParamPtrs{}
 	}
 	mmAction.defaultExpectation.paramPtrs.secondParam = &secondParam
+	mmAction.defaultExpectation.origins.originSecondParam = minimock.CallerInfo(1)
 
 	return mmAction
 }
@@ -273,15 +284,18 @@ func (mmAction *ActorMock) Action(firstParam string, secondParam int) (i1 int, e
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.firstParam != nil && !minimock.Equal(*mm_want_ptrs.firstParam, mm_got.firstParam) {
-				mmAction.t.Errorf("ActorMock.Action got unexpected parameter firstParam, want: %#v, got: %#v%s\n", *mm_want_ptrs.firstParam, mm_got.firstParam, minimock.Diff(*mm_want_ptrs.firstParam, mm_got.firstParam))
+				mmAction.t.Errorf("ActorMock.Action got unexpected parameter firstParam expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmAction.ActionMock.defaultExpectation.origins.originFirstParam, *mm_want_ptrs.firstParam, mm_got.firstParam, minimock.Diff(*mm_want_ptrs.firstParam, mm_got.firstParam))
 			}
 
 			if mm_want_ptrs.secondParam != nil && !minimock.Equal(*mm_want_ptrs.secondParam, mm_got.secondParam) {
-				mmAction.t.Errorf("ActorMock.Action got unexpected parameter secondParam, want: %#v, got: %#v%s\n", *mm_want_ptrs.secondParam, mm_got.secondParam, minimock.Diff(*mm_want_ptrs.secondParam, mm_got.secondParam))
+				mmAction.t.Errorf("ActorMock.Action got unexpected parameter secondParam expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmAction.ActionMock.defaultExpectation.origins.originSecondParam, *mm_want_ptrs.secondParam, mm_got.secondParam, minimock.Diff(*mm_want_ptrs.secondParam, mm_got.secondParam))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmAction.t.Errorf("ActorMock.Action got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmAction.t.Errorf("ActorMock.Action got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmAction.ActionMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		mm_results := mmAction.ActionMock.defaultExpectation.results

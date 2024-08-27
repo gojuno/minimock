@@ -58,6 +58,7 @@ type GenericMultipleTypesMockNameExpectation[T proto.Message, K any] struct {
 	mock      *GenericMultipleTypesMock[T, K]
 	params    *GenericMultipleTypesMockNameParams[T, K]
 	paramPtrs *GenericMultipleTypesMockNameParamPtrs[T, K]
+	origins   GenericMultipleTypesMockNameOrigins
 
 	Counter uint64
 }
@@ -72,6 +73,13 @@ type GenericMultipleTypesMockNameParams[T proto.Message, K any] struct {
 type GenericMultipleTypesMockNameParamPtrs[T proto.Message, K any] struct {
 	t1 *T
 	k1 *K
+}
+
+// GenericMultipleTypesMockNameOrigins contains origins of expectations of the genericMultipleTypes.Name
+type GenericMultipleTypesMockNameOrigins struct {
+	origin   string
+	originT1 string
+	originK1 string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -99,6 +107,7 @@ func (mmName *mGenericMultipleTypesMockName[T, K]) Expect(t1 T, k1 K) *mGenericM
 	}
 
 	mmName.defaultExpectation.params = &GenericMultipleTypesMockNameParams[T, K]{t1, k1}
+	mmName.defaultExpectation.origins.origin = minimock.CallerInfo(1)
 	for _, e := range mmName.expectations {
 		if minimock.Equal(e.params, mmName.defaultExpectation.params) {
 			mmName.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmName.defaultExpectation.params)
@@ -126,6 +135,7 @@ func (mmName *mGenericMultipleTypesMockName[T, K]) ExpectT1Param1(t1 T) *mGeneri
 		mmName.defaultExpectation.paramPtrs = &GenericMultipleTypesMockNameParamPtrs[T, K]{}
 	}
 	mmName.defaultExpectation.paramPtrs.t1 = &t1
+	mmName.defaultExpectation.origins.originT1 = minimock.CallerInfo(1)
 
 	return mmName
 }
@@ -148,6 +158,7 @@ func (mmName *mGenericMultipleTypesMockName[T, K]) ExpectK1Param2(k1 K) *mGeneri
 		mmName.defaultExpectation.paramPtrs = &GenericMultipleTypesMockNameParamPtrs[T, K]{}
 	}
 	mmName.defaultExpectation.paramPtrs.k1 = &k1
+	mmName.defaultExpectation.origins.originK1 = minimock.CallerInfo(1)
 
 	return mmName
 }
@@ -247,15 +258,18 @@ func (mmName *GenericMultipleTypesMock[T, K]) Name(t1 T, k1 K) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.t1 != nil && !minimock.Equal(*mm_want_ptrs.t1, mm_got.t1) {
-				mmName.t.Errorf("GenericMultipleTypesMock.Name got unexpected parameter t1, want: %#v, got: %#v%s\n", *mm_want_ptrs.t1, mm_got.t1, minimock.Diff(*mm_want_ptrs.t1, mm_got.t1))
+				mmName.t.Errorf("GenericMultipleTypesMock.Name got unexpected parameter t1 expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmName.NameMock.defaultExpectation.origins.originT1, *mm_want_ptrs.t1, mm_got.t1, minimock.Diff(*mm_want_ptrs.t1, mm_got.t1))
 			}
 
 			if mm_want_ptrs.k1 != nil && !minimock.Equal(*mm_want_ptrs.k1, mm_got.k1) {
-				mmName.t.Errorf("GenericMultipleTypesMock.Name got unexpected parameter k1, want: %#v, got: %#v%s\n", *mm_want_ptrs.k1, mm_got.k1, minimock.Diff(*mm_want_ptrs.k1, mm_got.k1))
+				mmName.t.Errorf("GenericMultipleTypesMock.Name got unexpected parameter k1 expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmName.NameMock.defaultExpectation.origins.originK1, *mm_want_ptrs.k1, mm_got.k1, minimock.Diff(*mm_want_ptrs.k1, mm_got.k1))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmName.t.Errorf("GenericMultipleTypesMock.Name got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmName.t.Errorf("GenericMultipleTypesMock.Name got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmName.NameMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return

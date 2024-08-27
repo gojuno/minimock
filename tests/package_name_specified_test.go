@@ -109,6 +109,7 @@ type TesterMockCleanupExpectation struct {
 	mock      *TesterMock
 	params    *TesterMockCleanupParams
 	paramPtrs *TesterMockCleanupParamPtrs
+	origins   TesterMockCleanupOrigins
 
 	Counter uint64
 }
@@ -121,6 +122,12 @@ type TesterMockCleanupParams struct {
 // TesterMockCleanupParamPtrs contains pointers to parameters of the Tester.Cleanup
 type TesterMockCleanupParamPtrs struct {
 	f *func()
+}
+
+// TesterMockCleanupOrigins contains origins of expectations of the Tester.Cleanup
+type TesterMockCleanupOrigins struct {
+	origin  string
+	originF string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -148,6 +155,7 @@ func (mmCleanup *mTesterMockCleanup) Expect(f func()) *mTesterMockCleanup {
 	}
 
 	mmCleanup.defaultExpectation.params = &TesterMockCleanupParams{f}
+	mmCleanup.defaultExpectation.origins.origin = minimock.CallerInfo(1)
 	for _, e := range mmCleanup.expectations {
 		if minimock.Equal(e.params, mmCleanup.defaultExpectation.params) {
 			mmCleanup.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmCleanup.defaultExpectation.params)
@@ -175,6 +183,7 @@ func (mmCleanup *mTesterMockCleanup) ExpectFParam1(f func()) *mTesterMockCleanup
 		mmCleanup.defaultExpectation.paramPtrs = &TesterMockCleanupParamPtrs{}
 	}
 	mmCleanup.defaultExpectation.paramPtrs.f = &f
+	mmCleanup.defaultExpectation.origins.originF = minimock.CallerInfo(1)
 
 	return mmCleanup
 }
@@ -274,11 +283,13 @@ func (mmCleanup *TesterMock) Cleanup(f func()) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.f != nil && !minimock.Equal(*mm_want_ptrs.f, mm_got.f) {
-				mmCleanup.t.Errorf("TesterMock.Cleanup got unexpected parameter f, want: %#v, got: %#v%s\n", *mm_want_ptrs.f, mm_got.f, minimock.Diff(*mm_want_ptrs.f, mm_got.f))
+				mmCleanup.t.Errorf("TesterMock.Cleanup got unexpected parameter f expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmCleanup.CleanupMock.defaultExpectation.origins.originF, *mm_want_ptrs.f, mm_got.f, minimock.Diff(*mm_want_ptrs.f, mm_got.f))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmCleanup.t.Errorf("TesterMock.Cleanup got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmCleanup.t.Errorf("TesterMock.Cleanup got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmCleanup.CleanupMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
@@ -377,6 +388,7 @@ type TesterMockErrorExpectation struct {
 	mock      *TesterMock
 	params    *TesterMockErrorParams
 	paramPtrs *TesterMockErrorParamPtrs
+	origins   TesterMockErrorOrigins
 
 	Counter uint64
 }
@@ -389,6 +401,12 @@ type TesterMockErrorParams struct {
 // TesterMockErrorParamPtrs contains pointers to parameters of the Tester.Error
 type TesterMockErrorParamPtrs struct {
 	p1 *[]interface{}
+}
+
+// TesterMockErrorOrigins contains origins of expectations of the Tester.Error
+type TesterMockErrorOrigins struct {
+	origin   string
+	originP1 string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -416,6 +434,7 @@ func (mmError *mTesterMockError) Expect(p1 ...interface{}) *mTesterMockError {
 	}
 
 	mmError.defaultExpectation.params = &TesterMockErrorParams{p1}
+	mmError.defaultExpectation.origins.origin = minimock.CallerInfo(1)
 	for _, e := range mmError.expectations {
 		if minimock.Equal(e.params, mmError.defaultExpectation.params) {
 			mmError.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmError.defaultExpectation.params)
@@ -443,6 +462,7 @@ func (mmError *mTesterMockError) ExpectP1Param1(p1 ...interface{}) *mTesterMockE
 		mmError.defaultExpectation.paramPtrs = &TesterMockErrorParamPtrs{}
 	}
 	mmError.defaultExpectation.paramPtrs.p1 = &p1
+	mmError.defaultExpectation.origins.originP1 = minimock.CallerInfo(1)
 
 	return mmError
 }
@@ -542,11 +562,13 @@ func (mmError *TesterMock) Error(p1 ...interface{}) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.p1 != nil && !minimock.Equal(*mm_want_ptrs.p1, mm_got.p1) {
-				mmError.t.Errorf("TesterMock.Error got unexpected parameter p1, want: %#v, got: %#v%s\n", *mm_want_ptrs.p1, mm_got.p1, minimock.Diff(*mm_want_ptrs.p1, mm_got.p1))
+				mmError.t.Errorf("TesterMock.Error got unexpected parameter p1 expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmError.ErrorMock.defaultExpectation.origins.originP1, *mm_want_ptrs.p1, mm_got.p1, minimock.Diff(*mm_want_ptrs.p1, mm_got.p1))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmError.t.Errorf("TesterMock.Error got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmError.t.Errorf("TesterMock.Error got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmError.ErrorMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
@@ -645,6 +667,7 @@ type TesterMockErrorfExpectation struct {
 	mock      *TesterMock
 	params    *TesterMockErrorfParams
 	paramPtrs *TesterMockErrorfParamPtrs
+	origins   TesterMockErrorfOrigins
 
 	Counter uint64
 }
@@ -659,6 +682,13 @@ type TesterMockErrorfParams struct {
 type TesterMockErrorfParamPtrs struct {
 	format *string
 	args   *[]interface{}
+}
+
+// TesterMockErrorfOrigins contains origins of expectations of the Tester.Errorf
+type TesterMockErrorfOrigins struct {
+	origin       string
+	originFormat string
+	originArgs   string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -686,6 +716,7 @@ func (mmErrorf *mTesterMockErrorf) Expect(format string, args ...interface{}) *m
 	}
 
 	mmErrorf.defaultExpectation.params = &TesterMockErrorfParams{format, args}
+	mmErrorf.defaultExpectation.origins.origin = minimock.CallerInfo(1)
 	for _, e := range mmErrorf.expectations {
 		if minimock.Equal(e.params, mmErrorf.defaultExpectation.params) {
 			mmErrorf.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmErrorf.defaultExpectation.params)
@@ -713,6 +744,7 @@ func (mmErrorf *mTesterMockErrorf) ExpectFormatParam1(format string) *mTesterMoc
 		mmErrorf.defaultExpectation.paramPtrs = &TesterMockErrorfParamPtrs{}
 	}
 	mmErrorf.defaultExpectation.paramPtrs.format = &format
+	mmErrorf.defaultExpectation.origins.originFormat = minimock.CallerInfo(1)
 
 	return mmErrorf
 }
@@ -735,6 +767,7 @@ func (mmErrorf *mTesterMockErrorf) ExpectArgsParam2(args ...interface{}) *mTeste
 		mmErrorf.defaultExpectation.paramPtrs = &TesterMockErrorfParamPtrs{}
 	}
 	mmErrorf.defaultExpectation.paramPtrs.args = &args
+	mmErrorf.defaultExpectation.origins.originArgs = minimock.CallerInfo(1)
 
 	return mmErrorf
 }
@@ -834,15 +867,18 @@ func (mmErrorf *TesterMock) Errorf(format string, args ...interface{}) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.format != nil && !minimock.Equal(*mm_want_ptrs.format, mm_got.format) {
-				mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameter format, want: %#v, got: %#v%s\n", *mm_want_ptrs.format, mm_got.format, minimock.Diff(*mm_want_ptrs.format, mm_got.format))
+				mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameter format expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmErrorf.ErrorfMock.defaultExpectation.origins.originFormat, *mm_want_ptrs.format, mm_got.format, minimock.Diff(*mm_want_ptrs.format, mm_got.format))
 			}
 
 			if mm_want_ptrs.args != nil && !minimock.Equal(*mm_want_ptrs.args, mm_got.args) {
-				mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameter args, want: %#v, got: %#v%s\n", *mm_want_ptrs.args, mm_got.args, minimock.Diff(*mm_want_ptrs.args, mm_got.args))
+				mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameter args expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmErrorf.ErrorfMock.defaultExpectation.origins.originArgs, *mm_want_ptrs.args, mm_got.args, minimock.Diff(*mm_want_ptrs.args, mm_got.args))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmErrorf.ErrorfMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
@@ -1116,6 +1152,7 @@ type TesterMockFatalExpectation struct {
 	mock      *TesterMock
 	params    *TesterMockFatalParams
 	paramPtrs *TesterMockFatalParamPtrs
+	origins   TesterMockFatalOrigins
 
 	Counter uint64
 }
@@ -1128,6 +1165,12 @@ type TesterMockFatalParams struct {
 // TesterMockFatalParamPtrs contains pointers to parameters of the Tester.Fatal
 type TesterMockFatalParamPtrs struct {
 	args *[]interface{}
+}
+
+// TesterMockFatalOrigins contains origins of expectations of the Tester.Fatal
+type TesterMockFatalOrigins struct {
+	origin     string
+	originArgs string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -1155,6 +1198,7 @@ func (mmFatal *mTesterMockFatal) Expect(args ...interface{}) *mTesterMockFatal {
 	}
 
 	mmFatal.defaultExpectation.params = &TesterMockFatalParams{args}
+	mmFatal.defaultExpectation.origins.origin = minimock.CallerInfo(1)
 	for _, e := range mmFatal.expectations {
 		if minimock.Equal(e.params, mmFatal.defaultExpectation.params) {
 			mmFatal.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmFatal.defaultExpectation.params)
@@ -1182,6 +1226,7 @@ func (mmFatal *mTesterMockFatal) ExpectArgsParam1(args ...interface{}) *mTesterM
 		mmFatal.defaultExpectation.paramPtrs = &TesterMockFatalParamPtrs{}
 	}
 	mmFatal.defaultExpectation.paramPtrs.args = &args
+	mmFatal.defaultExpectation.origins.originArgs = minimock.CallerInfo(1)
 
 	return mmFatal
 }
@@ -1281,11 +1326,13 @@ func (mmFatal *TesterMock) Fatal(args ...interface{}) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.args != nil && !minimock.Equal(*mm_want_ptrs.args, mm_got.args) {
-				mmFatal.t.Errorf("TesterMock.Fatal got unexpected parameter args, want: %#v, got: %#v%s\n", *mm_want_ptrs.args, mm_got.args, minimock.Diff(*mm_want_ptrs.args, mm_got.args))
+				mmFatal.t.Errorf("TesterMock.Fatal got unexpected parameter args expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmFatal.FatalMock.defaultExpectation.origins.originArgs, *mm_want_ptrs.args, mm_got.args, minimock.Diff(*mm_want_ptrs.args, mm_got.args))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmFatal.t.Errorf("TesterMock.Fatal got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmFatal.t.Errorf("TesterMock.Fatal got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmFatal.FatalMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
@@ -1384,6 +1431,7 @@ type TesterMockFatalfExpectation struct {
 	mock      *TesterMock
 	params    *TesterMockFatalfParams
 	paramPtrs *TesterMockFatalfParamPtrs
+	origins   TesterMockFatalfOrigins
 
 	Counter uint64
 }
@@ -1398,6 +1446,13 @@ type TesterMockFatalfParams struct {
 type TesterMockFatalfParamPtrs struct {
 	format *string
 	args   *[]interface{}
+}
+
+// TesterMockFatalfOrigins contains origins of expectations of the Tester.Fatalf
+type TesterMockFatalfOrigins struct {
+	origin       string
+	originFormat string
+	originArgs   string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -1425,6 +1480,7 @@ func (mmFatalf *mTesterMockFatalf) Expect(format string, args ...interface{}) *m
 	}
 
 	mmFatalf.defaultExpectation.params = &TesterMockFatalfParams{format, args}
+	mmFatalf.defaultExpectation.origins.origin = minimock.CallerInfo(1)
 	for _, e := range mmFatalf.expectations {
 		if minimock.Equal(e.params, mmFatalf.defaultExpectation.params) {
 			mmFatalf.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmFatalf.defaultExpectation.params)
@@ -1452,6 +1508,7 @@ func (mmFatalf *mTesterMockFatalf) ExpectFormatParam1(format string) *mTesterMoc
 		mmFatalf.defaultExpectation.paramPtrs = &TesterMockFatalfParamPtrs{}
 	}
 	mmFatalf.defaultExpectation.paramPtrs.format = &format
+	mmFatalf.defaultExpectation.origins.originFormat = minimock.CallerInfo(1)
 
 	return mmFatalf
 }
@@ -1474,6 +1531,7 @@ func (mmFatalf *mTesterMockFatalf) ExpectArgsParam2(args ...interface{}) *mTeste
 		mmFatalf.defaultExpectation.paramPtrs = &TesterMockFatalfParamPtrs{}
 	}
 	mmFatalf.defaultExpectation.paramPtrs.args = &args
+	mmFatalf.defaultExpectation.origins.originArgs = minimock.CallerInfo(1)
 
 	return mmFatalf
 }
@@ -1573,15 +1631,18 @@ func (mmFatalf *TesterMock) Fatalf(format string, args ...interface{}) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.format != nil && !minimock.Equal(*mm_want_ptrs.format, mm_got.format) {
-				mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameter format, want: %#v, got: %#v%s\n", *mm_want_ptrs.format, mm_got.format, minimock.Diff(*mm_want_ptrs.format, mm_got.format))
+				mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameter format expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmFatalf.FatalfMock.defaultExpectation.origins.originFormat, *mm_want_ptrs.format, mm_got.format, minimock.Diff(*mm_want_ptrs.format, mm_got.format))
 			}
 
 			if mm_want_ptrs.args != nil && !minimock.Equal(*mm_want_ptrs.args, mm_got.args) {
-				mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameter args, want: %#v, got: %#v%s\n", *mm_want_ptrs.args, mm_got.args, minimock.Diff(*mm_want_ptrs.args, mm_got.args))
+				mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameter args expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmFatalf.FatalfMock.defaultExpectation.origins.originArgs, *mm_want_ptrs.args, mm_got.args, minimock.Diff(*mm_want_ptrs.args, mm_got.args))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmFatalf.FatalfMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return

@@ -57,6 +57,7 @@ type GenericComplexUnionMockNameExpectation[T complexUnion] struct {
 	mock      *GenericComplexUnionMock[T]
 	params    *GenericComplexUnionMockNameParams[T]
 	paramPtrs *GenericComplexUnionMockNameParamPtrs[T]
+	origins   GenericComplexUnionMockNameOrigins
 
 	Counter uint64
 }
@@ -69,6 +70,12 @@ type GenericComplexUnionMockNameParams[T complexUnion] struct {
 // GenericComplexUnionMockNameParamPtrs contains pointers to parameters of the genericComplexUnion.Name
 type GenericComplexUnionMockNameParamPtrs[T complexUnion] struct {
 	t1 *T
+}
+
+// GenericComplexUnionMockNameOrigins contains origins of expectations of the genericComplexUnion.Name
+type GenericComplexUnionMockNameOrigins struct {
+	origin   string
+	originT1 string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -96,6 +103,7 @@ func (mmName *mGenericComplexUnionMockName[T]) Expect(t1 T) *mGenericComplexUnio
 	}
 
 	mmName.defaultExpectation.params = &GenericComplexUnionMockNameParams[T]{t1}
+	mmName.defaultExpectation.origins.origin = minimock.CallerInfo(1)
 	for _, e := range mmName.expectations {
 		if minimock.Equal(e.params, mmName.defaultExpectation.params) {
 			mmName.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmName.defaultExpectation.params)
@@ -123,6 +131,7 @@ func (mmName *mGenericComplexUnionMockName[T]) ExpectT1Param1(t1 T) *mGenericCom
 		mmName.defaultExpectation.paramPtrs = &GenericComplexUnionMockNameParamPtrs[T]{}
 	}
 	mmName.defaultExpectation.paramPtrs.t1 = &t1
+	mmName.defaultExpectation.origins.originT1 = minimock.CallerInfo(1)
 
 	return mmName
 }
@@ -222,11 +231,13 @@ func (mmName *GenericComplexUnionMock[T]) Name(t1 T) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.t1 != nil && !minimock.Equal(*mm_want_ptrs.t1, mm_got.t1) {
-				mmName.t.Errorf("GenericComplexUnionMock.Name got unexpected parameter t1, want: %#v, got: %#v%s\n", *mm_want_ptrs.t1, mm_got.t1, minimock.Diff(*mm_want_ptrs.t1, mm_got.t1))
+				mmName.t.Errorf("GenericComplexUnionMock.Name got unexpected parameter t1 expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmName.NameMock.defaultExpectation.origins.originT1, *mm_want_ptrs.t1, mm_got.t1, minimock.Diff(*mm_want_ptrs.t1, mm_got.t1))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmName.t.Errorf("GenericComplexUnionMock.Name got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmName.t.Errorf("GenericComplexUnionMock.Name got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmName.NameMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
