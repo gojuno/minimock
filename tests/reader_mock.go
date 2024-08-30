@@ -18,6 +18,7 @@ type ReaderMock struct {
 	finishOnce sync.Once
 
 	funcRead          func(p []byte) (n int, err error)
+	funcReadOrigin    string
 	inspectFuncRead   func(p []byte)
 	afterReadCounter  uint64
 	beforeReadCounter uint64
@@ -49,17 +50,19 @@ type mReaderMockRead struct {
 	callArgs []*ReaderMockReadParams
 	mutex    sync.RWMutex
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // ReaderMockReadExpectation specifies expectation struct of the reader.Read
 type ReaderMockReadExpectation struct {
-	mock      *ReaderMock
-	params    *ReaderMockReadParams
-	paramPtrs *ReaderMockReadParamPtrs
-	origins   ReaderMockReadOrigins
-	results   *ReaderMockReadResults
-	Counter   uint64
+	mock               *ReaderMock
+	params             *ReaderMockReadParams
+	paramPtrs          *ReaderMockReadParamPtrs
+	expectationOrigins ReaderMockReadExpectationOrigins
+	results            *ReaderMockReadResults
+	returnOrigin       string
+	Counter            uint64
 }
 
 // ReaderMockReadParams contains parameters of the reader.Read
@@ -79,7 +82,7 @@ type ReaderMockReadResults struct {
 }
 
 // ReaderMockReadOrigins contains origins of expectations of the reader.Read
-type ReaderMockReadOrigins struct {
+type ReaderMockReadExpectationOrigins struct {
 	origin  string
 	originP string
 }
@@ -109,7 +112,7 @@ func (mmRead *mReaderMockRead) Expect(p []byte) *mReaderMockRead {
 	}
 
 	mmRead.defaultExpectation.params = &ReaderMockReadParams{p}
-	mmRead.defaultExpectation.origins.origin = minimock.CallerInfo(1)
+	mmRead.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmRead.expectations {
 		if minimock.Equal(e.params, mmRead.defaultExpectation.params) {
 			mmRead.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmRead.defaultExpectation.params)
@@ -137,7 +140,7 @@ func (mmRead *mReaderMockRead) ExpectPParam1(p []byte) *mReaderMockRead {
 		mmRead.defaultExpectation.paramPtrs = &ReaderMockReadParamPtrs{}
 	}
 	mmRead.defaultExpectation.paramPtrs.p = &p
-	mmRead.defaultExpectation.origins.originP = minimock.CallerInfo(1)
+	mmRead.defaultExpectation.expectationOrigins.originP = minimock.CallerInfo(1)
 
 	return mmRead
 }
@@ -163,6 +166,7 @@ func (mmRead *mReaderMockRead) Return(n int, err error) *ReaderMock {
 		mmRead.defaultExpectation = &ReaderMockReadExpectation{mock: mmRead.mock}
 	}
 	mmRead.defaultExpectation.results = &ReaderMockReadResults{n, err}
+	mmRead.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmRead.mock
 }
 
@@ -177,6 +181,7 @@ func (mmRead *mReaderMockRead) Set(f func(p []byte) (n int, err error)) *ReaderM
 	}
 
 	mmRead.mock.funcRead = f
+	mmRead.mock.funcReadOrigin = minimock.CallerInfo(1)
 	return mmRead.mock
 }
 
@@ -188,8 +193,9 @@ func (mmRead *mReaderMockRead) When(p []byte) *ReaderMockReadExpectation {
 	}
 
 	expectation := &ReaderMockReadExpectation{
-		mock:   mmRead.mock,
-		params: &ReaderMockReadParams{p},
+		mock:               mmRead.mock,
+		params:             &ReaderMockReadParams{p},
+		expectationOrigins: ReaderMockReadExpectationOrigins{origin: minimock.CallerInfo(1)},
 	}
 	mmRead.expectations = append(mmRead.expectations, expectation)
 	return expectation
@@ -207,6 +213,7 @@ func (mmRead *mReaderMockRead) Times(n uint64) *mReaderMockRead {
 		mmRead.mock.t.Fatalf("Times of ReaderMock.Read mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmRead.expectedInvocations, n)
+	mmRead.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmRead
 }
 
@@ -226,9 +233,7 @@ func (mmRead *ReaderMock) Read(p []byte) (n int, err error) {
 	mm_atomic.AddUint64(&mmRead.beforeReadCounter, 1)
 	defer mm_atomic.AddUint64(&mmRead.afterReadCounter, 1)
 
-	if helper, ok := mmRead.t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
+	mmRead.t.Helper()
 
 	if mmRead.inspectFuncRead != nil {
 		mmRead.inspectFuncRead(p)
@@ -258,13 +263,13 @@ func (mmRead *ReaderMock) Read(p []byte) (n int, err error) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.p != nil && !minimock.Equal(*mm_want_ptrs.p, mm_got.p) {
-				mmRead.t.Errorf("ReaderMock.Read got unexpected parameter p expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmRead.ReadMock.defaultExpectation.origins.originP, *mm_want_ptrs.p, mm_got.p, minimock.Diff(*mm_want_ptrs.p, mm_got.p))
+				mmRead.t.Errorf("ReaderMock.Read got unexpected parameter p, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmRead.ReadMock.defaultExpectation.expectationOrigins.originP, *mm_want_ptrs.p, mm_got.p, minimock.Diff(*mm_want_ptrs.p, mm_got.p))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmRead.t.Errorf("ReaderMock.Read got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-				mmRead.ReadMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmRead.t.Errorf("ReaderMock.Read got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmRead.ReadMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		mm_results := mmRead.ReadMock.defaultExpectation.results
@@ -324,7 +329,7 @@ func (m *ReaderMock) MinimockReadDone() bool {
 func (m *ReaderMock) MinimockReadInspect() {
 	for _, e := range m.ReadMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to ReaderMock.Read with params: %#v", *e.params)
+			m.t.Errorf("Expected call to ReaderMock.Read at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
 		}
 	}
 
@@ -332,19 +337,19 @@ func (m *ReaderMock) MinimockReadInspect() {
 	// if default expectation was set then invocations count should be greater than zero
 	if m.ReadMock.defaultExpectation != nil && afterReadCounter < 1 {
 		if m.ReadMock.defaultExpectation.params == nil {
-			m.t.Error("Expected call to ReaderMock.Read")
+			m.t.Errorf("Expected call to ReaderMock.Read at\n%s", m.ReadMock.defaultExpectation.returnOrigin)
 		} else {
-			m.t.Errorf("Expected call to ReaderMock.Read with params: %#v", *m.ReadMock.defaultExpectation.params)
+			m.t.Errorf("Expected call to ReaderMock.Read at\n%s with params: %#v", m.ReadMock.defaultExpectation.expectationOrigins.origin, *m.ReadMock.defaultExpectation.params)
 		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcRead != nil && afterReadCounter < 1 {
-		m.t.Error("Expected call to ReaderMock.Read")
+		m.t.Errorf("Expected call to ReaderMock.Read at\n%s", m.funcReadOrigin)
 	}
 
 	if !m.ReadMock.invocationsDone() && afterReadCounter > 0 {
-		m.t.Errorf("Expected %d calls to ReaderMock.Read but found %d calls",
-			mm_atomic.LoadUint64(&m.ReadMock.expectedInvocations), afterReadCounter)
+		m.t.Errorf("Expected %d calls to ReaderMock.Read at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.ReadMock.expectedInvocations), m.ReadMock.expectedInvocationsOrigin, afterReadCounter)
 	}
 }
 

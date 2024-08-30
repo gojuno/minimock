@@ -18,42 +18,49 @@ type TesterMock struct {
 	finishOnce sync.Once
 
 	funcCleanup          func(f func())
+	funcCleanupOrigin    string
 	inspectFuncCleanup   func(f func())
 	afterCleanupCounter  uint64
 	beforeCleanupCounter uint64
 	CleanupMock          mTesterMockCleanup
 
 	funcError          func(p1 ...interface{})
+	funcErrorOrigin    string
 	inspectFuncError   func(p1 ...interface{})
 	afterErrorCounter  uint64
 	beforeErrorCounter uint64
 	ErrorMock          mTesterMockError
 
 	funcErrorf          func(format string, args ...interface{})
+	funcErrorfOrigin    string
 	inspectFuncErrorf   func(format string, args ...interface{})
 	afterErrorfCounter  uint64
 	beforeErrorfCounter uint64
 	ErrorfMock          mTesterMockErrorf
 
 	funcFailNow          func()
+	funcFailNowOrigin    string
 	inspectFuncFailNow   func()
 	afterFailNowCounter  uint64
 	beforeFailNowCounter uint64
 	FailNowMock          mTesterMockFailNow
 
 	funcFatal          func(args ...interface{})
+	funcFatalOrigin    string
 	inspectFuncFatal   func(args ...interface{})
 	afterFatalCounter  uint64
 	beforeFatalCounter uint64
 	FatalMock          mTesterMockFatal
 
 	funcFatalf          func(format string, args ...interface{})
+	funcFatalfOrigin    string
 	inspectFuncFatalf   func(format string, args ...interface{})
 	afterFatalfCounter  uint64
 	beforeFatalfCounter uint64
 	FatalfMock          mTesterMockFatalf
 
 	funcHelper          func()
+	funcHelperOrigin    string
 	inspectFuncHelper   func()
 	afterHelperCounter  uint64
 	beforeHelperCounter uint64
@@ -101,17 +108,19 @@ type mTesterMockCleanup struct {
 	callArgs []*TesterMockCleanupParams
 	mutex    sync.RWMutex
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // TesterMockCleanupExpectation specifies expectation struct of the Tester.Cleanup
 type TesterMockCleanupExpectation struct {
-	mock      *TesterMock
-	params    *TesterMockCleanupParams
-	paramPtrs *TesterMockCleanupParamPtrs
-	origins   TesterMockCleanupOrigins
+	mock               *TesterMock
+	params             *TesterMockCleanupParams
+	paramPtrs          *TesterMockCleanupParamPtrs
+	expectationOrigins TesterMockCleanupExpectationOrigins
 
-	Counter uint64
+	returnOrigin string
+	Counter      uint64
 }
 
 // TesterMockCleanupParams contains parameters of the Tester.Cleanup
@@ -125,7 +134,7 @@ type TesterMockCleanupParamPtrs struct {
 }
 
 // TesterMockCleanupOrigins contains origins of expectations of the Tester.Cleanup
-type TesterMockCleanupOrigins struct {
+type TesterMockCleanupExpectationOrigins struct {
 	origin  string
 	originF string
 }
@@ -155,7 +164,7 @@ func (mmCleanup *mTesterMockCleanup) Expect(f func()) *mTesterMockCleanup {
 	}
 
 	mmCleanup.defaultExpectation.params = &TesterMockCleanupParams{f}
-	mmCleanup.defaultExpectation.origins.origin = minimock.CallerInfo(1)
+	mmCleanup.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmCleanup.expectations {
 		if minimock.Equal(e.params, mmCleanup.defaultExpectation.params) {
 			mmCleanup.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmCleanup.defaultExpectation.params)
@@ -183,7 +192,7 @@ func (mmCleanup *mTesterMockCleanup) ExpectFParam1(f func()) *mTesterMockCleanup
 		mmCleanup.defaultExpectation.paramPtrs = &TesterMockCleanupParamPtrs{}
 	}
 	mmCleanup.defaultExpectation.paramPtrs.f = &f
-	mmCleanup.defaultExpectation.origins.originF = minimock.CallerInfo(1)
+	mmCleanup.defaultExpectation.expectationOrigins.originF = minimock.CallerInfo(1)
 
 	return mmCleanup
 }
@@ -209,6 +218,7 @@ func (mmCleanup *mTesterMockCleanup) Return() *TesterMock {
 		mmCleanup.defaultExpectation = &TesterMockCleanupExpectation{mock: mmCleanup.mock}
 	}
 
+	mmCleanup.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmCleanup.mock
 }
 
@@ -223,6 +233,7 @@ func (mmCleanup *mTesterMockCleanup) Set(f func(f func())) *TesterMock {
 	}
 
 	mmCleanup.mock.funcCleanup = f
+	mmCleanup.mock.funcCleanupOrigin = minimock.CallerInfo(1)
 	return mmCleanup.mock
 }
 
@@ -232,6 +243,7 @@ func (mmCleanup *mTesterMockCleanup) Times(n uint64) *mTesterMockCleanup {
 		mmCleanup.mock.t.Fatalf("Times of TesterMock.Cleanup mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmCleanup.expectedInvocations, n)
+	mmCleanup.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmCleanup
 }
 
@@ -251,9 +263,7 @@ func (mmCleanup *TesterMock) Cleanup(f func()) {
 	mm_atomic.AddUint64(&mmCleanup.beforeCleanupCounter, 1)
 	defer mm_atomic.AddUint64(&mmCleanup.afterCleanupCounter, 1)
 
-	if helper, ok := mmCleanup.t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
+	mmCleanup.t.Helper()
 
 	if mmCleanup.inspectFuncCleanup != nil {
 		mmCleanup.inspectFuncCleanup(f)
@@ -283,13 +293,13 @@ func (mmCleanup *TesterMock) Cleanup(f func()) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.f != nil && !minimock.Equal(*mm_want_ptrs.f, mm_got.f) {
-				mmCleanup.t.Errorf("TesterMock.Cleanup got unexpected parameter f expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmCleanup.CleanupMock.defaultExpectation.origins.originF, *mm_want_ptrs.f, mm_got.f, minimock.Diff(*mm_want_ptrs.f, mm_got.f))
+				mmCleanup.t.Errorf("TesterMock.Cleanup got unexpected parameter f, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmCleanup.CleanupMock.defaultExpectation.expectationOrigins.originF, *mm_want_ptrs.f, mm_got.f, minimock.Diff(*mm_want_ptrs.f, mm_got.f))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmCleanup.t.Errorf("TesterMock.Cleanup got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-				mmCleanup.CleanupMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmCleanup.t.Errorf("TesterMock.Cleanup got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmCleanup.CleanupMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
@@ -347,7 +357,7 @@ func (m *TesterMock) MinimockCleanupDone() bool {
 func (m *TesterMock) MinimockCleanupInspect() {
 	for _, e := range m.CleanupMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to TesterMock.Cleanup with params: %#v", *e.params)
+			m.t.Errorf("Expected call to TesterMock.Cleanup at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
 		}
 	}
 
@@ -355,19 +365,19 @@ func (m *TesterMock) MinimockCleanupInspect() {
 	// if default expectation was set then invocations count should be greater than zero
 	if m.CleanupMock.defaultExpectation != nil && afterCleanupCounter < 1 {
 		if m.CleanupMock.defaultExpectation.params == nil {
-			m.t.Error("Expected call to TesterMock.Cleanup")
+			m.t.Errorf("Expected call to TesterMock.Cleanup at\n%s", m.CleanupMock.defaultExpectation.returnOrigin)
 		} else {
-			m.t.Errorf("Expected call to TesterMock.Cleanup with params: %#v", *m.CleanupMock.defaultExpectation.params)
+			m.t.Errorf("Expected call to TesterMock.Cleanup at\n%s with params: %#v", m.CleanupMock.defaultExpectation.expectationOrigins.origin, *m.CleanupMock.defaultExpectation.params)
 		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcCleanup != nil && afterCleanupCounter < 1 {
-		m.t.Error("Expected call to TesterMock.Cleanup")
+		m.t.Errorf("Expected call to TesterMock.Cleanup at\n%s", m.funcCleanupOrigin)
 	}
 
 	if !m.CleanupMock.invocationsDone() && afterCleanupCounter > 0 {
-		m.t.Errorf("Expected %d calls to TesterMock.Cleanup but found %d calls",
-			mm_atomic.LoadUint64(&m.CleanupMock.expectedInvocations), afterCleanupCounter)
+		m.t.Errorf("Expected %d calls to TesterMock.Cleanup at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.CleanupMock.expectedInvocations), m.CleanupMock.expectedInvocationsOrigin, afterCleanupCounter)
 	}
 }
 
@@ -380,17 +390,19 @@ type mTesterMockError struct {
 	callArgs []*TesterMockErrorParams
 	mutex    sync.RWMutex
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // TesterMockErrorExpectation specifies expectation struct of the Tester.Error
 type TesterMockErrorExpectation struct {
-	mock      *TesterMock
-	params    *TesterMockErrorParams
-	paramPtrs *TesterMockErrorParamPtrs
-	origins   TesterMockErrorOrigins
+	mock               *TesterMock
+	params             *TesterMockErrorParams
+	paramPtrs          *TesterMockErrorParamPtrs
+	expectationOrigins TesterMockErrorExpectationOrigins
 
-	Counter uint64
+	returnOrigin string
+	Counter      uint64
 }
 
 // TesterMockErrorParams contains parameters of the Tester.Error
@@ -404,7 +416,7 @@ type TesterMockErrorParamPtrs struct {
 }
 
 // TesterMockErrorOrigins contains origins of expectations of the Tester.Error
-type TesterMockErrorOrigins struct {
+type TesterMockErrorExpectationOrigins struct {
 	origin   string
 	originP1 string
 }
@@ -434,7 +446,7 @@ func (mmError *mTesterMockError) Expect(p1 ...interface{}) *mTesterMockError {
 	}
 
 	mmError.defaultExpectation.params = &TesterMockErrorParams{p1}
-	mmError.defaultExpectation.origins.origin = minimock.CallerInfo(1)
+	mmError.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmError.expectations {
 		if minimock.Equal(e.params, mmError.defaultExpectation.params) {
 			mmError.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmError.defaultExpectation.params)
@@ -462,7 +474,7 @@ func (mmError *mTesterMockError) ExpectP1Param1(p1 ...interface{}) *mTesterMockE
 		mmError.defaultExpectation.paramPtrs = &TesterMockErrorParamPtrs{}
 	}
 	mmError.defaultExpectation.paramPtrs.p1 = &p1
-	mmError.defaultExpectation.origins.originP1 = minimock.CallerInfo(1)
+	mmError.defaultExpectation.expectationOrigins.originP1 = minimock.CallerInfo(1)
 
 	return mmError
 }
@@ -488,6 +500,7 @@ func (mmError *mTesterMockError) Return() *TesterMock {
 		mmError.defaultExpectation = &TesterMockErrorExpectation{mock: mmError.mock}
 	}
 
+	mmError.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmError.mock
 }
 
@@ -502,6 +515,7 @@ func (mmError *mTesterMockError) Set(f func(p1 ...interface{})) *TesterMock {
 	}
 
 	mmError.mock.funcError = f
+	mmError.mock.funcErrorOrigin = minimock.CallerInfo(1)
 	return mmError.mock
 }
 
@@ -511,6 +525,7 @@ func (mmError *mTesterMockError) Times(n uint64) *mTesterMockError {
 		mmError.mock.t.Fatalf("Times of TesterMock.Error mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmError.expectedInvocations, n)
+	mmError.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmError
 }
 
@@ -530,9 +545,7 @@ func (mmError *TesterMock) Error(p1 ...interface{}) {
 	mm_atomic.AddUint64(&mmError.beforeErrorCounter, 1)
 	defer mm_atomic.AddUint64(&mmError.afterErrorCounter, 1)
 
-	if helper, ok := mmError.t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
+	mmError.t.Helper()
 
 	if mmError.inspectFuncError != nil {
 		mmError.inspectFuncError(p1...)
@@ -562,13 +575,13 @@ func (mmError *TesterMock) Error(p1 ...interface{}) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.p1 != nil && !minimock.Equal(*mm_want_ptrs.p1, mm_got.p1) {
-				mmError.t.Errorf("TesterMock.Error got unexpected parameter p1 expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmError.ErrorMock.defaultExpectation.origins.originP1, *mm_want_ptrs.p1, mm_got.p1, minimock.Diff(*mm_want_ptrs.p1, mm_got.p1))
+				mmError.t.Errorf("TesterMock.Error got unexpected parameter p1, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmError.ErrorMock.defaultExpectation.expectationOrigins.originP1, *mm_want_ptrs.p1, mm_got.p1, minimock.Diff(*mm_want_ptrs.p1, mm_got.p1))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmError.t.Errorf("TesterMock.Error got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-				mmError.ErrorMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmError.t.Errorf("TesterMock.Error got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmError.ErrorMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
@@ -626,7 +639,7 @@ func (m *TesterMock) MinimockErrorDone() bool {
 func (m *TesterMock) MinimockErrorInspect() {
 	for _, e := range m.ErrorMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to TesterMock.Error with params: %#v", *e.params)
+			m.t.Errorf("Expected call to TesterMock.Error at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
 		}
 	}
 
@@ -634,19 +647,19 @@ func (m *TesterMock) MinimockErrorInspect() {
 	// if default expectation was set then invocations count should be greater than zero
 	if m.ErrorMock.defaultExpectation != nil && afterErrorCounter < 1 {
 		if m.ErrorMock.defaultExpectation.params == nil {
-			m.t.Error("Expected call to TesterMock.Error")
+			m.t.Errorf("Expected call to TesterMock.Error at\n%s", m.ErrorMock.defaultExpectation.returnOrigin)
 		} else {
-			m.t.Errorf("Expected call to TesterMock.Error with params: %#v", *m.ErrorMock.defaultExpectation.params)
+			m.t.Errorf("Expected call to TesterMock.Error at\n%s with params: %#v", m.ErrorMock.defaultExpectation.expectationOrigins.origin, *m.ErrorMock.defaultExpectation.params)
 		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcError != nil && afterErrorCounter < 1 {
-		m.t.Error("Expected call to TesterMock.Error")
+		m.t.Errorf("Expected call to TesterMock.Error at\n%s", m.funcErrorOrigin)
 	}
 
 	if !m.ErrorMock.invocationsDone() && afterErrorCounter > 0 {
-		m.t.Errorf("Expected %d calls to TesterMock.Error but found %d calls",
-			mm_atomic.LoadUint64(&m.ErrorMock.expectedInvocations), afterErrorCounter)
+		m.t.Errorf("Expected %d calls to TesterMock.Error at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.ErrorMock.expectedInvocations), m.ErrorMock.expectedInvocationsOrigin, afterErrorCounter)
 	}
 }
 
@@ -659,17 +672,19 @@ type mTesterMockErrorf struct {
 	callArgs []*TesterMockErrorfParams
 	mutex    sync.RWMutex
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // TesterMockErrorfExpectation specifies expectation struct of the Tester.Errorf
 type TesterMockErrorfExpectation struct {
-	mock      *TesterMock
-	params    *TesterMockErrorfParams
-	paramPtrs *TesterMockErrorfParamPtrs
-	origins   TesterMockErrorfOrigins
+	mock               *TesterMock
+	params             *TesterMockErrorfParams
+	paramPtrs          *TesterMockErrorfParamPtrs
+	expectationOrigins TesterMockErrorfExpectationOrigins
 
-	Counter uint64
+	returnOrigin string
+	Counter      uint64
 }
 
 // TesterMockErrorfParams contains parameters of the Tester.Errorf
@@ -685,7 +700,7 @@ type TesterMockErrorfParamPtrs struct {
 }
 
 // TesterMockErrorfOrigins contains origins of expectations of the Tester.Errorf
-type TesterMockErrorfOrigins struct {
+type TesterMockErrorfExpectationOrigins struct {
 	origin       string
 	originFormat string
 	originArgs   string
@@ -716,7 +731,7 @@ func (mmErrorf *mTesterMockErrorf) Expect(format string, args ...interface{}) *m
 	}
 
 	mmErrorf.defaultExpectation.params = &TesterMockErrorfParams{format, args}
-	mmErrorf.defaultExpectation.origins.origin = minimock.CallerInfo(1)
+	mmErrorf.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmErrorf.expectations {
 		if minimock.Equal(e.params, mmErrorf.defaultExpectation.params) {
 			mmErrorf.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmErrorf.defaultExpectation.params)
@@ -744,7 +759,7 @@ func (mmErrorf *mTesterMockErrorf) ExpectFormatParam1(format string) *mTesterMoc
 		mmErrorf.defaultExpectation.paramPtrs = &TesterMockErrorfParamPtrs{}
 	}
 	mmErrorf.defaultExpectation.paramPtrs.format = &format
-	mmErrorf.defaultExpectation.origins.originFormat = minimock.CallerInfo(1)
+	mmErrorf.defaultExpectation.expectationOrigins.originFormat = minimock.CallerInfo(1)
 
 	return mmErrorf
 }
@@ -767,7 +782,7 @@ func (mmErrorf *mTesterMockErrorf) ExpectArgsParam2(args ...interface{}) *mTeste
 		mmErrorf.defaultExpectation.paramPtrs = &TesterMockErrorfParamPtrs{}
 	}
 	mmErrorf.defaultExpectation.paramPtrs.args = &args
-	mmErrorf.defaultExpectation.origins.originArgs = minimock.CallerInfo(1)
+	mmErrorf.defaultExpectation.expectationOrigins.originArgs = minimock.CallerInfo(1)
 
 	return mmErrorf
 }
@@ -793,6 +808,7 @@ func (mmErrorf *mTesterMockErrorf) Return() *TesterMock {
 		mmErrorf.defaultExpectation = &TesterMockErrorfExpectation{mock: mmErrorf.mock}
 	}
 
+	mmErrorf.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmErrorf.mock
 }
 
@@ -807,6 +823,7 @@ func (mmErrorf *mTesterMockErrorf) Set(f func(format string, args ...interface{}
 	}
 
 	mmErrorf.mock.funcErrorf = f
+	mmErrorf.mock.funcErrorfOrigin = minimock.CallerInfo(1)
 	return mmErrorf.mock
 }
 
@@ -816,6 +833,7 @@ func (mmErrorf *mTesterMockErrorf) Times(n uint64) *mTesterMockErrorf {
 		mmErrorf.mock.t.Fatalf("Times of TesterMock.Errorf mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmErrorf.expectedInvocations, n)
+	mmErrorf.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmErrorf
 }
 
@@ -835,9 +853,7 @@ func (mmErrorf *TesterMock) Errorf(format string, args ...interface{}) {
 	mm_atomic.AddUint64(&mmErrorf.beforeErrorfCounter, 1)
 	defer mm_atomic.AddUint64(&mmErrorf.afterErrorfCounter, 1)
 
-	if helper, ok := mmErrorf.t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
+	mmErrorf.t.Helper()
 
 	if mmErrorf.inspectFuncErrorf != nil {
 		mmErrorf.inspectFuncErrorf(format, args...)
@@ -867,18 +883,18 @@ func (mmErrorf *TesterMock) Errorf(format string, args ...interface{}) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.format != nil && !minimock.Equal(*mm_want_ptrs.format, mm_got.format) {
-				mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameter format expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmErrorf.ErrorfMock.defaultExpectation.origins.originFormat, *mm_want_ptrs.format, mm_got.format, minimock.Diff(*mm_want_ptrs.format, mm_got.format))
+				mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameter format, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmErrorf.ErrorfMock.defaultExpectation.expectationOrigins.originFormat, *mm_want_ptrs.format, mm_got.format, minimock.Diff(*mm_want_ptrs.format, mm_got.format))
 			}
 
 			if mm_want_ptrs.args != nil && !minimock.Equal(*mm_want_ptrs.args, mm_got.args) {
-				mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameter args expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmErrorf.ErrorfMock.defaultExpectation.origins.originArgs, *mm_want_ptrs.args, mm_got.args, minimock.Diff(*mm_want_ptrs.args, mm_got.args))
+				mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameter args, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmErrorf.ErrorfMock.defaultExpectation.expectationOrigins.originArgs, *mm_want_ptrs.args, mm_got.args, minimock.Diff(*mm_want_ptrs.args, mm_got.args))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-				mmErrorf.ErrorfMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmErrorf.t.Errorf("TesterMock.Errorf got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmErrorf.ErrorfMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
@@ -936,7 +952,7 @@ func (m *TesterMock) MinimockErrorfDone() bool {
 func (m *TesterMock) MinimockErrorfInspect() {
 	for _, e := range m.ErrorfMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to TesterMock.Errorf with params: %#v", *e.params)
+			m.t.Errorf("Expected call to TesterMock.Errorf at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
 		}
 	}
 
@@ -944,19 +960,19 @@ func (m *TesterMock) MinimockErrorfInspect() {
 	// if default expectation was set then invocations count should be greater than zero
 	if m.ErrorfMock.defaultExpectation != nil && afterErrorfCounter < 1 {
 		if m.ErrorfMock.defaultExpectation.params == nil {
-			m.t.Error("Expected call to TesterMock.Errorf")
+			m.t.Errorf("Expected call to TesterMock.Errorf at\n%s", m.ErrorfMock.defaultExpectation.returnOrigin)
 		} else {
-			m.t.Errorf("Expected call to TesterMock.Errorf with params: %#v", *m.ErrorfMock.defaultExpectation.params)
+			m.t.Errorf("Expected call to TesterMock.Errorf at\n%s with params: %#v", m.ErrorfMock.defaultExpectation.expectationOrigins.origin, *m.ErrorfMock.defaultExpectation.params)
 		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcErrorf != nil && afterErrorfCounter < 1 {
-		m.t.Error("Expected call to TesterMock.Errorf")
+		m.t.Errorf("Expected call to TesterMock.Errorf at\n%s", m.funcErrorfOrigin)
 	}
 
 	if !m.ErrorfMock.invocationsDone() && afterErrorfCounter > 0 {
-		m.t.Errorf("Expected %d calls to TesterMock.Errorf but found %d calls",
-			mm_atomic.LoadUint64(&m.ErrorfMock.expectedInvocations), afterErrorfCounter)
+		m.t.Errorf("Expected %d calls to TesterMock.Errorf at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.ErrorfMock.expectedInvocations), m.ErrorfMock.expectedInvocationsOrigin, afterErrorfCounter)
 	}
 }
 
@@ -966,14 +982,16 @@ type mTesterMockFailNow struct {
 	defaultExpectation *TesterMockFailNowExpectation
 	expectations       []*TesterMockFailNowExpectation
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // TesterMockFailNowExpectation specifies expectation struct of the Tester.FailNow
 type TesterMockFailNowExpectation struct {
 	mock *TesterMock
 
-	Counter uint64
+	returnOrigin string
+	Counter      uint64
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -1020,6 +1038,7 @@ func (mmFailNow *mTesterMockFailNow) Return() *TesterMock {
 		mmFailNow.defaultExpectation = &TesterMockFailNowExpectation{mock: mmFailNow.mock}
 	}
 
+	mmFailNow.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmFailNow.mock
 }
 
@@ -1034,6 +1053,7 @@ func (mmFailNow *mTesterMockFailNow) Set(f func()) *TesterMock {
 	}
 
 	mmFailNow.mock.funcFailNow = f
+	mmFailNow.mock.funcFailNowOrigin = minimock.CallerInfo(1)
 	return mmFailNow.mock
 }
 
@@ -1043,6 +1063,7 @@ func (mmFailNow *mTesterMockFailNow) Times(n uint64) *mTesterMockFailNow {
 		mmFailNow.mock.t.Fatalf("Times of TesterMock.FailNow mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmFailNow.expectedInvocations, n)
+	mmFailNow.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmFailNow
 }
 
@@ -1062,9 +1083,7 @@ func (mmFailNow *TesterMock) FailNow() {
 	mm_atomic.AddUint64(&mmFailNow.beforeFailNowCounter, 1)
 	defer mm_atomic.AddUint64(&mmFailNow.afterFailNowCounter, 1)
 
-	if helper, ok := mmFailNow.t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
+	mmFailNow.t.Helper()
 
 	if mmFailNow.inspectFuncFailNow != nil {
 		mmFailNow.inspectFuncFailNow()
@@ -1122,16 +1141,16 @@ func (m *TesterMock) MinimockFailNowInspect() {
 	afterFailNowCounter := mm_atomic.LoadUint64(&m.afterFailNowCounter)
 	// if default expectation was set then invocations count should be greater than zero
 	if m.FailNowMock.defaultExpectation != nil && afterFailNowCounter < 1 {
-		m.t.Error("Expected call to TesterMock.FailNow")
+		m.t.Errorf("Expected call to TesterMock.FailNow at\n%s", m.FailNowMock.defaultExpectation.returnOrigin)
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcFailNow != nil && afterFailNowCounter < 1 {
-		m.t.Error("Expected call to TesterMock.FailNow")
+		m.t.Errorf("Expected call to TesterMock.FailNow at\n%s", m.funcFailNowOrigin)
 	}
 
 	if !m.FailNowMock.invocationsDone() && afterFailNowCounter > 0 {
-		m.t.Errorf("Expected %d calls to TesterMock.FailNow but found %d calls",
-			mm_atomic.LoadUint64(&m.FailNowMock.expectedInvocations), afterFailNowCounter)
+		m.t.Errorf("Expected %d calls to TesterMock.FailNow at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.FailNowMock.expectedInvocations), m.FailNowMock.expectedInvocationsOrigin, afterFailNowCounter)
 	}
 }
 
@@ -1144,17 +1163,19 @@ type mTesterMockFatal struct {
 	callArgs []*TesterMockFatalParams
 	mutex    sync.RWMutex
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // TesterMockFatalExpectation specifies expectation struct of the Tester.Fatal
 type TesterMockFatalExpectation struct {
-	mock      *TesterMock
-	params    *TesterMockFatalParams
-	paramPtrs *TesterMockFatalParamPtrs
-	origins   TesterMockFatalOrigins
+	mock               *TesterMock
+	params             *TesterMockFatalParams
+	paramPtrs          *TesterMockFatalParamPtrs
+	expectationOrigins TesterMockFatalExpectationOrigins
 
-	Counter uint64
+	returnOrigin string
+	Counter      uint64
 }
 
 // TesterMockFatalParams contains parameters of the Tester.Fatal
@@ -1168,7 +1189,7 @@ type TesterMockFatalParamPtrs struct {
 }
 
 // TesterMockFatalOrigins contains origins of expectations of the Tester.Fatal
-type TesterMockFatalOrigins struct {
+type TesterMockFatalExpectationOrigins struct {
 	origin     string
 	originArgs string
 }
@@ -1198,7 +1219,7 @@ func (mmFatal *mTesterMockFatal) Expect(args ...interface{}) *mTesterMockFatal {
 	}
 
 	mmFatal.defaultExpectation.params = &TesterMockFatalParams{args}
-	mmFatal.defaultExpectation.origins.origin = minimock.CallerInfo(1)
+	mmFatal.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmFatal.expectations {
 		if minimock.Equal(e.params, mmFatal.defaultExpectation.params) {
 			mmFatal.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmFatal.defaultExpectation.params)
@@ -1226,7 +1247,7 @@ func (mmFatal *mTesterMockFatal) ExpectArgsParam1(args ...interface{}) *mTesterM
 		mmFatal.defaultExpectation.paramPtrs = &TesterMockFatalParamPtrs{}
 	}
 	mmFatal.defaultExpectation.paramPtrs.args = &args
-	mmFatal.defaultExpectation.origins.originArgs = minimock.CallerInfo(1)
+	mmFatal.defaultExpectation.expectationOrigins.originArgs = minimock.CallerInfo(1)
 
 	return mmFatal
 }
@@ -1252,6 +1273,7 @@ func (mmFatal *mTesterMockFatal) Return() *TesterMock {
 		mmFatal.defaultExpectation = &TesterMockFatalExpectation{mock: mmFatal.mock}
 	}
 
+	mmFatal.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmFatal.mock
 }
 
@@ -1266,6 +1288,7 @@ func (mmFatal *mTesterMockFatal) Set(f func(args ...interface{})) *TesterMock {
 	}
 
 	mmFatal.mock.funcFatal = f
+	mmFatal.mock.funcFatalOrigin = minimock.CallerInfo(1)
 	return mmFatal.mock
 }
 
@@ -1275,6 +1298,7 @@ func (mmFatal *mTesterMockFatal) Times(n uint64) *mTesterMockFatal {
 		mmFatal.mock.t.Fatalf("Times of TesterMock.Fatal mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmFatal.expectedInvocations, n)
+	mmFatal.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmFatal
 }
 
@@ -1294,9 +1318,7 @@ func (mmFatal *TesterMock) Fatal(args ...interface{}) {
 	mm_atomic.AddUint64(&mmFatal.beforeFatalCounter, 1)
 	defer mm_atomic.AddUint64(&mmFatal.afterFatalCounter, 1)
 
-	if helper, ok := mmFatal.t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
+	mmFatal.t.Helper()
 
 	if mmFatal.inspectFuncFatal != nil {
 		mmFatal.inspectFuncFatal(args...)
@@ -1326,13 +1348,13 @@ func (mmFatal *TesterMock) Fatal(args ...interface{}) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.args != nil && !minimock.Equal(*mm_want_ptrs.args, mm_got.args) {
-				mmFatal.t.Errorf("TesterMock.Fatal got unexpected parameter args expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmFatal.FatalMock.defaultExpectation.origins.originArgs, *mm_want_ptrs.args, mm_got.args, minimock.Diff(*mm_want_ptrs.args, mm_got.args))
+				mmFatal.t.Errorf("TesterMock.Fatal got unexpected parameter args, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmFatal.FatalMock.defaultExpectation.expectationOrigins.originArgs, *mm_want_ptrs.args, mm_got.args, minimock.Diff(*mm_want_ptrs.args, mm_got.args))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmFatal.t.Errorf("TesterMock.Fatal got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-				mmFatal.FatalMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmFatal.t.Errorf("TesterMock.Fatal got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmFatal.FatalMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
@@ -1390,7 +1412,7 @@ func (m *TesterMock) MinimockFatalDone() bool {
 func (m *TesterMock) MinimockFatalInspect() {
 	for _, e := range m.FatalMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to TesterMock.Fatal with params: %#v", *e.params)
+			m.t.Errorf("Expected call to TesterMock.Fatal at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
 		}
 	}
 
@@ -1398,19 +1420,19 @@ func (m *TesterMock) MinimockFatalInspect() {
 	// if default expectation was set then invocations count should be greater than zero
 	if m.FatalMock.defaultExpectation != nil && afterFatalCounter < 1 {
 		if m.FatalMock.defaultExpectation.params == nil {
-			m.t.Error("Expected call to TesterMock.Fatal")
+			m.t.Errorf("Expected call to TesterMock.Fatal at\n%s", m.FatalMock.defaultExpectation.returnOrigin)
 		} else {
-			m.t.Errorf("Expected call to TesterMock.Fatal with params: %#v", *m.FatalMock.defaultExpectation.params)
+			m.t.Errorf("Expected call to TesterMock.Fatal at\n%s with params: %#v", m.FatalMock.defaultExpectation.expectationOrigins.origin, *m.FatalMock.defaultExpectation.params)
 		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcFatal != nil && afterFatalCounter < 1 {
-		m.t.Error("Expected call to TesterMock.Fatal")
+		m.t.Errorf("Expected call to TesterMock.Fatal at\n%s", m.funcFatalOrigin)
 	}
 
 	if !m.FatalMock.invocationsDone() && afterFatalCounter > 0 {
-		m.t.Errorf("Expected %d calls to TesterMock.Fatal but found %d calls",
-			mm_atomic.LoadUint64(&m.FatalMock.expectedInvocations), afterFatalCounter)
+		m.t.Errorf("Expected %d calls to TesterMock.Fatal at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.FatalMock.expectedInvocations), m.FatalMock.expectedInvocationsOrigin, afterFatalCounter)
 	}
 }
 
@@ -1423,17 +1445,19 @@ type mTesterMockFatalf struct {
 	callArgs []*TesterMockFatalfParams
 	mutex    sync.RWMutex
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // TesterMockFatalfExpectation specifies expectation struct of the Tester.Fatalf
 type TesterMockFatalfExpectation struct {
-	mock      *TesterMock
-	params    *TesterMockFatalfParams
-	paramPtrs *TesterMockFatalfParamPtrs
-	origins   TesterMockFatalfOrigins
+	mock               *TesterMock
+	params             *TesterMockFatalfParams
+	paramPtrs          *TesterMockFatalfParamPtrs
+	expectationOrigins TesterMockFatalfExpectationOrigins
 
-	Counter uint64
+	returnOrigin string
+	Counter      uint64
 }
 
 // TesterMockFatalfParams contains parameters of the Tester.Fatalf
@@ -1449,7 +1473,7 @@ type TesterMockFatalfParamPtrs struct {
 }
 
 // TesterMockFatalfOrigins contains origins of expectations of the Tester.Fatalf
-type TesterMockFatalfOrigins struct {
+type TesterMockFatalfExpectationOrigins struct {
 	origin       string
 	originFormat string
 	originArgs   string
@@ -1480,7 +1504,7 @@ func (mmFatalf *mTesterMockFatalf) Expect(format string, args ...interface{}) *m
 	}
 
 	mmFatalf.defaultExpectation.params = &TesterMockFatalfParams{format, args}
-	mmFatalf.defaultExpectation.origins.origin = minimock.CallerInfo(1)
+	mmFatalf.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmFatalf.expectations {
 		if minimock.Equal(e.params, mmFatalf.defaultExpectation.params) {
 			mmFatalf.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmFatalf.defaultExpectation.params)
@@ -1508,7 +1532,7 @@ func (mmFatalf *mTesterMockFatalf) ExpectFormatParam1(format string) *mTesterMoc
 		mmFatalf.defaultExpectation.paramPtrs = &TesterMockFatalfParamPtrs{}
 	}
 	mmFatalf.defaultExpectation.paramPtrs.format = &format
-	mmFatalf.defaultExpectation.origins.originFormat = minimock.CallerInfo(1)
+	mmFatalf.defaultExpectation.expectationOrigins.originFormat = minimock.CallerInfo(1)
 
 	return mmFatalf
 }
@@ -1531,7 +1555,7 @@ func (mmFatalf *mTesterMockFatalf) ExpectArgsParam2(args ...interface{}) *mTeste
 		mmFatalf.defaultExpectation.paramPtrs = &TesterMockFatalfParamPtrs{}
 	}
 	mmFatalf.defaultExpectation.paramPtrs.args = &args
-	mmFatalf.defaultExpectation.origins.originArgs = minimock.CallerInfo(1)
+	mmFatalf.defaultExpectation.expectationOrigins.originArgs = minimock.CallerInfo(1)
 
 	return mmFatalf
 }
@@ -1557,6 +1581,7 @@ func (mmFatalf *mTesterMockFatalf) Return() *TesterMock {
 		mmFatalf.defaultExpectation = &TesterMockFatalfExpectation{mock: mmFatalf.mock}
 	}
 
+	mmFatalf.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmFatalf.mock
 }
 
@@ -1571,6 +1596,7 @@ func (mmFatalf *mTesterMockFatalf) Set(f func(format string, args ...interface{}
 	}
 
 	mmFatalf.mock.funcFatalf = f
+	mmFatalf.mock.funcFatalfOrigin = minimock.CallerInfo(1)
 	return mmFatalf.mock
 }
 
@@ -1580,6 +1606,7 @@ func (mmFatalf *mTesterMockFatalf) Times(n uint64) *mTesterMockFatalf {
 		mmFatalf.mock.t.Fatalf("Times of TesterMock.Fatalf mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmFatalf.expectedInvocations, n)
+	mmFatalf.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmFatalf
 }
 
@@ -1599,9 +1626,7 @@ func (mmFatalf *TesterMock) Fatalf(format string, args ...interface{}) {
 	mm_atomic.AddUint64(&mmFatalf.beforeFatalfCounter, 1)
 	defer mm_atomic.AddUint64(&mmFatalf.afterFatalfCounter, 1)
 
-	if helper, ok := mmFatalf.t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
+	mmFatalf.t.Helper()
 
 	if mmFatalf.inspectFuncFatalf != nil {
 		mmFatalf.inspectFuncFatalf(format, args...)
@@ -1631,18 +1656,18 @@ func (mmFatalf *TesterMock) Fatalf(format string, args ...interface{}) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.format != nil && !minimock.Equal(*mm_want_ptrs.format, mm_got.format) {
-				mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameter format expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmFatalf.FatalfMock.defaultExpectation.origins.originFormat, *mm_want_ptrs.format, mm_got.format, minimock.Diff(*mm_want_ptrs.format, mm_got.format))
+				mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameter format, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmFatalf.FatalfMock.defaultExpectation.expectationOrigins.originFormat, *mm_want_ptrs.format, mm_got.format, minimock.Diff(*mm_want_ptrs.format, mm_got.format))
 			}
 
 			if mm_want_ptrs.args != nil && !minimock.Equal(*mm_want_ptrs.args, mm_got.args) {
-				mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameter args expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmFatalf.FatalfMock.defaultExpectation.origins.originArgs, *mm_want_ptrs.args, mm_got.args, minimock.Diff(*mm_want_ptrs.args, mm_got.args))
+				mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameter args, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmFatalf.FatalfMock.defaultExpectation.expectationOrigins.originArgs, *mm_want_ptrs.args, mm_got.args, minimock.Diff(*mm_want_ptrs.args, mm_got.args))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-				mmFatalf.FatalfMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmFatalf.t.Errorf("TesterMock.Fatalf got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmFatalf.FatalfMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
@@ -1700,7 +1725,7 @@ func (m *TesterMock) MinimockFatalfDone() bool {
 func (m *TesterMock) MinimockFatalfInspect() {
 	for _, e := range m.FatalfMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to TesterMock.Fatalf with params: %#v", *e.params)
+			m.t.Errorf("Expected call to TesterMock.Fatalf at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
 		}
 	}
 
@@ -1708,19 +1733,19 @@ func (m *TesterMock) MinimockFatalfInspect() {
 	// if default expectation was set then invocations count should be greater than zero
 	if m.FatalfMock.defaultExpectation != nil && afterFatalfCounter < 1 {
 		if m.FatalfMock.defaultExpectation.params == nil {
-			m.t.Error("Expected call to TesterMock.Fatalf")
+			m.t.Errorf("Expected call to TesterMock.Fatalf at\n%s", m.FatalfMock.defaultExpectation.returnOrigin)
 		} else {
-			m.t.Errorf("Expected call to TesterMock.Fatalf with params: %#v", *m.FatalfMock.defaultExpectation.params)
+			m.t.Errorf("Expected call to TesterMock.Fatalf at\n%s with params: %#v", m.FatalfMock.defaultExpectation.expectationOrigins.origin, *m.FatalfMock.defaultExpectation.params)
 		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcFatalf != nil && afterFatalfCounter < 1 {
-		m.t.Error("Expected call to TesterMock.Fatalf")
+		m.t.Errorf("Expected call to TesterMock.Fatalf at\n%s", m.funcFatalfOrigin)
 	}
 
 	if !m.FatalfMock.invocationsDone() && afterFatalfCounter > 0 {
-		m.t.Errorf("Expected %d calls to TesterMock.Fatalf but found %d calls",
-			mm_atomic.LoadUint64(&m.FatalfMock.expectedInvocations), afterFatalfCounter)
+		m.t.Errorf("Expected %d calls to TesterMock.Fatalf at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.FatalfMock.expectedInvocations), m.FatalfMock.expectedInvocationsOrigin, afterFatalfCounter)
 	}
 }
 
@@ -1730,14 +1755,16 @@ type mTesterMockHelper struct {
 	defaultExpectation *TesterMockHelperExpectation
 	expectations       []*TesterMockHelperExpectation
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // TesterMockHelperExpectation specifies expectation struct of the Tester.Helper
 type TesterMockHelperExpectation struct {
 	mock *TesterMock
 
-	Counter uint64
+	returnOrigin string
+	Counter      uint64
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -1784,6 +1811,7 @@ func (mmHelper *mTesterMockHelper) Return() *TesterMock {
 		mmHelper.defaultExpectation = &TesterMockHelperExpectation{mock: mmHelper.mock}
 	}
 
+	mmHelper.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmHelper.mock
 }
 
@@ -1798,6 +1826,7 @@ func (mmHelper *mTesterMockHelper) Set(f func()) *TesterMock {
 	}
 
 	mmHelper.mock.funcHelper = f
+	mmHelper.mock.funcHelperOrigin = minimock.CallerInfo(1)
 	return mmHelper.mock
 }
 
@@ -1807,6 +1836,7 @@ func (mmHelper *mTesterMockHelper) Times(n uint64) *mTesterMockHelper {
 		mmHelper.mock.t.Fatalf("Times of TesterMock.Helper mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmHelper.expectedInvocations, n)
+	mmHelper.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmHelper
 }
 
@@ -1826,9 +1856,7 @@ func (mmHelper *TesterMock) Helper() {
 	mm_atomic.AddUint64(&mmHelper.beforeHelperCounter, 1)
 	defer mm_atomic.AddUint64(&mmHelper.afterHelperCounter, 1)
 
-	if helper, ok := mmHelper.t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
+	mmHelper.t.Helper()
 
 	if mmHelper.inspectFuncHelper != nil {
 		mmHelper.inspectFuncHelper()
@@ -1886,16 +1914,16 @@ func (m *TesterMock) MinimockHelperInspect() {
 	afterHelperCounter := mm_atomic.LoadUint64(&m.afterHelperCounter)
 	// if default expectation was set then invocations count should be greater than zero
 	if m.HelperMock.defaultExpectation != nil && afterHelperCounter < 1 {
-		m.t.Error("Expected call to TesterMock.Helper")
+		m.t.Errorf("Expected call to TesterMock.Helper at\n%s", m.HelperMock.defaultExpectation.returnOrigin)
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcHelper != nil && afterHelperCounter < 1 {
-		m.t.Error("Expected call to TesterMock.Helper")
+		m.t.Errorf("Expected call to TesterMock.Helper at\n%s", m.funcHelperOrigin)
 	}
 
 	if !m.HelperMock.invocationsDone() && afterHelperCounter > 0 {
-		m.t.Errorf("Expected %d calls to TesterMock.Helper but found %d calls",
-			mm_atomic.LoadUint64(&m.HelperMock.expectedInvocations), afterHelperCounter)
+		m.t.Errorf("Expected %d calls to TesterMock.Helper at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.HelperMock.expectedInvocations), m.HelperMock.expectedInvocationsOrigin, afterHelperCounter)
 	}
 }
 

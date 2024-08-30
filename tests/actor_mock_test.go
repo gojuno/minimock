@@ -34,10 +34,13 @@ func TestActorMock_TestPassedWithOneExpectedParams(t *testing.T) {
 func TestActorMock_TestFailedWithExpectedParams(t *testing.T) {
 	tester := NewTesterMock(t)
 	tester.CleanupMock.Return().HelperMock.Return()
-	tester.ErrorfMock.
-		Expect("ActorMock.Action got unexpected parameter secondParam, want: %#v, got: %#v%s\n", 24, 25, "").
-		Return()
+	tester.ErrorfMock.Set(func(format string, args ...interface{}) {
+		assert.Equal(t, "ActorMock.Action got unexpected parameter secondParam, expected at\n%s:\nwant: %#v\n got: %#v%s\n", format)
 
+		assert.Equal(t, 24, args[1])
+		assert.Equal(t, 25, args[2])
+		assert.Equal(t, "", args[3])
+	})
 	mock := NewActorMock(tester).
 		ActionMock.ExpectFirstParamParam1("abc").
 		ExpectSecondParamParam2(24).Return(1, nil)

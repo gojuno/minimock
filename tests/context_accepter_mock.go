@@ -19,18 +19,21 @@ type ContextAccepterMock struct {
 	finishOnce sync.Once
 
 	funcAcceptContext          func(ctx context.Context)
+	funcAcceptContextOrigin    string
 	inspectFuncAcceptContext   func(ctx context.Context)
 	afterAcceptContextCounter  uint64
 	beforeAcceptContextCounter uint64
 	AcceptContextMock          mContextAccepterMockAcceptContext
 
 	funcAcceptContextWithOtherArgs          func(ctx context.Context, i1 int) (i2 int, err error)
+	funcAcceptContextWithOtherArgsOrigin    string
 	inspectFuncAcceptContextWithOtherArgs   func(ctx context.Context, i1 int)
 	afterAcceptContextWithOtherArgsCounter  uint64
 	beforeAcceptContextWithOtherArgsCounter uint64
 	AcceptContextWithOtherArgsMock          mContextAccepterMockAcceptContextWithOtherArgs
 
 	funcAcceptContextWithStructArgs          func(ctx context.Context, s1 structArg) (i1 int, err error)
+	funcAcceptContextWithStructArgsOrigin    string
 	inspectFuncAcceptContextWithStructArgs   func(ctx context.Context, s1 structArg)
 	afterAcceptContextWithStructArgsCounter  uint64
 	beforeAcceptContextWithStructArgsCounter uint64
@@ -68,17 +71,19 @@ type mContextAccepterMockAcceptContext struct {
 	callArgs []*ContextAccepterMockAcceptContextParams
 	mutex    sync.RWMutex
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // ContextAccepterMockAcceptContextExpectation specifies expectation struct of the contextAccepter.AcceptContext
 type ContextAccepterMockAcceptContextExpectation struct {
-	mock      *ContextAccepterMock
-	params    *ContextAccepterMockAcceptContextParams
-	paramPtrs *ContextAccepterMockAcceptContextParamPtrs
-	origins   ContextAccepterMockAcceptContextOrigins
+	mock               *ContextAccepterMock
+	params             *ContextAccepterMockAcceptContextParams
+	paramPtrs          *ContextAccepterMockAcceptContextParamPtrs
+	expectationOrigins ContextAccepterMockAcceptContextExpectationOrigins
 
-	Counter uint64
+	returnOrigin string
+	Counter      uint64
 }
 
 // ContextAccepterMockAcceptContextParams contains parameters of the contextAccepter.AcceptContext
@@ -92,7 +97,7 @@ type ContextAccepterMockAcceptContextParamPtrs struct {
 }
 
 // ContextAccepterMockAcceptContextOrigins contains origins of expectations of the contextAccepter.AcceptContext
-type ContextAccepterMockAcceptContextOrigins struct {
+type ContextAccepterMockAcceptContextExpectationOrigins struct {
 	origin    string
 	originCtx string
 }
@@ -122,7 +127,7 @@ func (mmAcceptContext *mContextAccepterMockAcceptContext) Expect(ctx context.Con
 	}
 
 	mmAcceptContext.defaultExpectation.params = &ContextAccepterMockAcceptContextParams{ctx}
-	mmAcceptContext.defaultExpectation.origins.origin = minimock.CallerInfo(1)
+	mmAcceptContext.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmAcceptContext.expectations {
 		if minimock.Equal(e.params, mmAcceptContext.defaultExpectation.params) {
 			mmAcceptContext.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmAcceptContext.defaultExpectation.params)
@@ -150,7 +155,7 @@ func (mmAcceptContext *mContextAccepterMockAcceptContext) ExpectCtxParam1(ctx co
 		mmAcceptContext.defaultExpectation.paramPtrs = &ContextAccepterMockAcceptContextParamPtrs{}
 	}
 	mmAcceptContext.defaultExpectation.paramPtrs.ctx = &ctx
-	mmAcceptContext.defaultExpectation.origins.originCtx = minimock.CallerInfo(1)
+	mmAcceptContext.defaultExpectation.expectationOrigins.originCtx = minimock.CallerInfo(1)
 
 	return mmAcceptContext
 }
@@ -176,6 +181,7 @@ func (mmAcceptContext *mContextAccepterMockAcceptContext) Return() *ContextAccep
 		mmAcceptContext.defaultExpectation = &ContextAccepterMockAcceptContextExpectation{mock: mmAcceptContext.mock}
 	}
 
+	mmAcceptContext.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmAcceptContext.mock
 }
 
@@ -190,6 +196,7 @@ func (mmAcceptContext *mContextAccepterMockAcceptContext) Set(f func(ctx context
 	}
 
 	mmAcceptContext.mock.funcAcceptContext = f
+	mmAcceptContext.mock.funcAcceptContextOrigin = minimock.CallerInfo(1)
 	return mmAcceptContext.mock
 }
 
@@ -199,6 +206,7 @@ func (mmAcceptContext *mContextAccepterMockAcceptContext) Times(n uint64) *mCont
 		mmAcceptContext.mock.t.Fatalf("Times of ContextAccepterMock.AcceptContext mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmAcceptContext.expectedInvocations, n)
+	mmAcceptContext.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmAcceptContext
 }
 
@@ -218,9 +226,7 @@ func (mmAcceptContext *ContextAccepterMock) AcceptContext(ctx context.Context) {
 	mm_atomic.AddUint64(&mmAcceptContext.beforeAcceptContextCounter, 1)
 	defer mm_atomic.AddUint64(&mmAcceptContext.afterAcceptContextCounter, 1)
 
-	if helper, ok := mmAcceptContext.t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
+	mmAcceptContext.t.Helper()
 
 	if mmAcceptContext.inspectFuncAcceptContext != nil {
 		mmAcceptContext.inspectFuncAcceptContext(ctx)
@@ -250,13 +256,13 @@ func (mmAcceptContext *ContextAccepterMock) AcceptContext(ctx context.Context) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
-				mmAcceptContext.t.Errorf("ContextAccepterMock.AcceptContext got unexpected parameter ctx expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmAcceptContext.AcceptContextMock.defaultExpectation.origins.originCtx, *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
+				mmAcceptContext.t.Errorf("ContextAccepterMock.AcceptContext got unexpected parameter ctx, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmAcceptContext.AcceptContextMock.defaultExpectation.expectationOrigins.originCtx, *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmAcceptContext.t.Errorf("ContextAccepterMock.AcceptContext got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-				mmAcceptContext.AcceptContextMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmAcceptContext.t.Errorf("ContextAccepterMock.AcceptContext got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmAcceptContext.AcceptContextMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
@@ -314,7 +320,7 @@ func (m *ContextAccepterMock) MinimockAcceptContextDone() bool {
 func (m *ContextAccepterMock) MinimockAcceptContextInspect() {
 	for _, e := range m.AcceptContextMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContext with params: %#v", *e.params)
+			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContext at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
 		}
 	}
 
@@ -322,19 +328,19 @@ func (m *ContextAccepterMock) MinimockAcceptContextInspect() {
 	// if default expectation was set then invocations count should be greater than zero
 	if m.AcceptContextMock.defaultExpectation != nil && afterAcceptContextCounter < 1 {
 		if m.AcceptContextMock.defaultExpectation.params == nil {
-			m.t.Error("Expected call to ContextAccepterMock.AcceptContext")
+			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContext at\n%s", m.AcceptContextMock.defaultExpectation.returnOrigin)
 		} else {
-			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContext with params: %#v", *m.AcceptContextMock.defaultExpectation.params)
+			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContext at\n%s with params: %#v", m.AcceptContextMock.defaultExpectation.expectationOrigins.origin, *m.AcceptContextMock.defaultExpectation.params)
 		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcAcceptContext != nil && afterAcceptContextCounter < 1 {
-		m.t.Error("Expected call to ContextAccepterMock.AcceptContext")
+		m.t.Errorf("Expected call to ContextAccepterMock.AcceptContext at\n%s", m.funcAcceptContextOrigin)
 	}
 
 	if !m.AcceptContextMock.invocationsDone() && afterAcceptContextCounter > 0 {
-		m.t.Errorf("Expected %d calls to ContextAccepterMock.AcceptContext but found %d calls",
-			mm_atomic.LoadUint64(&m.AcceptContextMock.expectedInvocations), afterAcceptContextCounter)
+		m.t.Errorf("Expected %d calls to ContextAccepterMock.AcceptContext at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.AcceptContextMock.expectedInvocations), m.AcceptContextMock.expectedInvocationsOrigin, afterAcceptContextCounter)
 	}
 }
 
@@ -347,17 +353,19 @@ type mContextAccepterMockAcceptContextWithOtherArgs struct {
 	callArgs []*ContextAccepterMockAcceptContextWithOtherArgsParams
 	mutex    sync.RWMutex
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // ContextAccepterMockAcceptContextWithOtherArgsExpectation specifies expectation struct of the contextAccepter.AcceptContextWithOtherArgs
 type ContextAccepterMockAcceptContextWithOtherArgsExpectation struct {
-	mock      *ContextAccepterMock
-	params    *ContextAccepterMockAcceptContextWithOtherArgsParams
-	paramPtrs *ContextAccepterMockAcceptContextWithOtherArgsParamPtrs
-	origins   ContextAccepterMockAcceptContextWithOtherArgsOrigins
-	results   *ContextAccepterMockAcceptContextWithOtherArgsResults
-	Counter   uint64
+	mock               *ContextAccepterMock
+	params             *ContextAccepterMockAcceptContextWithOtherArgsParams
+	paramPtrs          *ContextAccepterMockAcceptContextWithOtherArgsParamPtrs
+	expectationOrigins ContextAccepterMockAcceptContextWithOtherArgsExpectationOrigins
+	results            *ContextAccepterMockAcceptContextWithOtherArgsResults
+	returnOrigin       string
+	Counter            uint64
 }
 
 // ContextAccepterMockAcceptContextWithOtherArgsParams contains parameters of the contextAccepter.AcceptContextWithOtherArgs
@@ -379,7 +387,7 @@ type ContextAccepterMockAcceptContextWithOtherArgsResults struct {
 }
 
 // ContextAccepterMockAcceptContextWithOtherArgsOrigins contains origins of expectations of the contextAccepter.AcceptContextWithOtherArgs
-type ContextAccepterMockAcceptContextWithOtherArgsOrigins struct {
+type ContextAccepterMockAcceptContextWithOtherArgsExpectationOrigins struct {
 	origin    string
 	originCtx string
 	originI1  string
@@ -410,7 +418,7 @@ func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherAr
 	}
 
 	mmAcceptContextWithOtherArgs.defaultExpectation.params = &ContextAccepterMockAcceptContextWithOtherArgsParams{ctx, i1}
-	mmAcceptContextWithOtherArgs.defaultExpectation.origins.origin = minimock.CallerInfo(1)
+	mmAcceptContextWithOtherArgs.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmAcceptContextWithOtherArgs.expectations {
 		if minimock.Equal(e.params, mmAcceptContextWithOtherArgs.defaultExpectation.params) {
 			mmAcceptContextWithOtherArgs.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmAcceptContextWithOtherArgs.defaultExpectation.params)
@@ -438,7 +446,7 @@ func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherAr
 		mmAcceptContextWithOtherArgs.defaultExpectation.paramPtrs = &ContextAccepterMockAcceptContextWithOtherArgsParamPtrs{}
 	}
 	mmAcceptContextWithOtherArgs.defaultExpectation.paramPtrs.ctx = &ctx
-	mmAcceptContextWithOtherArgs.defaultExpectation.origins.originCtx = minimock.CallerInfo(1)
+	mmAcceptContextWithOtherArgs.defaultExpectation.expectationOrigins.originCtx = minimock.CallerInfo(1)
 
 	return mmAcceptContextWithOtherArgs
 }
@@ -461,7 +469,7 @@ func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherAr
 		mmAcceptContextWithOtherArgs.defaultExpectation.paramPtrs = &ContextAccepterMockAcceptContextWithOtherArgsParamPtrs{}
 	}
 	mmAcceptContextWithOtherArgs.defaultExpectation.paramPtrs.i1 = &i1
-	mmAcceptContextWithOtherArgs.defaultExpectation.origins.originI1 = minimock.CallerInfo(1)
+	mmAcceptContextWithOtherArgs.defaultExpectation.expectationOrigins.originI1 = minimock.CallerInfo(1)
 
 	return mmAcceptContextWithOtherArgs
 }
@@ -487,6 +495,7 @@ func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherAr
 		mmAcceptContextWithOtherArgs.defaultExpectation = &ContextAccepterMockAcceptContextWithOtherArgsExpectation{mock: mmAcceptContextWithOtherArgs.mock}
 	}
 	mmAcceptContextWithOtherArgs.defaultExpectation.results = &ContextAccepterMockAcceptContextWithOtherArgsResults{i2, err}
+	mmAcceptContextWithOtherArgs.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmAcceptContextWithOtherArgs.mock
 }
 
@@ -501,6 +510,7 @@ func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherAr
 	}
 
 	mmAcceptContextWithOtherArgs.mock.funcAcceptContextWithOtherArgs = f
+	mmAcceptContextWithOtherArgs.mock.funcAcceptContextWithOtherArgsOrigin = minimock.CallerInfo(1)
 	return mmAcceptContextWithOtherArgs.mock
 }
 
@@ -512,8 +522,9 @@ func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherAr
 	}
 
 	expectation := &ContextAccepterMockAcceptContextWithOtherArgsExpectation{
-		mock:   mmAcceptContextWithOtherArgs.mock,
-		params: &ContextAccepterMockAcceptContextWithOtherArgsParams{ctx, i1},
+		mock:               mmAcceptContextWithOtherArgs.mock,
+		params:             &ContextAccepterMockAcceptContextWithOtherArgsParams{ctx, i1},
+		expectationOrigins: ContextAccepterMockAcceptContextWithOtherArgsExpectationOrigins{origin: minimock.CallerInfo(1)},
 	}
 	mmAcceptContextWithOtherArgs.expectations = append(mmAcceptContextWithOtherArgs.expectations, expectation)
 	return expectation
@@ -531,6 +542,7 @@ func (mmAcceptContextWithOtherArgs *mContextAccepterMockAcceptContextWithOtherAr
 		mmAcceptContextWithOtherArgs.mock.t.Fatalf("Times of ContextAccepterMock.AcceptContextWithOtherArgs mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmAcceptContextWithOtherArgs.expectedInvocations, n)
+	mmAcceptContextWithOtherArgs.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmAcceptContextWithOtherArgs
 }
 
@@ -550,9 +562,7 @@ func (mmAcceptContextWithOtherArgs *ContextAccepterMock) AcceptContextWithOtherA
 	mm_atomic.AddUint64(&mmAcceptContextWithOtherArgs.beforeAcceptContextWithOtherArgsCounter, 1)
 	defer mm_atomic.AddUint64(&mmAcceptContextWithOtherArgs.afterAcceptContextWithOtherArgsCounter, 1)
 
-	if helper, ok := mmAcceptContextWithOtherArgs.t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
+	mmAcceptContextWithOtherArgs.t.Helper()
 
 	if mmAcceptContextWithOtherArgs.inspectFuncAcceptContextWithOtherArgs != nil {
 		mmAcceptContextWithOtherArgs.inspectFuncAcceptContextWithOtherArgs(ctx, i1)
@@ -582,18 +592,18 @@ func (mmAcceptContextWithOtherArgs *ContextAccepterMock) AcceptContextWithOtherA
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
-				mmAcceptContextWithOtherArgs.t.Errorf("ContextAccepterMock.AcceptContextWithOtherArgs got unexpected parameter ctx expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmAcceptContextWithOtherArgs.AcceptContextWithOtherArgsMock.defaultExpectation.origins.originCtx, *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
+				mmAcceptContextWithOtherArgs.t.Errorf("ContextAccepterMock.AcceptContextWithOtherArgs got unexpected parameter ctx, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmAcceptContextWithOtherArgs.AcceptContextWithOtherArgsMock.defaultExpectation.expectationOrigins.originCtx, *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
 			}
 
 			if mm_want_ptrs.i1 != nil && !minimock.Equal(*mm_want_ptrs.i1, mm_got.i1) {
-				mmAcceptContextWithOtherArgs.t.Errorf("ContextAccepterMock.AcceptContextWithOtherArgs got unexpected parameter i1 expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmAcceptContextWithOtherArgs.AcceptContextWithOtherArgsMock.defaultExpectation.origins.originI1, *mm_want_ptrs.i1, mm_got.i1, minimock.Diff(*mm_want_ptrs.i1, mm_got.i1))
+				mmAcceptContextWithOtherArgs.t.Errorf("ContextAccepterMock.AcceptContextWithOtherArgs got unexpected parameter i1, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmAcceptContextWithOtherArgs.AcceptContextWithOtherArgsMock.defaultExpectation.expectationOrigins.originI1, *mm_want_ptrs.i1, mm_got.i1, minimock.Diff(*mm_want_ptrs.i1, mm_got.i1))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmAcceptContextWithOtherArgs.t.Errorf("ContextAccepterMock.AcceptContextWithOtherArgs got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-				mmAcceptContextWithOtherArgs.AcceptContextWithOtherArgsMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmAcceptContextWithOtherArgs.t.Errorf("ContextAccepterMock.AcceptContextWithOtherArgs got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmAcceptContextWithOtherArgs.AcceptContextWithOtherArgsMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		mm_results := mmAcceptContextWithOtherArgs.AcceptContextWithOtherArgsMock.defaultExpectation.results
@@ -653,7 +663,7 @@ func (m *ContextAccepterMock) MinimockAcceptContextWithOtherArgsDone() bool {
 func (m *ContextAccepterMock) MinimockAcceptContextWithOtherArgsInspect() {
 	for _, e := range m.AcceptContextWithOtherArgsMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContextWithOtherArgs with params: %#v", *e.params)
+			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContextWithOtherArgs at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
 		}
 	}
 
@@ -661,19 +671,19 @@ func (m *ContextAccepterMock) MinimockAcceptContextWithOtherArgsInspect() {
 	// if default expectation was set then invocations count should be greater than zero
 	if m.AcceptContextWithOtherArgsMock.defaultExpectation != nil && afterAcceptContextWithOtherArgsCounter < 1 {
 		if m.AcceptContextWithOtherArgsMock.defaultExpectation.params == nil {
-			m.t.Error("Expected call to ContextAccepterMock.AcceptContextWithOtherArgs")
+			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContextWithOtherArgs at\n%s", m.AcceptContextWithOtherArgsMock.defaultExpectation.returnOrigin)
 		} else {
-			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContextWithOtherArgs with params: %#v", *m.AcceptContextWithOtherArgsMock.defaultExpectation.params)
+			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContextWithOtherArgs at\n%s with params: %#v", m.AcceptContextWithOtherArgsMock.defaultExpectation.expectationOrigins.origin, *m.AcceptContextWithOtherArgsMock.defaultExpectation.params)
 		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcAcceptContextWithOtherArgs != nil && afterAcceptContextWithOtherArgsCounter < 1 {
-		m.t.Error("Expected call to ContextAccepterMock.AcceptContextWithOtherArgs")
+		m.t.Errorf("Expected call to ContextAccepterMock.AcceptContextWithOtherArgs at\n%s", m.funcAcceptContextWithOtherArgsOrigin)
 	}
 
 	if !m.AcceptContextWithOtherArgsMock.invocationsDone() && afterAcceptContextWithOtherArgsCounter > 0 {
-		m.t.Errorf("Expected %d calls to ContextAccepterMock.AcceptContextWithOtherArgs but found %d calls",
-			mm_atomic.LoadUint64(&m.AcceptContextWithOtherArgsMock.expectedInvocations), afterAcceptContextWithOtherArgsCounter)
+		m.t.Errorf("Expected %d calls to ContextAccepterMock.AcceptContextWithOtherArgs at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.AcceptContextWithOtherArgsMock.expectedInvocations), m.AcceptContextWithOtherArgsMock.expectedInvocationsOrigin, afterAcceptContextWithOtherArgsCounter)
 	}
 }
 
@@ -686,17 +696,19 @@ type mContextAccepterMockAcceptContextWithStructArgs struct {
 	callArgs []*ContextAccepterMockAcceptContextWithStructArgsParams
 	mutex    sync.RWMutex
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // ContextAccepterMockAcceptContextWithStructArgsExpectation specifies expectation struct of the contextAccepter.AcceptContextWithStructArgs
 type ContextAccepterMockAcceptContextWithStructArgsExpectation struct {
-	mock      *ContextAccepterMock
-	params    *ContextAccepterMockAcceptContextWithStructArgsParams
-	paramPtrs *ContextAccepterMockAcceptContextWithStructArgsParamPtrs
-	origins   ContextAccepterMockAcceptContextWithStructArgsOrigins
-	results   *ContextAccepterMockAcceptContextWithStructArgsResults
-	Counter   uint64
+	mock               *ContextAccepterMock
+	params             *ContextAccepterMockAcceptContextWithStructArgsParams
+	paramPtrs          *ContextAccepterMockAcceptContextWithStructArgsParamPtrs
+	expectationOrigins ContextAccepterMockAcceptContextWithStructArgsExpectationOrigins
+	results            *ContextAccepterMockAcceptContextWithStructArgsResults
+	returnOrigin       string
+	Counter            uint64
 }
 
 // ContextAccepterMockAcceptContextWithStructArgsParams contains parameters of the contextAccepter.AcceptContextWithStructArgs
@@ -718,7 +730,7 @@ type ContextAccepterMockAcceptContextWithStructArgsResults struct {
 }
 
 // ContextAccepterMockAcceptContextWithStructArgsOrigins contains origins of expectations of the contextAccepter.AcceptContextWithStructArgs
-type ContextAccepterMockAcceptContextWithStructArgsOrigins struct {
+type ContextAccepterMockAcceptContextWithStructArgsExpectationOrigins struct {
 	origin    string
 	originCtx string
 	originS1  string
@@ -749,7 +761,7 @@ func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStruct
 	}
 
 	mmAcceptContextWithStructArgs.defaultExpectation.params = &ContextAccepterMockAcceptContextWithStructArgsParams{ctx, s1}
-	mmAcceptContextWithStructArgs.defaultExpectation.origins.origin = minimock.CallerInfo(1)
+	mmAcceptContextWithStructArgs.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmAcceptContextWithStructArgs.expectations {
 		if minimock.Equal(e.params, mmAcceptContextWithStructArgs.defaultExpectation.params) {
 			mmAcceptContextWithStructArgs.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmAcceptContextWithStructArgs.defaultExpectation.params)
@@ -777,7 +789,7 @@ func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStruct
 		mmAcceptContextWithStructArgs.defaultExpectation.paramPtrs = &ContextAccepterMockAcceptContextWithStructArgsParamPtrs{}
 	}
 	mmAcceptContextWithStructArgs.defaultExpectation.paramPtrs.ctx = &ctx
-	mmAcceptContextWithStructArgs.defaultExpectation.origins.originCtx = minimock.CallerInfo(1)
+	mmAcceptContextWithStructArgs.defaultExpectation.expectationOrigins.originCtx = minimock.CallerInfo(1)
 
 	return mmAcceptContextWithStructArgs
 }
@@ -800,7 +812,7 @@ func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStruct
 		mmAcceptContextWithStructArgs.defaultExpectation.paramPtrs = &ContextAccepterMockAcceptContextWithStructArgsParamPtrs{}
 	}
 	mmAcceptContextWithStructArgs.defaultExpectation.paramPtrs.s1 = &s1
-	mmAcceptContextWithStructArgs.defaultExpectation.origins.originS1 = minimock.CallerInfo(1)
+	mmAcceptContextWithStructArgs.defaultExpectation.expectationOrigins.originS1 = minimock.CallerInfo(1)
 
 	return mmAcceptContextWithStructArgs
 }
@@ -826,6 +838,7 @@ func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStruct
 		mmAcceptContextWithStructArgs.defaultExpectation = &ContextAccepterMockAcceptContextWithStructArgsExpectation{mock: mmAcceptContextWithStructArgs.mock}
 	}
 	mmAcceptContextWithStructArgs.defaultExpectation.results = &ContextAccepterMockAcceptContextWithStructArgsResults{i1, err}
+	mmAcceptContextWithStructArgs.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmAcceptContextWithStructArgs.mock
 }
 
@@ -840,6 +853,7 @@ func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStruct
 	}
 
 	mmAcceptContextWithStructArgs.mock.funcAcceptContextWithStructArgs = f
+	mmAcceptContextWithStructArgs.mock.funcAcceptContextWithStructArgsOrigin = minimock.CallerInfo(1)
 	return mmAcceptContextWithStructArgs.mock
 }
 
@@ -851,8 +865,9 @@ func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStruct
 	}
 
 	expectation := &ContextAccepterMockAcceptContextWithStructArgsExpectation{
-		mock:   mmAcceptContextWithStructArgs.mock,
-		params: &ContextAccepterMockAcceptContextWithStructArgsParams{ctx, s1},
+		mock:               mmAcceptContextWithStructArgs.mock,
+		params:             &ContextAccepterMockAcceptContextWithStructArgsParams{ctx, s1},
+		expectationOrigins: ContextAccepterMockAcceptContextWithStructArgsExpectationOrigins{origin: minimock.CallerInfo(1)},
 	}
 	mmAcceptContextWithStructArgs.expectations = append(mmAcceptContextWithStructArgs.expectations, expectation)
 	return expectation
@@ -870,6 +885,7 @@ func (mmAcceptContextWithStructArgs *mContextAccepterMockAcceptContextWithStruct
 		mmAcceptContextWithStructArgs.mock.t.Fatalf("Times of ContextAccepterMock.AcceptContextWithStructArgs mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmAcceptContextWithStructArgs.expectedInvocations, n)
+	mmAcceptContextWithStructArgs.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmAcceptContextWithStructArgs
 }
 
@@ -889,9 +905,7 @@ func (mmAcceptContextWithStructArgs *ContextAccepterMock) AcceptContextWithStruc
 	mm_atomic.AddUint64(&mmAcceptContextWithStructArgs.beforeAcceptContextWithStructArgsCounter, 1)
 	defer mm_atomic.AddUint64(&mmAcceptContextWithStructArgs.afterAcceptContextWithStructArgsCounter, 1)
 
-	if helper, ok := mmAcceptContextWithStructArgs.t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
+	mmAcceptContextWithStructArgs.t.Helper()
 
 	if mmAcceptContextWithStructArgs.inspectFuncAcceptContextWithStructArgs != nil {
 		mmAcceptContextWithStructArgs.inspectFuncAcceptContextWithStructArgs(ctx, s1)
@@ -921,18 +935,18 @@ func (mmAcceptContextWithStructArgs *ContextAccepterMock) AcceptContextWithStruc
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.ctx != nil && !minimock.Equal(*mm_want_ptrs.ctx, mm_got.ctx) {
-				mmAcceptContextWithStructArgs.t.Errorf("ContextAccepterMock.AcceptContextWithStructArgs got unexpected parameter ctx expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.defaultExpectation.origins.originCtx, *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
+				mmAcceptContextWithStructArgs.t.Errorf("ContextAccepterMock.AcceptContextWithStructArgs got unexpected parameter ctx, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.defaultExpectation.expectationOrigins.originCtx, *mm_want_ptrs.ctx, mm_got.ctx, minimock.Diff(*mm_want_ptrs.ctx, mm_got.ctx))
 			}
 
 			if mm_want_ptrs.s1 != nil && !minimock.Equal(*mm_want_ptrs.s1, mm_got.s1) {
-				mmAcceptContextWithStructArgs.t.Errorf("ContextAccepterMock.AcceptContextWithStructArgs got unexpected parameter s1 expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.defaultExpectation.origins.originS1, *mm_want_ptrs.s1, mm_got.s1, minimock.Diff(*mm_want_ptrs.s1, mm_got.s1))
+				mmAcceptContextWithStructArgs.t.Errorf("ContextAccepterMock.AcceptContextWithStructArgs got unexpected parameter s1, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.defaultExpectation.expectationOrigins.originS1, *mm_want_ptrs.s1, mm_got.s1, minimock.Diff(*mm_want_ptrs.s1, mm_got.s1))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmAcceptContextWithStructArgs.t.Errorf("ContextAccepterMock.AcceptContextWithStructArgs got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-				mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmAcceptContextWithStructArgs.t.Errorf("ContextAccepterMock.AcceptContextWithStructArgs got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		mm_results := mmAcceptContextWithStructArgs.AcceptContextWithStructArgsMock.defaultExpectation.results
@@ -992,7 +1006,7 @@ func (m *ContextAccepterMock) MinimockAcceptContextWithStructArgsDone() bool {
 func (m *ContextAccepterMock) MinimockAcceptContextWithStructArgsInspect() {
 	for _, e := range m.AcceptContextWithStructArgsMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContextWithStructArgs with params: %#v", *e.params)
+			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContextWithStructArgs at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
 		}
 	}
 
@@ -1000,19 +1014,19 @@ func (m *ContextAccepterMock) MinimockAcceptContextWithStructArgsInspect() {
 	// if default expectation was set then invocations count should be greater than zero
 	if m.AcceptContextWithStructArgsMock.defaultExpectation != nil && afterAcceptContextWithStructArgsCounter < 1 {
 		if m.AcceptContextWithStructArgsMock.defaultExpectation.params == nil {
-			m.t.Error("Expected call to ContextAccepterMock.AcceptContextWithStructArgs")
+			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContextWithStructArgs at\n%s", m.AcceptContextWithStructArgsMock.defaultExpectation.returnOrigin)
 		} else {
-			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContextWithStructArgs with params: %#v", *m.AcceptContextWithStructArgsMock.defaultExpectation.params)
+			m.t.Errorf("Expected call to ContextAccepterMock.AcceptContextWithStructArgs at\n%s with params: %#v", m.AcceptContextWithStructArgsMock.defaultExpectation.expectationOrigins.origin, *m.AcceptContextWithStructArgsMock.defaultExpectation.params)
 		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcAcceptContextWithStructArgs != nil && afterAcceptContextWithStructArgsCounter < 1 {
-		m.t.Error("Expected call to ContextAccepterMock.AcceptContextWithStructArgs")
+		m.t.Errorf("Expected call to ContextAccepterMock.AcceptContextWithStructArgs at\n%s", m.funcAcceptContextWithStructArgsOrigin)
 	}
 
 	if !m.AcceptContextWithStructArgsMock.invocationsDone() && afterAcceptContextWithStructArgsCounter > 0 {
-		m.t.Errorf("Expected %d calls to ContextAccepterMock.AcceptContextWithStructArgs but found %d calls",
-			mm_atomic.LoadUint64(&m.AcceptContextWithStructArgsMock.expectedInvocations), afterAcceptContextWithStructArgsCounter)
+		m.t.Errorf("Expected %d calls to ContextAccepterMock.AcceptContextWithStructArgs at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.AcceptContextWithStructArgsMock.expectedInvocations), m.AcceptContextWithStructArgsMock.expectedInvocationsOrigin, afterAcceptContextWithStructArgsCounter)
 	}
 }
 

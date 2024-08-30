@@ -18,6 +18,7 @@ type GenericInlineUnionWithManyTypesMock[T int | float64 | string] struct {
 	finishOnce sync.Once
 
 	funcName          func(t1 T)
+	funcNameOrigin    string
 	inspectFuncName   func(t1 T)
 	afterNameCounter  uint64
 	beforeNameCounter uint64
@@ -49,17 +50,19 @@ type mGenericInlineUnionWithManyTypesMockName[T int | float64 | string] struct {
 	callArgs []*GenericInlineUnionWithManyTypesMockNameParams[T]
 	mutex    sync.RWMutex
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // GenericInlineUnionWithManyTypesMockNameExpectation specifies expectation struct of the genericInlineUnionWithManyTypes.Name
 type GenericInlineUnionWithManyTypesMockNameExpectation[T int | float64 | string] struct {
-	mock      *GenericInlineUnionWithManyTypesMock[T]
-	params    *GenericInlineUnionWithManyTypesMockNameParams[T]
-	paramPtrs *GenericInlineUnionWithManyTypesMockNameParamPtrs[T]
-	origins   GenericInlineUnionWithManyTypesMockNameOrigins
+	mock               *GenericInlineUnionWithManyTypesMock[T]
+	params             *GenericInlineUnionWithManyTypesMockNameParams[T]
+	paramPtrs          *GenericInlineUnionWithManyTypesMockNameParamPtrs[T]
+	expectationOrigins GenericInlineUnionWithManyTypesMockNameExpectationOrigins
 
-	Counter uint64
+	returnOrigin string
+	Counter      uint64
 }
 
 // GenericInlineUnionWithManyTypesMockNameParams contains parameters of the genericInlineUnionWithManyTypes.Name
@@ -73,7 +76,7 @@ type GenericInlineUnionWithManyTypesMockNameParamPtrs[T int | float64 | string] 
 }
 
 // GenericInlineUnionWithManyTypesMockNameOrigins contains origins of expectations of the genericInlineUnionWithManyTypes.Name
-type GenericInlineUnionWithManyTypesMockNameOrigins struct {
+type GenericInlineUnionWithManyTypesMockNameExpectationOrigins struct {
 	origin   string
 	originT1 string
 }
@@ -103,7 +106,7 @@ func (mmName *mGenericInlineUnionWithManyTypesMockName[T]) Expect(t1 T) *mGeneri
 	}
 
 	mmName.defaultExpectation.params = &GenericInlineUnionWithManyTypesMockNameParams[T]{t1}
-	mmName.defaultExpectation.origins.origin = minimock.CallerInfo(1)
+	mmName.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmName.expectations {
 		if minimock.Equal(e.params, mmName.defaultExpectation.params) {
 			mmName.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmName.defaultExpectation.params)
@@ -131,7 +134,7 @@ func (mmName *mGenericInlineUnionWithManyTypesMockName[T]) ExpectT1Param1(t1 T) 
 		mmName.defaultExpectation.paramPtrs = &GenericInlineUnionWithManyTypesMockNameParamPtrs[T]{}
 	}
 	mmName.defaultExpectation.paramPtrs.t1 = &t1
-	mmName.defaultExpectation.origins.originT1 = minimock.CallerInfo(1)
+	mmName.defaultExpectation.expectationOrigins.originT1 = minimock.CallerInfo(1)
 
 	return mmName
 }
@@ -157,6 +160,7 @@ func (mmName *mGenericInlineUnionWithManyTypesMockName[T]) Return() *GenericInli
 		mmName.defaultExpectation = &GenericInlineUnionWithManyTypesMockNameExpectation[T]{mock: mmName.mock}
 	}
 
+	mmName.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmName.mock
 }
 
@@ -171,6 +175,7 @@ func (mmName *mGenericInlineUnionWithManyTypesMockName[T]) Set(f func(t1 T)) *Ge
 	}
 
 	mmName.mock.funcName = f
+	mmName.mock.funcNameOrigin = minimock.CallerInfo(1)
 	return mmName.mock
 }
 
@@ -180,6 +185,7 @@ func (mmName *mGenericInlineUnionWithManyTypesMockName[T]) Times(n uint64) *mGen
 		mmName.mock.t.Fatalf("Times of GenericInlineUnionWithManyTypesMock.Name mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmName.expectedInvocations, n)
+	mmName.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmName
 }
 
@@ -199,9 +205,7 @@ func (mmName *GenericInlineUnionWithManyTypesMock[T]) Name(t1 T) {
 	mm_atomic.AddUint64(&mmName.beforeNameCounter, 1)
 	defer mm_atomic.AddUint64(&mmName.afterNameCounter, 1)
 
-	if helper, ok := mmName.t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
+	mmName.t.Helper()
 
 	if mmName.inspectFuncName != nil {
 		mmName.inspectFuncName(t1)
@@ -231,13 +235,13 @@ func (mmName *GenericInlineUnionWithManyTypesMock[T]) Name(t1 T) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.t1 != nil && !minimock.Equal(*mm_want_ptrs.t1, mm_got.t1) {
-				mmName.t.Errorf("GenericInlineUnionWithManyTypesMock.Name got unexpected parameter t1 expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmName.NameMock.defaultExpectation.origins.originT1, *mm_want_ptrs.t1, mm_got.t1, minimock.Diff(*mm_want_ptrs.t1, mm_got.t1))
+				mmName.t.Errorf("GenericInlineUnionWithManyTypesMock.Name got unexpected parameter t1, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmName.NameMock.defaultExpectation.expectationOrigins.originT1, *mm_want_ptrs.t1, mm_got.t1, minimock.Diff(*mm_want_ptrs.t1, mm_got.t1))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmName.t.Errorf("GenericInlineUnionWithManyTypesMock.Name got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-				mmName.NameMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmName.t.Errorf("GenericInlineUnionWithManyTypesMock.Name got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmName.NameMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
@@ -295,7 +299,7 @@ func (m *GenericInlineUnionWithManyTypesMock[T]) MinimockNameDone() bool {
 func (m *GenericInlineUnionWithManyTypesMock[T]) MinimockNameInspect() {
 	for _, e := range m.NameMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to GenericInlineUnionWithManyTypesMock.Name with params: %#v", *e.params)
+			m.t.Errorf("Expected call to GenericInlineUnionWithManyTypesMock.Name at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
 		}
 	}
 
@@ -303,19 +307,19 @@ func (m *GenericInlineUnionWithManyTypesMock[T]) MinimockNameInspect() {
 	// if default expectation was set then invocations count should be greater than zero
 	if m.NameMock.defaultExpectation != nil && afterNameCounter < 1 {
 		if m.NameMock.defaultExpectation.params == nil {
-			m.t.Error("Expected call to GenericInlineUnionWithManyTypesMock.Name")
+			m.t.Errorf("Expected call to GenericInlineUnionWithManyTypesMock.Name at\n%s", m.NameMock.defaultExpectation.returnOrigin)
 		} else {
-			m.t.Errorf("Expected call to GenericInlineUnionWithManyTypesMock.Name with params: %#v", *m.NameMock.defaultExpectation.params)
+			m.t.Errorf("Expected call to GenericInlineUnionWithManyTypesMock.Name at\n%s with params: %#v", m.NameMock.defaultExpectation.expectationOrigins.origin, *m.NameMock.defaultExpectation.params)
 		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcName != nil && afterNameCounter < 1 {
-		m.t.Error("Expected call to GenericInlineUnionWithManyTypesMock.Name")
+		m.t.Errorf("Expected call to GenericInlineUnionWithManyTypesMock.Name at\n%s", m.funcNameOrigin)
 	}
 
 	if !m.NameMock.invocationsDone() && afterNameCounter > 0 {
-		m.t.Errorf("Expected %d calls to GenericInlineUnionWithManyTypesMock.Name but found %d calls",
-			mm_atomic.LoadUint64(&m.NameMock.expectedInvocations), afterNameCounter)
+		m.t.Errorf("Expected %d calls to GenericInlineUnionWithManyTypesMock.Name at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.NameMock.expectedInvocations), m.NameMock.expectedInvocationsOrigin, afterNameCounter)
 	}
 }
 

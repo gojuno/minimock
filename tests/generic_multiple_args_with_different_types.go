@@ -19,6 +19,7 @@ type GenericMultipleTypesMock[T proto.Message, K any] struct {
 	finishOnce sync.Once
 
 	funcName          func(t1 T, k1 K)
+	funcNameOrigin    string
 	inspectFuncName   func(t1 T, k1 K)
 	afterNameCounter  uint64
 	beforeNameCounter uint64
@@ -50,17 +51,19 @@ type mGenericMultipleTypesMockName[T proto.Message, K any] struct {
 	callArgs []*GenericMultipleTypesMockNameParams[T, K]
 	mutex    sync.RWMutex
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // GenericMultipleTypesMockNameExpectation specifies expectation struct of the genericMultipleTypes.Name
 type GenericMultipleTypesMockNameExpectation[T proto.Message, K any] struct {
-	mock      *GenericMultipleTypesMock[T, K]
-	params    *GenericMultipleTypesMockNameParams[T, K]
-	paramPtrs *GenericMultipleTypesMockNameParamPtrs[T, K]
-	origins   GenericMultipleTypesMockNameOrigins
+	mock               *GenericMultipleTypesMock[T, K]
+	params             *GenericMultipleTypesMockNameParams[T, K]
+	paramPtrs          *GenericMultipleTypesMockNameParamPtrs[T, K]
+	expectationOrigins GenericMultipleTypesMockNameExpectationOrigins
 
-	Counter uint64
+	returnOrigin string
+	Counter      uint64
 }
 
 // GenericMultipleTypesMockNameParams contains parameters of the genericMultipleTypes.Name
@@ -76,7 +79,7 @@ type GenericMultipleTypesMockNameParamPtrs[T proto.Message, K any] struct {
 }
 
 // GenericMultipleTypesMockNameOrigins contains origins of expectations of the genericMultipleTypes.Name
-type GenericMultipleTypesMockNameOrigins struct {
+type GenericMultipleTypesMockNameExpectationOrigins struct {
 	origin   string
 	originT1 string
 	originK1 string
@@ -107,7 +110,7 @@ func (mmName *mGenericMultipleTypesMockName[T, K]) Expect(t1 T, k1 K) *mGenericM
 	}
 
 	mmName.defaultExpectation.params = &GenericMultipleTypesMockNameParams[T, K]{t1, k1}
-	mmName.defaultExpectation.origins.origin = minimock.CallerInfo(1)
+	mmName.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmName.expectations {
 		if minimock.Equal(e.params, mmName.defaultExpectation.params) {
 			mmName.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmName.defaultExpectation.params)
@@ -135,7 +138,7 @@ func (mmName *mGenericMultipleTypesMockName[T, K]) ExpectT1Param1(t1 T) *mGeneri
 		mmName.defaultExpectation.paramPtrs = &GenericMultipleTypesMockNameParamPtrs[T, K]{}
 	}
 	mmName.defaultExpectation.paramPtrs.t1 = &t1
-	mmName.defaultExpectation.origins.originT1 = minimock.CallerInfo(1)
+	mmName.defaultExpectation.expectationOrigins.originT1 = minimock.CallerInfo(1)
 
 	return mmName
 }
@@ -158,7 +161,7 @@ func (mmName *mGenericMultipleTypesMockName[T, K]) ExpectK1Param2(k1 K) *mGeneri
 		mmName.defaultExpectation.paramPtrs = &GenericMultipleTypesMockNameParamPtrs[T, K]{}
 	}
 	mmName.defaultExpectation.paramPtrs.k1 = &k1
-	mmName.defaultExpectation.origins.originK1 = minimock.CallerInfo(1)
+	mmName.defaultExpectation.expectationOrigins.originK1 = minimock.CallerInfo(1)
 
 	return mmName
 }
@@ -184,6 +187,7 @@ func (mmName *mGenericMultipleTypesMockName[T, K]) Return() *GenericMultipleType
 		mmName.defaultExpectation = &GenericMultipleTypesMockNameExpectation[T, K]{mock: mmName.mock}
 	}
 
+	mmName.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmName.mock
 }
 
@@ -198,6 +202,7 @@ func (mmName *mGenericMultipleTypesMockName[T, K]) Set(f func(t1 T, k1 K)) *Gene
 	}
 
 	mmName.mock.funcName = f
+	mmName.mock.funcNameOrigin = minimock.CallerInfo(1)
 	return mmName.mock
 }
 
@@ -207,6 +212,7 @@ func (mmName *mGenericMultipleTypesMockName[T, K]) Times(n uint64) *mGenericMult
 		mmName.mock.t.Fatalf("Times of GenericMultipleTypesMock.Name mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmName.expectedInvocations, n)
+	mmName.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmName
 }
 
@@ -226,9 +232,7 @@ func (mmName *GenericMultipleTypesMock[T, K]) Name(t1 T, k1 K) {
 	mm_atomic.AddUint64(&mmName.beforeNameCounter, 1)
 	defer mm_atomic.AddUint64(&mmName.afterNameCounter, 1)
 
-	if helper, ok := mmName.t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
+	mmName.t.Helper()
 
 	if mmName.inspectFuncName != nil {
 		mmName.inspectFuncName(t1, k1)
@@ -258,18 +262,18 @@ func (mmName *GenericMultipleTypesMock[T, K]) Name(t1 T, k1 K) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.t1 != nil && !minimock.Equal(*mm_want_ptrs.t1, mm_got.t1) {
-				mmName.t.Errorf("GenericMultipleTypesMock.Name got unexpected parameter t1 expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmName.NameMock.defaultExpectation.origins.originT1, *mm_want_ptrs.t1, mm_got.t1, minimock.Diff(*mm_want_ptrs.t1, mm_got.t1))
+				mmName.t.Errorf("GenericMultipleTypesMock.Name got unexpected parameter t1, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmName.NameMock.defaultExpectation.expectationOrigins.originT1, *mm_want_ptrs.t1, mm_got.t1, minimock.Diff(*mm_want_ptrs.t1, mm_got.t1))
 			}
 
 			if mm_want_ptrs.k1 != nil && !minimock.Equal(*mm_want_ptrs.k1, mm_got.k1) {
-				mmName.t.Errorf("GenericMultipleTypesMock.Name got unexpected parameter k1 expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmName.NameMock.defaultExpectation.origins.originK1, *mm_want_ptrs.k1, mm_got.k1, minimock.Diff(*mm_want_ptrs.k1, mm_got.k1))
+				mmName.t.Errorf("GenericMultipleTypesMock.Name got unexpected parameter k1, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmName.NameMock.defaultExpectation.expectationOrigins.originK1, *mm_want_ptrs.k1, mm_got.k1, minimock.Diff(*mm_want_ptrs.k1, mm_got.k1))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmName.t.Errorf("GenericMultipleTypesMock.Name got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-				mmName.NameMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmName.t.Errorf("GenericMultipleTypesMock.Name got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmName.NameMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
@@ -327,7 +331,7 @@ func (m *GenericMultipleTypesMock[T, K]) MinimockNameDone() bool {
 func (m *GenericMultipleTypesMock[T, K]) MinimockNameInspect() {
 	for _, e := range m.NameMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to GenericMultipleTypesMock.Name with params: %#v", *e.params)
+			m.t.Errorf("Expected call to GenericMultipleTypesMock.Name at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
 		}
 	}
 
@@ -335,19 +339,19 @@ func (m *GenericMultipleTypesMock[T, K]) MinimockNameInspect() {
 	// if default expectation was set then invocations count should be greater than zero
 	if m.NameMock.defaultExpectation != nil && afterNameCounter < 1 {
 		if m.NameMock.defaultExpectation.params == nil {
-			m.t.Error("Expected call to GenericMultipleTypesMock.Name")
+			m.t.Errorf("Expected call to GenericMultipleTypesMock.Name at\n%s", m.NameMock.defaultExpectation.returnOrigin)
 		} else {
-			m.t.Errorf("Expected call to GenericMultipleTypesMock.Name with params: %#v", *m.NameMock.defaultExpectation.params)
+			m.t.Errorf("Expected call to GenericMultipleTypesMock.Name at\n%s with params: %#v", m.NameMock.defaultExpectation.expectationOrigins.origin, *m.NameMock.defaultExpectation.params)
 		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcName != nil && afterNameCounter < 1 {
-		m.t.Error("Expected call to GenericMultipleTypesMock.Name")
+		m.t.Errorf("Expected call to GenericMultipleTypesMock.Name at\n%s", m.funcNameOrigin)
 	}
 
 	if !m.NameMock.invocationsDone() && afterNameCounter > 0 {
-		m.t.Errorf("Expected %d calls to GenericMultipleTypesMock.Name but found %d calls",
-			mm_atomic.LoadUint64(&m.NameMock.expectedInvocations), afterNameCounter)
+		m.t.Errorf("Expected %d calls to GenericMultipleTypesMock.Name at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.NameMock.expectedInvocations), m.NameMock.expectedInvocationsOrigin, afterNameCounter)
 	}
 }
 

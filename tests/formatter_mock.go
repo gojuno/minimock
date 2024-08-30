@@ -18,6 +18,7 @@ type FormatterMock struct {
 	finishOnce sync.Once
 
 	funcFormat          func(s1 string, p1 ...interface{}) (s2 string)
+	funcFormatOrigin    string
 	inspectFuncFormat   func(s1 string, p1 ...interface{})
 	afterFormatCounter  uint64
 	beforeFormatCounter uint64
@@ -49,17 +50,19 @@ type mFormatterMockFormat struct {
 	callArgs []*FormatterMockFormatParams
 	mutex    sync.RWMutex
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // FormatterMockFormatExpectation specifies expectation struct of the Formatter.Format
 type FormatterMockFormatExpectation struct {
-	mock      *FormatterMock
-	params    *FormatterMockFormatParams
-	paramPtrs *FormatterMockFormatParamPtrs
-	origins   FormatterMockFormatOrigins
-	results   *FormatterMockFormatResults
-	Counter   uint64
+	mock               *FormatterMock
+	params             *FormatterMockFormatParams
+	paramPtrs          *FormatterMockFormatParamPtrs
+	expectationOrigins FormatterMockFormatExpectationOrigins
+	results            *FormatterMockFormatResults
+	returnOrigin       string
+	Counter            uint64
 }
 
 // FormatterMockFormatParams contains parameters of the Formatter.Format
@@ -80,7 +83,7 @@ type FormatterMockFormatResults struct {
 }
 
 // FormatterMockFormatOrigins contains origins of expectations of the Formatter.Format
-type FormatterMockFormatOrigins struct {
+type FormatterMockFormatExpectationOrigins struct {
 	origin   string
 	originS1 string
 	originP1 string
@@ -111,7 +114,7 @@ func (mmFormat *mFormatterMockFormat) Expect(s1 string, p1 ...interface{}) *mFor
 	}
 
 	mmFormat.defaultExpectation.params = &FormatterMockFormatParams{s1, p1}
-	mmFormat.defaultExpectation.origins.origin = minimock.CallerInfo(1)
+	mmFormat.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmFormat.expectations {
 		if minimock.Equal(e.params, mmFormat.defaultExpectation.params) {
 			mmFormat.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmFormat.defaultExpectation.params)
@@ -139,7 +142,7 @@ func (mmFormat *mFormatterMockFormat) ExpectS1Param1(s1 string) *mFormatterMockF
 		mmFormat.defaultExpectation.paramPtrs = &FormatterMockFormatParamPtrs{}
 	}
 	mmFormat.defaultExpectation.paramPtrs.s1 = &s1
-	mmFormat.defaultExpectation.origins.originS1 = minimock.CallerInfo(1)
+	mmFormat.defaultExpectation.expectationOrigins.originS1 = minimock.CallerInfo(1)
 
 	return mmFormat
 }
@@ -162,7 +165,7 @@ func (mmFormat *mFormatterMockFormat) ExpectP1Param2(p1 ...interface{}) *mFormat
 		mmFormat.defaultExpectation.paramPtrs = &FormatterMockFormatParamPtrs{}
 	}
 	mmFormat.defaultExpectation.paramPtrs.p1 = &p1
-	mmFormat.defaultExpectation.origins.originP1 = minimock.CallerInfo(1)
+	mmFormat.defaultExpectation.expectationOrigins.originP1 = minimock.CallerInfo(1)
 
 	return mmFormat
 }
@@ -188,6 +191,7 @@ func (mmFormat *mFormatterMockFormat) Return(s2 string) *FormatterMock {
 		mmFormat.defaultExpectation = &FormatterMockFormatExpectation{mock: mmFormat.mock}
 	}
 	mmFormat.defaultExpectation.results = &FormatterMockFormatResults{s2}
+	mmFormat.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmFormat.mock
 }
 
@@ -202,6 +206,7 @@ func (mmFormat *mFormatterMockFormat) Set(f func(s1 string, p1 ...interface{}) (
 	}
 
 	mmFormat.mock.funcFormat = f
+	mmFormat.mock.funcFormatOrigin = minimock.CallerInfo(1)
 	return mmFormat.mock
 }
 
@@ -213,8 +218,9 @@ func (mmFormat *mFormatterMockFormat) When(s1 string, p1 ...interface{}) *Format
 	}
 
 	expectation := &FormatterMockFormatExpectation{
-		mock:   mmFormat.mock,
-		params: &FormatterMockFormatParams{s1, p1},
+		mock:               mmFormat.mock,
+		params:             &FormatterMockFormatParams{s1, p1},
+		expectationOrigins: FormatterMockFormatExpectationOrigins{origin: minimock.CallerInfo(1)},
 	}
 	mmFormat.expectations = append(mmFormat.expectations, expectation)
 	return expectation
@@ -232,6 +238,7 @@ func (mmFormat *mFormatterMockFormat) Times(n uint64) *mFormatterMockFormat {
 		mmFormat.mock.t.Fatalf("Times of FormatterMock.Format mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmFormat.expectedInvocations, n)
+	mmFormat.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmFormat
 }
 
@@ -251,9 +258,7 @@ func (mmFormat *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) 
 	mm_atomic.AddUint64(&mmFormat.beforeFormatCounter, 1)
 	defer mm_atomic.AddUint64(&mmFormat.afterFormatCounter, 1)
 
-	if helper, ok := mmFormat.t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
+	mmFormat.t.Helper()
 
 	if mmFormat.inspectFuncFormat != nil {
 		mmFormat.inspectFuncFormat(s1, p1...)
@@ -283,18 +288,18 @@ func (mmFormat *FormatterMock) Format(s1 string, p1 ...interface{}) (s2 string) 
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.s1 != nil && !minimock.Equal(*mm_want_ptrs.s1, mm_got.s1) {
-				mmFormat.t.Errorf("FormatterMock.Format got unexpected parameter s1 expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmFormat.FormatMock.defaultExpectation.origins.originS1, *mm_want_ptrs.s1, mm_got.s1, minimock.Diff(*mm_want_ptrs.s1, mm_got.s1))
+				mmFormat.t.Errorf("FormatterMock.Format got unexpected parameter s1, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmFormat.FormatMock.defaultExpectation.expectationOrigins.originS1, *mm_want_ptrs.s1, mm_got.s1, minimock.Diff(*mm_want_ptrs.s1, mm_got.s1))
 			}
 
 			if mm_want_ptrs.p1 != nil && !minimock.Equal(*mm_want_ptrs.p1, mm_got.p1) {
-				mmFormat.t.Errorf("FormatterMock.Format got unexpected parameter p1 expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmFormat.FormatMock.defaultExpectation.origins.originP1, *mm_want_ptrs.p1, mm_got.p1, minimock.Diff(*mm_want_ptrs.p1, mm_got.p1))
+				mmFormat.t.Errorf("FormatterMock.Format got unexpected parameter p1, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmFormat.FormatMock.defaultExpectation.expectationOrigins.originP1, *mm_want_ptrs.p1, mm_got.p1, minimock.Diff(*mm_want_ptrs.p1, mm_got.p1))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmFormat.t.Errorf("FormatterMock.Format got unexpected parameters expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-				mmFormat.FormatMock.defaultExpectation.origins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmFormat.t.Errorf("FormatterMock.Format got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmFormat.FormatMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		mm_results := mmFormat.FormatMock.defaultExpectation.results
@@ -354,7 +359,7 @@ func (m *FormatterMock) MinimockFormatDone() bool {
 func (m *FormatterMock) MinimockFormatInspect() {
 	for _, e := range m.FormatMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to FormatterMock.Format with params: %#v", *e.params)
+			m.t.Errorf("Expected call to FormatterMock.Format at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
 		}
 	}
 
@@ -362,19 +367,19 @@ func (m *FormatterMock) MinimockFormatInspect() {
 	// if default expectation was set then invocations count should be greater than zero
 	if m.FormatMock.defaultExpectation != nil && afterFormatCounter < 1 {
 		if m.FormatMock.defaultExpectation.params == nil {
-			m.t.Error("Expected call to FormatterMock.Format")
+			m.t.Errorf("Expected call to FormatterMock.Format at\n%s", m.FormatMock.defaultExpectation.returnOrigin)
 		} else {
-			m.t.Errorf("Expected call to FormatterMock.Format with params: %#v", *m.FormatMock.defaultExpectation.params)
+			m.t.Errorf("Expected call to FormatterMock.Format at\n%s with params: %#v", m.FormatMock.defaultExpectation.expectationOrigins.origin, *m.FormatMock.defaultExpectation.params)
 		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcFormat != nil && afterFormatCounter < 1 {
-		m.t.Error("Expected call to FormatterMock.Format")
+		m.t.Errorf("Expected call to FormatterMock.Format at\n%s", m.funcFormatOrigin)
 	}
 
 	if !m.FormatMock.invocationsDone() && afterFormatCounter > 0 {
-		m.t.Errorf("Expected %d calls to FormatterMock.Format but found %d calls",
-			mm_atomic.LoadUint64(&m.FormatMock.expectedInvocations), afterFormatCounter)
+		m.t.Errorf("Expected %d calls to FormatterMock.Format at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.FormatMock.expectedInvocations), m.FormatMock.expectedInvocationsOrigin, afterFormatCounter)
 	}
 }
 

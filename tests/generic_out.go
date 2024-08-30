@@ -18,6 +18,7 @@ type GenericOutMock[T any] struct {
 	finishOnce sync.Once
 
 	funcName          func() (t1 T)
+	funcNameOrigin    string
 	inspectFuncName   func()
 	afterNameCounter  uint64
 	beforeNameCounter uint64
@@ -45,15 +46,17 @@ type mGenericOutMockName[T any] struct {
 	defaultExpectation *GenericOutMockNameExpectation[T]
 	expectations       []*GenericOutMockNameExpectation[T]
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // GenericOutMockNameExpectation specifies expectation struct of the genericOut.Name
 type GenericOutMockNameExpectation[T any] struct {
 	mock *GenericOutMock[T]
 
-	results *GenericOutMockNameResults[T]
-	Counter uint64
+	results      *GenericOutMockNameResults[T]
+	returnOrigin string
+	Counter      uint64
 }
 
 // GenericOutMockNameResults contains results of the genericOut.Name
@@ -105,6 +108,7 @@ func (mmName *mGenericOutMockName[T]) Return(t1 T) *GenericOutMock[T] {
 		mmName.defaultExpectation = &GenericOutMockNameExpectation[T]{mock: mmName.mock}
 	}
 	mmName.defaultExpectation.results = &GenericOutMockNameResults[T]{t1}
+	mmName.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmName.mock
 }
 
@@ -119,6 +123,7 @@ func (mmName *mGenericOutMockName[T]) Set(f func() (t1 T)) *GenericOutMock[T] {
 	}
 
 	mmName.mock.funcName = f
+	mmName.mock.funcNameOrigin = minimock.CallerInfo(1)
 	return mmName.mock
 }
 
@@ -128,6 +133,7 @@ func (mmName *mGenericOutMockName[T]) Times(n uint64) *mGenericOutMockName[T] {
 		mmName.mock.t.Fatalf("Times of GenericOutMock.Name mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmName.expectedInvocations, n)
+	mmName.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmName
 }
 
@@ -147,9 +153,7 @@ func (mmName *GenericOutMock[T]) Name() (t1 T) {
 	mm_atomic.AddUint64(&mmName.beforeNameCounter, 1)
 	defer mm_atomic.AddUint64(&mmName.afterNameCounter, 1)
 
-	if helper, ok := mmName.t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
+	mmName.t.Helper()
 
 	if mmName.inspectFuncName != nil {
 		mmName.inspectFuncName()
@@ -209,16 +213,16 @@ func (m *GenericOutMock[T]) MinimockNameInspect() {
 	afterNameCounter := mm_atomic.LoadUint64(&m.afterNameCounter)
 	// if default expectation was set then invocations count should be greater than zero
 	if m.NameMock.defaultExpectation != nil && afterNameCounter < 1 {
-		m.t.Error("Expected call to GenericOutMock.Name")
+		m.t.Errorf("Expected call to GenericOutMock.Name at\n%s", m.NameMock.defaultExpectation.returnOrigin)
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcName != nil && afterNameCounter < 1 {
-		m.t.Error("Expected call to GenericOutMock.Name")
+		m.t.Errorf("Expected call to GenericOutMock.Name at\n%s", m.funcNameOrigin)
 	}
 
 	if !m.NameMock.invocationsDone() && afterNameCounter > 0 {
-		m.t.Errorf("Expected %d calls to GenericOutMock.Name but found %d calls",
-			mm_atomic.LoadUint64(&m.NameMock.expectedInvocations), afterNameCounter)
+		m.t.Errorf("Expected %d calls to GenericOutMock.Name at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.NameMock.expectedInvocations), m.NameMock.expectedInvocationsOrigin, afterNameCounter)
 	}
 }
 
