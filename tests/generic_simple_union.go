@@ -18,6 +18,7 @@ type GenericSimpleUnionMock[T simpleUnion] struct {
 	finishOnce sync.Once
 
 	funcName          func(t1 T)
+	funcNameOrigin    string
 	inspectFuncName   func(t1 T)
 	afterNameCounter  uint64
 	beforeNameCounter uint64
@@ -49,16 +50,19 @@ type mGenericSimpleUnionMockName[T simpleUnion] struct {
 	callArgs []*GenericSimpleUnionMockNameParams[T]
 	mutex    sync.RWMutex
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // GenericSimpleUnionMockNameExpectation specifies expectation struct of the genericSimpleUnion.Name
 type GenericSimpleUnionMockNameExpectation[T simpleUnion] struct {
-	mock      *GenericSimpleUnionMock[T]
-	params    *GenericSimpleUnionMockNameParams[T]
-	paramPtrs *GenericSimpleUnionMockNameParamPtrs[T]
+	mock               *GenericSimpleUnionMock[T]
+	params             *GenericSimpleUnionMockNameParams[T]
+	paramPtrs          *GenericSimpleUnionMockNameParamPtrs[T]
+	expectationOrigins GenericSimpleUnionMockNameExpectationOrigins
 
-	Counter uint64
+	returnOrigin string
+	Counter      uint64
 }
 
 // GenericSimpleUnionMockNameParams contains parameters of the genericSimpleUnion.Name
@@ -69,6 +73,12 @@ type GenericSimpleUnionMockNameParams[T simpleUnion] struct {
 // GenericSimpleUnionMockNameParamPtrs contains pointers to parameters of the genericSimpleUnion.Name
 type GenericSimpleUnionMockNameParamPtrs[T simpleUnion] struct {
 	t1 *T
+}
+
+// GenericSimpleUnionMockNameOrigins contains origins of expectations of the genericSimpleUnion.Name
+type GenericSimpleUnionMockNameExpectationOrigins struct {
+	origin   string
+	originT1 string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -96,6 +106,7 @@ func (mmName *mGenericSimpleUnionMockName[T]) Expect(t1 T) *mGenericSimpleUnionM
 	}
 
 	mmName.defaultExpectation.params = &GenericSimpleUnionMockNameParams[T]{t1}
+	mmName.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmName.expectations {
 		if minimock.Equal(e.params, mmName.defaultExpectation.params) {
 			mmName.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmName.defaultExpectation.params)
@@ -123,6 +134,7 @@ func (mmName *mGenericSimpleUnionMockName[T]) ExpectT1Param1(t1 T) *mGenericSimp
 		mmName.defaultExpectation.paramPtrs = &GenericSimpleUnionMockNameParamPtrs[T]{}
 	}
 	mmName.defaultExpectation.paramPtrs.t1 = &t1
+	mmName.defaultExpectation.expectationOrigins.originT1 = minimock.CallerInfo(1)
 
 	return mmName
 }
@@ -148,6 +160,7 @@ func (mmName *mGenericSimpleUnionMockName[T]) Return() *GenericSimpleUnionMock[T
 		mmName.defaultExpectation = &GenericSimpleUnionMockNameExpectation[T]{mock: mmName.mock}
 	}
 
+	mmName.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmName.mock
 }
 
@@ -162,6 +175,7 @@ func (mmName *mGenericSimpleUnionMockName[T]) Set(f func(t1 T)) *GenericSimpleUn
 	}
 
 	mmName.mock.funcName = f
+	mmName.mock.funcNameOrigin = minimock.CallerInfo(1)
 	return mmName.mock
 }
 
@@ -171,6 +185,7 @@ func (mmName *mGenericSimpleUnionMockName[T]) Times(n uint64) *mGenericSimpleUni
 		mmName.mock.t.Fatalf("Times of GenericSimpleUnionMock.Name mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmName.expectedInvocations, n)
+	mmName.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmName
 }
 
@@ -189,6 +204,8 @@ func (mmName *mGenericSimpleUnionMockName[T]) invocationsDone() bool {
 func (mmName *GenericSimpleUnionMock[T]) Name(t1 T) {
 	mm_atomic.AddUint64(&mmName.beforeNameCounter, 1)
 	defer mm_atomic.AddUint64(&mmName.afterNameCounter, 1)
+
+	mmName.t.Helper()
 
 	if mmName.inspectFuncName != nil {
 		mmName.inspectFuncName(t1)
@@ -218,11 +235,13 @@ func (mmName *GenericSimpleUnionMock[T]) Name(t1 T) {
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.t1 != nil && !minimock.Equal(*mm_want_ptrs.t1, mm_got.t1) {
-				mmName.t.Errorf("GenericSimpleUnionMock.Name got unexpected parameter t1, want: %#v, got: %#v%s\n", *mm_want_ptrs.t1, mm_got.t1, minimock.Diff(*mm_want_ptrs.t1, mm_got.t1))
+				mmName.t.Errorf("GenericSimpleUnionMock.Name got unexpected parameter t1, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmName.NameMock.defaultExpectation.expectationOrigins.originT1, *mm_want_ptrs.t1, mm_got.t1, minimock.Diff(*mm_want_ptrs.t1, mm_got.t1))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmName.t.Errorf("GenericSimpleUnionMock.Name got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmName.t.Errorf("GenericSimpleUnionMock.Name got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmName.NameMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		return
@@ -280,7 +299,7 @@ func (m *GenericSimpleUnionMock[T]) MinimockNameDone() bool {
 func (m *GenericSimpleUnionMock[T]) MinimockNameInspect() {
 	for _, e := range m.NameMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to GenericSimpleUnionMock.Name with params: %#v", *e.params)
+			m.t.Errorf("Expected call to GenericSimpleUnionMock.Name at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
 		}
 	}
 
@@ -288,19 +307,19 @@ func (m *GenericSimpleUnionMock[T]) MinimockNameInspect() {
 	// if default expectation was set then invocations count should be greater than zero
 	if m.NameMock.defaultExpectation != nil && afterNameCounter < 1 {
 		if m.NameMock.defaultExpectation.params == nil {
-			m.t.Error("Expected call to GenericSimpleUnionMock.Name")
+			m.t.Errorf("Expected call to GenericSimpleUnionMock.Name at\n%s", m.NameMock.defaultExpectation.returnOrigin)
 		} else {
-			m.t.Errorf("Expected call to GenericSimpleUnionMock.Name with params: %#v", *m.NameMock.defaultExpectation.params)
+			m.t.Errorf("Expected call to GenericSimpleUnionMock.Name at\n%s with params: %#v", m.NameMock.defaultExpectation.expectationOrigins.origin, *m.NameMock.defaultExpectation.params)
 		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcName != nil && afterNameCounter < 1 {
-		m.t.Error("Expected call to GenericSimpleUnionMock.Name")
+		m.t.Errorf("Expected call to GenericSimpleUnionMock.Name at\n%s", m.funcNameOrigin)
 	}
 
 	if !m.NameMock.invocationsDone() && afterNameCounter > 0 {
-		m.t.Errorf("Expected %d calls to GenericSimpleUnionMock.Name but found %d calls",
-			mm_atomic.LoadUint64(&m.NameMock.expectedInvocations), afterNameCounter)
+		m.t.Errorf("Expected %d calls to GenericSimpleUnionMock.Name at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.NameMock.expectedInvocations), m.NameMock.expectedInvocationsOrigin, afterNameCounter)
 	}
 }
 

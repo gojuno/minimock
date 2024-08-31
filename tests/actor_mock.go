@@ -18,6 +18,7 @@ type ActorMock struct {
 	finishOnce sync.Once
 
 	funcAction          func(firstParam string, secondParam int) (i1 int, err error)
+	funcActionOrigin    string
 	inspectFuncAction   func(firstParam string, secondParam int)
 	afterActionCounter  uint64
 	beforeActionCounter uint64
@@ -49,16 +50,19 @@ type mActorMockAction struct {
 	callArgs []*ActorMockActionParams
 	mutex    sync.RWMutex
 
-	expectedInvocations uint64
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
 }
 
 // ActorMockActionExpectation specifies expectation struct of the actor.Action
 type ActorMockActionExpectation struct {
-	mock      *ActorMock
-	params    *ActorMockActionParams
-	paramPtrs *ActorMockActionParamPtrs
-	results   *ActorMockActionResults
-	Counter   uint64
+	mock               *ActorMock
+	params             *ActorMockActionParams
+	paramPtrs          *ActorMockActionParamPtrs
+	expectationOrigins ActorMockActionExpectationOrigins
+	results            *ActorMockActionResults
+	returnOrigin       string
+	Counter            uint64
 }
 
 // ActorMockActionParams contains parameters of the actor.Action
@@ -77,6 +81,13 @@ type ActorMockActionParamPtrs struct {
 type ActorMockActionResults struct {
 	i1  int
 	err error
+}
+
+// ActorMockActionOrigins contains origins of expectations of the actor.Action
+type ActorMockActionExpectationOrigins struct {
+	origin            string
+	originFirstParam  string
+	originSecondParam string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -104,6 +115,7 @@ func (mmAction *mActorMockAction) Expect(firstParam string, secondParam int) *mA
 	}
 
 	mmAction.defaultExpectation.params = &ActorMockActionParams{firstParam, secondParam}
+	mmAction.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmAction.expectations {
 		if minimock.Equal(e.params, mmAction.defaultExpectation.params) {
 			mmAction.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmAction.defaultExpectation.params)
@@ -131,6 +143,7 @@ func (mmAction *mActorMockAction) ExpectFirstParamParam1(firstParam string) *mAc
 		mmAction.defaultExpectation.paramPtrs = &ActorMockActionParamPtrs{}
 	}
 	mmAction.defaultExpectation.paramPtrs.firstParam = &firstParam
+	mmAction.defaultExpectation.expectationOrigins.originFirstParam = minimock.CallerInfo(1)
 
 	return mmAction
 }
@@ -153,6 +166,7 @@ func (mmAction *mActorMockAction) ExpectSecondParamParam2(secondParam int) *mAct
 		mmAction.defaultExpectation.paramPtrs = &ActorMockActionParamPtrs{}
 	}
 	mmAction.defaultExpectation.paramPtrs.secondParam = &secondParam
+	mmAction.defaultExpectation.expectationOrigins.originSecondParam = minimock.CallerInfo(1)
 
 	return mmAction
 }
@@ -178,6 +192,7 @@ func (mmAction *mActorMockAction) Return(i1 int, err error) *ActorMock {
 		mmAction.defaultExpectation = &ActorMockActionExpectation{mock: mmAction.mock}
 	}
 	mmAction.defaultExpectation.results = &ActorMockActionResults{i1, err}
+	mmAction.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmAction.mock
 }
 
@@ -192,6 +207,7 @@ func (mmAction *mActorMockAction) Set(f func(firstParam string, secondParam int)
 	}
 
 	mmAction.mock.funcAction = f
+	mmAction.mock.funcActionOrigin = minimock.CallerInfo(1)
 	return mmAction.mock
 }
 
@@ -203,8 +219,9 @@ func (mmAction *mActorMockAction) When(firstParam string, secondParam int) *Acto
 	}
 
 	expectation := &ActorMockActionExpectation{
-		mock:   mmAction.mock,
-		params: &ActorMockActionParams{firstParam, secondParam},
+		mock:               mmAction.mock,
+		params:             &ActorMockActionParams{firstParam, secondParam},
+		expectationOrigins: ActorMockActionExpectationOrigins{origin: minimock.CallerInfo(1)},
 	}
 	mmAction.expectations = append(mmAction.expectations, expectation)
 	return expectation
@@ -222,6 +239,7 @@ func (mmAction *mActorMockAction) Times(n uint64) *mActorMockAction {
 		mmAction.mock.t.Fatalf("Times of ActorMock.Action mock can not be zero")
 	}
 	mm_atomic.StoreUint64(&mmAction.expectedInvocations, n)
+	mmAction.expectedInvocationsOrigin = minimock.CallerInfo(1)
 	return mmAction
 }
 
@@ -240,6 +258,8 @@ func (mmAction *mActorMockAction) invocationsDone() bool {
 func (mmAction *ActorMock) Action(firstParam string, secondParam int) (i1 int, err error) {
 	mm_atomic.AddUint64(&mmAction.beforeActionCounter, 1)
 	defer mm_atomic.AddUint64(&mmAction.afterActionCounter, 1)
+
+	mmAction.t.Helper()
 
 	if mmAction.inspectFuncAction != nil {
 		mmAction.inspectFuncAction(firstParam, secondParam)
@@ -269,15 +289,18 @@ func (mmAction *ActorMock) Action(firstParam string, secondParam int) (i1 int, e
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.firstParam != nil && !minimock.Equal(*mm_want_ptrs.firstParam, mm_got.firstParam) {
-				mmAction.t.Errorf("ActorMock.Action got unexpected parameter firstParam, want: %#v, got: %#v%s\n", *mm_want_ptrs.firstParam, mm_got.firstParam, minimock.Diff(*mm_want_ptrs.firstParam, mm_got.firstParam))
+				mmAction.t.Errorf("ActorMock.Action got unexpected parameter firstParam, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmAction.ActionMock.defaultExpectation.expectationOrigins.originFirstParam, *mm_want_ptrs.firstParam, mm_got.firstParam, minimock.Diff(*mm_want_ptrs.firstParam, mm_got.firstParam))
 			}
 
 			if mm_want_ptrs.secondParam != nil && !minimock.Equal(*mm_want_ptrs.secondParam, mm_got.secondParam) {
-				mmAction.t.Errorf("ActorMock.Action got unexpected parameter secondParam, want: %#v, got: %#v%s\n", *mm_want_ptrs.secondParam, mm_got.secondParam, minimock.Diff(*mm_want_ptrs.secondParam, mm_got.secondParam))
+				mmAction.t.Errorf("ActorMock.Action got unexpected parameter secondParam, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmAction.ActionMock.defaultExpectation.expectationOrigins.originSecondParam, *mm_want_ptrs.secondParam, mm_got.secondParam, minimock.Diff(*mm_want_ptrs.secondParam, mm_got.secondParam))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmAction.t.Errorf("ActorMock.Action got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmAction.t.Errorf("ActorMock.Action got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmAction.ActionMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
 		mm_results := mmAction.ActionMock.defaultExpectation.results
@@ -337,7 +360,7 @@ func (m *ActorMock) MinimockActionDone() bool {
 func (m *ActorMock) MinimockActionInspect() {
 	for _, e := range m.ActionMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to ActorMock.Action with params: %#v", *e.params)
+			m.t.Errorf("Expected call to ActorMock.Action at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
 		}
 	}
 
@@ -345,19 +368,19 @@ func (m *ActorMock) MinimockActionInspect() {
 	// if default expectation was set then invocations count should be greater than zero
 	if m.ActionMock.defaultExpectation != nil && afterActionCounter < 1 {
 		if m.ActionMock.defaultExpectation.params == nil {
-			m.t.Error("Expected call to ActorMock.Action")
+			m.t.Errorf("Expected call to ActorMock.Action at\n%s", m.ActionMock.defaultExpectation.returnOrigin)
 		} else {
-			m.t.Errorf("Expected call to ActorMock.Action with params: %#v", *m.ActionMock.defaultExpectation.params)
+			m.t.Errorf("Expected call to ActorMock.Action at\n%s with params: %#v", m.ActionMock.defaultExpectation.expectationOrigins.origin, *m.ActionMock.defaultExpectation.params)
 		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcAction != nil && afterActionCounter < 1 {
-		m.t.Error("Expected call to ActorMock.Action")
+		m.t.Errorf("Expected call to ActorMock.Action at\n%s", m.funcActionOrigin)
 	}
 
 	if !m.ActionMock.invocationsDone() && afterActionCounter > 0 {
-		m.t.Errorf("Expected %d calls to ActorMock.Action but found %d calls",
-			mm_atomic.LoadUint64(&m.ActionMock.expectedInvocations), afterActionCounter)
+		m.t.Errorf("Expected %d calls to ActorMock.Action at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.ActionMock.expectedInvocations), m.ActionMock.expectedInvocationsOrigin, afterActionCounter)
 	}
 }
 
