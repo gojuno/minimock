@@ -8,7 +8,6 @@ import (
 	"go/token"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -16,7 +15,7 @@ import (
 	"text/template"
 	"time"
 
-	minimock "github.com/gojuno/minimock/v3"
+	"github.com/gojuno/minimock/v3"
 	"github.com/gojuno/minimock/v3/internal/types"
 	"github.com/hexdigest/gowrap/generator"
 	"github.com/hexdigest/gowrap/pkg"
@@ -24,11 +23,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-const (
-	devVersion = "dev"
-	runMode    = "go-run"
-	directMode = "direct"
-)
+const devVersion = "dev"
 
 var (
 	//do not modify the following vars
@@ -56,12 +51,12 @@ var helpers = template.FuncMap{
 
 type (
 	options struct {
-		interfaces     []interfaceInfo
-		noGenerate     bool
-		suffix         string
-		mockNames      []string
-		packageNames   []string
-		goGenerateMode string
+		interfaces      []interfaceInfo
+		noGenerate      bool
+		suffix          string
+		mockNames       []string
+		packageNames    []string
+		goGenerateGoRun bool
 	}
 
 	interfaceInfo struct {
@@ -115,7 +110,7 @@ func getVersion(version string, buildInfo *debug.BuildInfo) string {
 }
 
 func main() {
-	opts, err := processArgs(os.Args[0], os.Args[1:], os.Stdout, os.Stderr)
+	opts, err := processArgs(os.Args[1:], os.Stdout, os.Stderr)
 	if err != nil {
 		if err == errInvalidArguments {
 			os.Exit(2)
@@ -168,7 +163,7 @@ func run(opts *options) (err error) {
 				"GenerateInstruction": !opts.noGenerate,
 				"Version":             version,
 				"PackageName":         packageName,
-				"GoGenerateMode":      opts.goGenerateMode,
+				"GenerateGoRun":       opts.goGenerateGoRun,
 			},
 			Vars:  map[string]interface{}{},
 			Funcs: helpers,
@@ -381,32 +376,16 @@ func processNames(names string, interfacesNum int, isInterfaceWildeCarded bool) 
 	return namesSplitted, nil
 }
 
-func processGoGenerateMode(cmd string, args []string, goGenerateMode string) (string, error) {
-	log.Println(cmd)
-	log.Println(args)
-	log.Println(goGenerateMode)
-	if goGenerateMode != "" && goGenerateMode != directMode && goGenerateMode != runMode {
-		return "", fmt.Errorf("wrong mode value")
-	}
-
-	if goGenerateMode != "" {
-		return goGenerateMode, nil
-	}
-	if cmd == "go" && len(args) > 0 && args[0] == "run" {
-		return runMode, nil
-	}
-
-	return directMode, nil
-}
-
 var errInvalidArguments = errors.New("invalid arguments")
 
-func processArgs(cmd string, args []string, stdout, stderr io.Writer) (*options, error) {
+func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
 	var opts options
 
 	fs := flag.NewFlagSet("", flag.ContinueOnError)
 
 	fs.BoolVar(&opts.noGenerate, "g", false, "don't put go:generate instruction into the generated code")
+	fs.BoolVar(&opts.goGenerateGoRun, "gr", false, `changes go:generate line from "//go:generate minimock args..." to  "//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock", 
+useful while controlling minimock version with go mod`)
 	fs.StringVar(&opts.suffix, "s", "_mock_test.go", "mock file suffix")
 
 	input := fs.String("i", "*", "comma-separated names of the interfaces to mock, i.e fmt.Stringer,io.Reader\nuse io.* notation to generate mocks for all interfaces in the \"io\" package")
@@ -415,10 +394,6 @@ func processArgs(cmd string, args []string, stdout, stderr io.Writer) (*options,
 	packageNames := fs.String("p", "", "comma-separated package names,\nby default the generated package names are taken from the destination directory names")
 	help := fs.Bool("h", false, "show this help message")
 	version := fs.Bool("version", false, "display version information and exit")
-	goGenerateMode := fs.String("go-generate-mode", "", `changes go:generate command mode: direct/go-run. 
-By default puts "go:generate minimock args..." instruction into generated code if mock was generated with minimock command. 
-If mock was generated with go run github.com/gojuno/minimock/v3/cmd/minimock then it puts "go:generate go run github.com/gojuno/minimock/v3/cmd/minimock args...".
-This behaviour can be rewritten by explicitly specifying mode with flag.`)
 
 	fs.Usage = func() { usage(fs, stderr) }
 
@@ -435,12 +410,6 @@ This behaviour can be rewritten by explicitly specifying mode with flag.`)
 		usage(fs, stdout)
 		return nil, nil
 	}
-
-	cmdMode, err := processGoGenerateMode(cmd, args, *goGenerateMode)
-	if err != nil {
-		return nil, fmt.Errorf("processing -go-generate-mode flag arguments: %w", err)
-	}
-	opts.goGenerateMode = cmdMode
 
 	interfaces := strings.Split(*input, ",")
 	interfacesLen := len(interfaces)
