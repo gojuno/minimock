@@ -8,7 +8,11 @@
 package {{$packageName}}
 
 {{if $.Options.HeaderVars.GenerateInstruction}}
+    {{if eq $.Options.HeaderVars.GoGenerateMode "go-run"}}
+//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock -i {{$.SourcePackage.PkgPath}}.{{$.Options.InterfaceName}} -o {{$.Options.HeaderVars.OutputFile}} -n {{(title (index $.Vars "MockName"))}} -p {{ $packageName }}
+    {{else}}
 //go:generate minimock -i {{$.SourcePackage.PkgPath}}.{{$.Options.InterfaceName}} -o {{$.Options.HeaderVars.OutputFile}} -n {{(title (index $.Vars "MockName"))}} -p {{ $packageName }}
+    {{end}}
 {{end}}
 
 import (
