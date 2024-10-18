@@ -15,7 +15,7 @@ import (
 	"text/template"
 	"time"
 
-	minimock "github.com/gojuno/minimock/v3"
+	"github.com/gojuno/minimock/v3"
 	"github.com/gojuno/minimock/v3/internal/types"
 	"github.com/hexdigest/gowrap/generator"
 	"github.com/hexdigest/gowrap/pkg"
@@ -51,11 +51,12 @@ var helpers = template.FuncMap{
 
 type (
 	options struct {
-		interfaces   []interfaceInfo
-		noGenerate   bool
-		suffix       string
-		mockNames    []string
-		packageNames []string
+		interfaces      []interfaceInfo
+		noGenerate      bool
+		suffix          string
+		mockNames       []string
+		packageNames    []string
+		goGenerateGoRun bool
 	}
 
 	interfaceInfo struct {
@@ -162,6 +163,7 @@ func run(opts *options) (err error) {
 				"GenerateInstruction": !opts.noGenerate,
 				"Version":             version,
 				"PackageName":         packageName,
+				"GenerateGoRun":       opts.goGenerateGoRun,
 			},
 			Vars:  map[string]interface{}{},
 			Funcs: helpers,
@@ -382,6 +384,8 @@ func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
 	fs := flag.NewFlagSet("", flag.ContinueOnError)
 
 	fs.BoolVar(&opts.noGenerate, "g", false, "don't put go:generate instruction into the generated code")
+	fs.BoolVar(&opts.goGenerateGoRun, "gr", false, `changes go:generate line from "//go:generate minimock args..." to  "//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock", 
+useful while controlling minimock version with go mod`)
 	fs.StringVar(&opts.suffix, "s", "_mock_test.go", "mock file suffix")
 
 	input := fs.String("i", "*", "comma-separated names of the interfaces to mock, i.e fmt.Stringer,io.Reader\nuse io.* notation to generate mocks for all interfaces in the \"io\" package")

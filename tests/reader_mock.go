@@ -2,7 +2,7 @@
 
 package tests
 
-//go:generate minimock -i github.com/gojuno/minimock/v3/tests.reader -o reader_mock.go -n ReaderMock -p tests
+//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock -i github.com/gojuno/minimock/v3/tests.reader -o reader_mock.go -n ReaderMock -p tests -gr
 
 import (
 	"sync"

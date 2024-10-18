@@ -22,7 +22,7 @@ generate:
 	go run ./cmd/minimock/minimock.go -i ./tests.actor -o ./tests/actor_mock.go
 	go run ./cmd/minimock/minimock.go -i ./tests.formatterAlias -o ./tests/formatter_alias_mock.go
 	go run ./cmd/minimock/minimock.go -i ./tests.formatterType -o ./tests/formatter_type_mock.go
-	go run ./cmd/minimock/minimock.go -i ./tests.reader -o ./tests/reader_mock.go
+	go run ./cmd/minimock/minimock.go -i ./tests.reader -o ./tests/reader_mock.go -gr
 
 ./bin:
 	mkdir ./bin
