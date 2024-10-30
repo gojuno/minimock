@@ -53,7 +53,8 @@ or install minimock using [v2 branch](https://github.com/gojuno/minimock/tree/v2
   -s string
     	mock file suffix (default "_mock_test.go")
   -gr
-        changes go:generate line from "//go:generate minimock args..." to  "//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock", 
+        changes go:generate line from "//go:generate minimock args..." to  
+        "//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock", 
         useful while controlling minimock version with go mod
 ```
 
