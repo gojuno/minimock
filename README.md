@@ -52,6 +52,9 @@ or install minimock using [v2 branch](https://github.com/gojuno/minimock/tree/v2
         by default the generated package names are taken from the destination directory names
   -s string
     	mock file suffix (default "_mock_test.go")
+  -gr
+        changes go:generate line from "//go:generate minimock args..." to  "//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock", 
+        useful while controlling minimock version with go mod
 ```
 
 Let's say we have the following interface declaration in github.com/gojuno/minimock/tests package:
