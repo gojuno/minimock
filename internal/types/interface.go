@@ -5,7 +5,6 @@ import (
 	"go/ast"
 	"go/printer"
 	"go/token"
-	"regexp"
 	"strings"
 
 	"github.com/hexdigest/gowrap/pkg"
@@ -157,9 +156,18 @@ func findSourcePackage(ident *ast.Ident, imports []*ast.ImportSpec) string {
 			continue
 		}
 
-		matched, err := regexp.MatchString(`^(.*\/)?`+ident.Name+`(\/.[^\/]*)?$`, cleanPath)
-		if err == nil && matched {
+		// try last segment, like in "github.com/my/package/identName"
+		lastSlash := strings.LastIndex(cleanPath, "/")
+		if ident.Name == cleanPath[lastSlash+1:] {
 			return cleanPath
+		}
+
+		// try prev segment, like in "github.com/my/package/identName/v5"
+		if cleanPath[lastSlash+1] == 'v' {
+			prevSlash := strings.LastIndex(cleanPath[:lastSlash], "/")
+			if ident.Name == cleanPath[prevSlash+1:lastSlash] {
+				return cleanPath
+			}
 		}
 	}
 
