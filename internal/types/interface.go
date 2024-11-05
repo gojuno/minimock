@@ -97,17 +97,27 @@ func isExportedInterfaceAlias(typeSpec *ast.TypeSpec, fileImports []*ast.ImportS
 		return false
 	}
 
+	name := selector.Sel.Name
 	srcPkgPath := findSourcePackage(ident, fileImports)
-	srcAst, err := getPackageAst(srcPkgPath)
+	srcPackageAst, err := getPackageAst(srcPkgPath)
 	if err != nil {
 		return false
 	}
 
-	typeSpec, imports := findTypeSpecInPackage(srcAst, selector.Sel.Name)
+	for _, f := range srcPackageAst.Files {
+		if f == nil {
+			continue
+		}
+		types := findAllTypeSpecsInFile(f)
+		typeSpec, found := findTypeByName(types, name)
+		if found {
+			// we have to check recursively because checked typed might be
+			// another alias to other interface
+			return isInterface(typeSpec, f.Imports)
+		}
+	}
 
-	// we have to check recursively because checked typed might be
-	// another alias to other interface
-	return isInterface(typeSpec, imports)
+	return false
 }
 
 func getPackageAst(packagePath string) (*ast.Package, error) {
@@ -123,21 +133,6 @@ func getPackageAst(packagePath string) (*ast.Package, error) {
 	}
 
 	return srcAst, nil
-}
-
-func findTypeSpecInPackage(p *ast.Package, name string) (typeSpec *ast.TypeSpec, imports []*ast.ImportSpec) {
-	for _, f := range p.Files {
-		if f == nil {
-			continue
-		}
-		types := findAllTypeSpecsInFile(f)
-		typeSpec, found := findTypeByName(types, name)
-		if found {
-			return typeSpec, f.Imports
-		}
-	}
-
-	return
 }
 
 func findTypeByName(types []*ast.TypeSpec, name string) (*ast.TypeSpec, bool) {
@@ -161,12 +156,22 @@ func findSourcePackage(ident *ast.Ident, imports []*ast.ImportSpec) string {
 			continue
 		}
 
-		slash := strings.LastIndex(cleanPath, "/")
-		if ident.Name == cleanPath[slash+1:] {
+		// try last segment, like in "github.com/my/package/identName"
+		lastSlash := strings.LastIndex(cleanPath, "/")
+		if ident.Name == cleanPath[lastSlash+1:] {
 			return cleanPath
+		}
+
+		// try prev segment, like in "github.com/my/package/identName/v5"
+		if cleanPath[lastSlash+1] == 'v' {
+			prevSlash := strings.LastIndex(cleanPath[:lastSlash], "/")
+			if ident.Name == cleanPath[prevSlash+1:lastSlash] {
+				return cleanPath
+			}
 		}
 	}
 
+	// todo: should not reach here?
 	return ""
 }
 
