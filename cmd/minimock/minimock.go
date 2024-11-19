@@ -54,6 +54,7 @@ type (
 		interfaces      []interfaceInfo
 		noGenerate      bool
 		suffix          string
+		prefix          string
 		mockNames       []string
 		packageNames    []string
 		goGenerateGoRun bool
@@ -173,7 +174,7 @@ func run(opts *options) (err error) {
 		if len(opts.interfaces) == len(opts.mockNames) {
 			mockName = opts.mockNames[i]
 		}
-		if err := processPackage(gopts, interfaces, in.WriteTo, opts.suffix, mockName); err != nil {
+		if err := processPackage(gopts, interfaces, in.WriteTo, opts.prefix, opts.suffix, mockName); err != nil {
 			return err
 		}
 	}
@@ -181,7 +182,7 @@ func run(opts *options) (err error) {
 	return nil
 }
 
-func processPackage(opts generator.Options, interfaces []types.InterfaceSpecification, writeTo, suffix, mockName string) (err error) {
+func processPackage(opts generator.Options, interfaces []types.InterfaceSpecification, writeTo, prefix, suffix, mockName string) (err error) {
 	for _, iface := range interfaces {
 		opts.InterfaceName = iface.InterfaceName
 
@@ -201,7 +202,7 @@ func processPackage(opts generator.Options, interfaces []types.InterfaceSpecific
 
 		paramsString := strings.Join(params, ",")
 
-		opts.OutputFile, err = destinationFile(iface.InterfaceName, writeTo, suffix)
+		opts.OutputFile, err = destinationFile(iface.InterfaceName, writeTo, prefix, suffix)
 		if err != nil {
 			return errors.Wrapf(err, "failed to generate mock for %s", iface.InterfaceName)
 		}
@@ -268,7 +269,7 @@ func isGoFile(path string) (bool, error) {
 	return strings.HasSuffix(path, ".go") && !stat.IsDir(), nil
 }
 
-func destinationFile(interfaceName, writeTo, suffix string) (string, error) {
+func destinationFile(interfaceName, writeTo, prefix, suffix string) (string, error) {
 	ok, err := isGoFile(writeTo)
 	if err != nil {
 		return "", err
@@ -279,7 +280,7 @@ func destinationFile(interfaceName, writeTo, suffix string) (string, error) {
 	if ok {
 		path = writeTo
 	} else {
-		path = filepath.Join(writeTo, minimock.CamelToSnake(interfaceName)+suffix)
+		path = filepath.Join(writeTo, prefix+minimock.CamelToSnake(interfaceName)+suffix)
 	}
 
 	if !strings.HasPrefix(path, "/") && !strings.HasPrefix(path, ".") {
@@ -387,7 +388,7 @@ func processArgs(args []string, stdout, stderr io.Writer) (*options, error) {
 	fs.BoolVar(&opts.goGenerateGoRun, "gr", false, `changes go:generate line from "//go:generate minimock args..." to  "//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock", 
 useful while controlling minimock version with go mod`)
 	fs.StringVar(&opts.suffix, "s", "_mock_test.go", "mock file suffix")
-
+	fs.StringVar(&opts.prefix, "pr", "", "mock file prefix")
 	input := fs.String("i", "*", "comma-separated names of the interfaces to mock, i.e fmt.Stringer,io.Reader\nuse io.* notation to generate mocks for all interfaces in the \"io\" package")
 	output := fs.String("o", "", "comma-separated destination file names or packages to put the generated mocks in,\nby default the generated mock is placed in the source package directory")
 	aliases := fs.String("n", "", "comma-separated mock names,\nby default the generated mock names append `Mock` to the given interface name")
