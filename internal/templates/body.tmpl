@@ -202,15 +202,14 @@ func New{{$mock}}{{(params)}}(t minimock.Tester) *{{$mock}}{{(paramsRef)}} {
             return expectation
         }
 
-        {{if $method.HasResults }}
         // Then sets up {{$.Interface.Name}}.{{$method.Name}} return parameters for the expectation previously defined by the When method
+        {{if $method.HasResults }}
         func (e *{{$mock}}{{$method.Name}}Expectation{{(paramsRef)}}) Then({{$method.Results}}) *{{$mock}}{{(paramsRef)}} {
             e.results = &{{$mock}}{{$method.Name}}Results{{(paramsRef)}}{ {{ $method.ResultsNames }} }
             return e.mock
         }
         {{end}}
         {{if not $method.HasResults }}
-        // Then sets up {{$.Interface.Name}}.{{$method.Name}} return parameters for the expectation previously defined by the When method
         func (e *{{$mock}}{{$method.Name}}Expectation{{(paramsRef)}}) Then() *{{$mock}}{{(paramsRef)}} {
             return e.mock
         }
