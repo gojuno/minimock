@@ -185,7 +185,7 @@ func New{{$mock}}{{(params)}}(t minimock.Tester) *{{$mock}}{{(paramsRef)}} {
         return {{$m}}.mock
     }
 
-    {{if (and $method.HasParams $method.HasResults)}}
+    {{if $method.HasParams }}
         // When sets expectation for the {{$.Interface.Name}}.{{$method.Name}} which will trigger the result defined by the following
         // Then helper
         func ({{$m}} *m{{$mock}}{{$method.Name}}{{(paramsRef)}}) When({{$method.Params}}) *{{$mock}}{{$method.Name}}Expectation{{(paramsRef)}} {
@@ -202,11 +202,19 @@ func New{{$mock}}{{(params)}}(t minimock.Tester) *{{$mock}}{{(paramsRef)}} {
             return expectation
         }
 
+        {{if $method.HasResults }}
         // Then sets up {{$.Interface.Name}}.{{$method.Name}} return parameters for the expectation previously defined by the When method
         func (e *{{$mock}}{{$method.Name}}Expectation{{(paramsRef)}}) Then({{$method.Results}}) *{{$mock}}{{(paramsRef)}} {
             e.results = &{{$mock}}{{$method.Name}}Results{{(paramsRef)}}{ {{ $method.ResultsNames }} }
             return e.mock
         }
+        {{end}}
+        {{if not $method.HasResults }}
+        // Then sets up {{$.Interface.Name}}.{{$method.Name}} return parameters for the expectation previously defined by the When method
+        func (e *{{$mock}}{{$method.Name}}Expectation{{(paramsRef)}}) Then() *{{$mock}}{{(paramsRef)}} {
+            return e.mock
+        }
+        {{end}}
     {{end}}
 
     // Times sets number of times {{$.Interface.Name}}.{{$method.Name}} should be invoked
