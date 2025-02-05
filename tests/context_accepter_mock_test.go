@@ -48,6 +48,16 @@ func TestContextAccepterMock_WhenThenMatchAnycontext(t *testing.T) {
 	assert.Equal(t, 42, result)
 }
 
+func TestContextAccepterMock_WhenThenMatchAnycontextWithoutArgs(t *testing.T) {
+	tester := NewTesterMock(t)
+	tester.CleanupMock.Return().HelperMock.Return()
+
+	mock := NewContextAccepterMock(tester).
+		AcceptContextMock.When(minimock.AnyContext).Then()
+
+	mock.AcceptContext(context.TODO())
+}
+
 func TestContextAccepterMock_DiffWithoutAnyContext(t *testing.T) {
 	tester := NewTesterMock(t)
 	tester.CleanupMock.Return().HelperMock.Return()
