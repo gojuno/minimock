@@ -179,6 +179,28 @@ func (mmName *mGenericInlineUnionWithManyTypesMockName[T]) Set(f func(t1 T)) *Ge
 	return mmName.mock
 }
 
+// When sets expectation for the genericInlineUnionWithManyTypes.Name which will trigger the result defined by the following
+// Then helper
+func (mmName *mGenericInlineUnionWithManyTypesMockName[T]) When(t1 T) *GenericInlineUnionWithManyTypesMockNameExpectation[T] {
+	if mmName.mock.funcName != nil {
+		mmName.mock.t.Fatalf("GenericInlineUnionWithManyTypesMock.Name mock is already set by Set")
+	}
+
+	expectation := &GenericInlineUnionWithManyTypesMockNameExpectation[T]{
+		mock:               mmName.mock,
+		params:             &GenericInlineUnionWithManyTypesMockNameParams[T]{t1},
+		expectationOrigins: GenericInlineUnionWithManyTypesMockNameExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmName.expectations = append(mmName.expectations, expectation)
+	return expectation
+}
+
+// Then sets up genericInlineUnionWithManyTypes.Name return parameters for the expectation previously defined by the When method
+
+func (e *GenericInlineUnionWithManyTypesMockNameExpectation[T]) Then() *GenericInlineUnionWithManyTypesMock[T] {
+	return e.mock
+}
+
 // Times sets number of times genericInlineUnionWithManyTypes.Name should be invoked
 func (mmName *mGenericInlineUnionWithManyTypesMockName[T]) Times(n uint64) *mGenericInlineUnionWithManyTypesMockName[T] {
 	if n == 0 {

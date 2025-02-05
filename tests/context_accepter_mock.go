@@ -200,6 +200,28 @@ func (mmAcceptContext *mContextAccepterMockAcceptContext) Set(f func(ctx context
 	return mmAcceptContext.mock
 }
 
+// When sets expectation for the contextAccepter.AcceptContext which will trigger the result defined by the following
+// Then helper
+func (mmAcceptContext *mContextAccepterMockAcceptContext) When(ctx context.Context) *ContextAccepterMockAcceptContextExpectation {
+	if mmAcceptContext.mock.funcAcceptContext != nil {
+		mmAcceptContext.mock.t.Fatalf("ContextAccepterMock.AcceptContext mock is already set by Set")
+	}
+
+	expectation := &ContextAccepterMockAcceptContextExpectation{
+		mock:               mmAcceptContext.mock,
+		params:             &ContextAccepterMockAcceptContextParams{ctx},
+		expectationOrigins: ContextAccepterMockAcceptContextExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmAcceptContext.expectations = append(mmAcceptContext.expectations, expectation)
+	return expectation
+}
+
+// Then sets up contextAccepter.AcceptContext return parameters for the expectation previously defined by the When method
+
+func (e *ContextAccepterMockAcceptContextExpectation) Then() *ContextAccepterMock {
+	return e.mock
+}
+
 // Times sets number of times contextAccepter.AcceptContext should be invoked
 func (mmAcceptContext *mContextAccepterMockAcceptContext) Times(n uint64) *mContextAccepterMockAcceptContext {
 	if n == 0 {

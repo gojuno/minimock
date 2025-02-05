@@ -179,6 +179,28 @@ func (mmName *mGenericInMockName[T]) Set(f func(t1 T)) *GenericInMock[T] {
 	return mmName.mock
 }
 
+// When sets expectation for the genericIn.Name which will trigger the result defined by the following
+// Then helper
+func (mmName *mGenericInMockName[T]) When(t1 T) *GenericInMockNameExpectation[T] {
+	if mmName.mock.funcName != nil {
+		mmName.mock.t.Fatalf("GenericInMock.Name mock is already set by Set")
+	}
+
+	expectation := &GenericInMockNameExpectation[T]{
+		mock:               mmName.mock,
+		params:             &GenericInMockNameParams[T]{t1},
+		expectationOrigins: GenericInMockNameExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmName.expectations = append(mmName.expectations, expectation)
+	return expectation
+}
+
+// Then sets up genericIn.Name return parameters for the expectation previously defined by the When method
+
+func (e *GenericInMockNameExpectation[T]) Then() *GenericInMock[T] {
+	return e.mock
+}
+
 // Times sets number of times genericIn.Name should be invoked
 func (mmName *mGenericInMockName[T]) Times(n uint64) *mGenericInMockName[T] {
 	if n == 0 {
