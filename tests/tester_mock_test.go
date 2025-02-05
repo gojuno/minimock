@@ -237,6 +237,28 @@ func (mmCleanup *mTesterMockCleanup) Set(f func(f func())) *TesterMock {
 	return mmCleanup.mock
 }
 
+// When sets expectation for the Tester.Cleanup which will trigger the result defined by the following
+// Then helper
+func (mmCleanup *mTesterMockCleanup) When(f func()) *TesterMockCleanupExpectation {
+	if mmCleanup.mock.funcCleanup != nil {
+		mmCleanup.mock.t.Fatalf("TesterMock.Cleanup mock is already set by Set")
+	}
+
+	expectation := &TesterMockCleanupExpectation{
+		mock:               mmCleanup.mock,
+		params:             &TesterMockCleanupParams{f},
+		expectationOrigins: TesterMockCleanupExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmCleanup.expectations = append(mmCleanup.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Tester.Cleanup return parameters for the expectation previously defined by the When method
+
+func (e *TesterMockCleanupExpectation) Then() *TesterMock {
+	return e.mock
+}
+
 // Times sets number of times Tester.Cleanup should be invoked
 func (mmCleanup *mTesterMockCleanup) Times(n uint64) *mTesterMockCleanup {
 	if n == 0 {
@@ -517,6 +539,28 @@ func (mmError *mTesterMockError) Set(f func(p1 ...interface{})) *TesterMock {
 	mmError.mock.funcError = f
 	mmError.mock.funcErrorOrigin = minimock.CallerInfo(1)
 	return mmError.mock
+}
+
+// When sets expectation for the Tester.Error which will trigger the result defined by the following
+// Then helper
+func (mmError *mTesterMockError) When(p1 ...interface{}) *TesterMockErrorExpectation {
+	if mmError.mock.funcError != nil {
+		mmError.mock.t.Fatalf("TesterMock.Error mock is already set by Set")
+	}
+
+	expectation := &TesterMockErrorExpectation{
+		mock:               mmError.mock,
+		params:             &TesterMockErrorParams{p1},
+		expectationOrigins: TesterMockErrorExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmError.expectations = append(mmError.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Tester.Error return parameters for the expectation previously defined by the When method
+
+func (e *TesterMockErrorExpectation) Then() *TesterMock {
+	return e.mock
 }
 
 // Times sets number of times Tester.Error should be invoked
@@ -825,6 +869,28 @@ func (mmErrorf *mTesterMockErrorf) Set(f func(format string, args ...interface{}
 	mmErrorf.mock.funcErrorf = f
 	mmErrorf.mock.funcErrorfOrigin = minimock.CallerInfo(1)
 	return mmErrorf.mock
+}
+
+// When sets expectation for the Tester.Errorf which will trigger the result defined by the following
+// Then helper
+func (mmErrorf *mTesterMockErrorf) When(format string, args ...interface{}) *TesterMockErrorfExpectation {
+	if mmErrorf.mock.funcErrorf != nil {
+		mmErrorf.mock.t.Fatalf("TesterMock.Errorf mock is already set by Set")
+	}
+
+	expectation := &TesterMockErrorfExpectation{
+		mock:               mmErrorf.mock,
+		params:             &TesterMockErrorfParams{format, args},
+		expectationOrigins: TesterMockErrorfExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmErrorf.expectations = append(mmErrorf.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Tester.Errorf return parameters for the expectation previously defined by the When method
+
+func (e *TesterMockErrorfExpectation) Then() *TesterMock {
+	return e.mock
 }
 
 // Times sets number of times Tester.Errorf should be invoked
@@ -1292,6 +1358,28 @@ func (mmFatal *mTesterMockFatal) Set(f func(args ...interface{})) *TesterMock {
 	return mmFatal.mock
 }
 
+// When sets expectation for the Tester.Fatal which will trigger the result defined by the following
+// Then helper
+func (mmFatal *mTesterMockFatal) When(args ...interface{}) *TesterMockFatalExpectation {
+	if mmFatal.mock.funcFatal != nil {
+		mmFatal.mock.t.Fatalf("TesterMock.Fatal mock is already set by Set")
+	}
+
+	expectation := &TesterMockFatalExpectation{
+		mock:               mmFatal.mock,
+		params:             &TesterMockFatalParams{args},
+		expectationOrigins: TesterMockFatalExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmFatal.expectations = append(mmFatal.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Tester.Fatal return parameters for the expectation previously defined by the When method
+
+func (e *TesterMockFatalExpectation) Then() *TesterMock {
+	return e.mock
+}
+
 // Times sets number of times Tester.Fatal should be invoked
 func (mmFatal *mTesterMockFatal) Times(n uint64) *mTesterMockFatal {
 	if n == 0 {
@@ -1598,6 +1686,28 @@ func (mmFatalf *mTesterMockFatalf) Set(f func(format string, args ...interface{}
 	mmFatalf.mock.funcFatalf = f
 	mmFatalf.mock.funcFatalfOrigin = minimock.CallerInfo(1)
 	return mmFatalf.mock
+}
+
+// When sets expectation for the Tester.Fatalf which will trigger the result defined by the following
+// Then helper
+func (mmFatalf *mTesterMockFatalf) When(format string, args ...interface{}) *TesterMockFatalfExpectation {
+	if mmFatalf.mock.funcFatalf != nil {
+		mmFatalf.mock.t.Fatalf("TesterMock.Fatalf mock is already set by Set")
+	}
+
+	expectation := &TesterMockFatalfExpectation{
+		mock:               mmFatalf.mock,
+		params:             &TesterMockFatalfParams{format, args},
+		expectationOrigins: TesterMockFatalfExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmFatalf.expectations = append(mmFatalf.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Tester.Fatalf return parameters for the expectation previously defined by the When method
+
+func (e *TesterMockFatalfExpectation) Then() *TesterMock {
+	return e.mock
 }
 
 // Times sets number of times Tester.Fatalf should be invoked

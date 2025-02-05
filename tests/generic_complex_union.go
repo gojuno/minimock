@@ -179,6 +179,28 @@ func (mmName *mGenericComplexUnionMockName[T]) Set(f func(t1 T)) *GenericComplex
 	return mmName.mock
 }
 
+// When sets expectation for the genericComplexUnion.Name which will trigger the result defined by the following
+// Then helper
+func (mmName *mGenericComplexUnionMockName[T]) When(t1 T) *GenericComplexUnionMockNameExpectation[T] {
+	if mmName.mock.funcName != nil {
+		mmName.mock.t.Fatalf("GenericComplexUnionMock.Name mock is already set by Set")
+	}
+
+	expectation := &GenericComplexUnionMockNameExpectation[T]{
+		mock:               mmName.mock,
+		params:             &GenericComplexUnionMockNameParams[T]{t1},
+		expectationOrigins: GenericComplexUnionMockNameExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmName.expectations = append(mmName.expectations, expectation)
+	return expectation
+}
+
+// Then sets up genericComplexUnion.Name return parameters for the expectation previously defined by the When method
+
+func (e *GenericComplexUnionMockNameExpectation[T]) Then() *GenericComplexUnionMock[T] {
+	return e.mock
+}
+
 // Times sets number of times genericComplexUnion.Name should be invoked
 func (mmName *mGenericComplexUnionMockName[T]) Times(n uint64) *mGenericComplexUnionMockName[T] {
 	if n == 0 {

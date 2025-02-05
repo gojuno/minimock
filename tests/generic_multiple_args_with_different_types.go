@@ -206,6 +206,28 @@ func (mmName *mGenericMultipleTypesMockName[T, K]) Set(f func(t1 T, k1 K)) *Gene
 	return mmName.mock
 }
 
+// When sets expectation for the genericMultipleTypes.Name which will trigger the result defined by the following
+// Then helper
+func (mmName *mGenericMultipleTypesMockName[T, K]) When(t1 T, k1 K) *GenericMultipleTypesMockNameExpectation[T, K] {
+	if mmName.mock.funcName != nil {
+		mmName.mock.t.Fatalf("GenericMultipleTypesMock.Name mock is already set by Set")
+	}
+
+	expectation := &GenericMultipleTypesMockNameExpectation[T, K]{
+		mock:               mmName.mock,
+		params:             &GenericMultipleTypesMockNameParams[T, K]{t1, k1},
+		expectationOrigins: GenericMultipleTypesMockNameExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmName.expectations = append(mmName.expectations, expectation)
+	return expectation
+}
+
+// Then sets up genericMultipleTypes.Name return parameters for the expectation previously defined by the When method
+
+func (e *GenericMultipleTypesMockNameExpectation[T, K]) Then() *GenericMultipleTypesMock[T, K] {
+	return e.mock
+}
+
 // Times sets number of times genericMultipleTypes.Name should be invoked
 func (mmName *mGenericMultipleTypesMockName[T, K]) Times(n uint64) *mGenericMultipleTypesMockName[T, K] {
 	if n == 0 {
