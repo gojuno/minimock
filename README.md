@@ -157,7 +157,7 @@ formatterMock.FormatMock.When("Hi %s!", "there").Then("Hi there!")
 alternatively you can use the one-liner:
 
 ```go
-formatterMock = NewFormatterMock(mc).When("Hello %s!", "world").Then("Hello world!").When("Hi %s!", "there").Then("Hi there!")
+formatterMock = NewFormatterMock(mc).FormatMock.When("Hello %s!", "world").Then("Hello world!").FormatMock.When("Hi %s!", "there").Then("Hi there!")
 ```
 
 ### Setting up a mock using the Set method:
