@@ -150,6 +150,10 @@ func run(opts *options) (err error) {
 
 		interfaces := types.FindAllInterfaces(astPackage, in.Type)
 
+		if len(interfaces) == 0 {
+			return errors.Errorf("no interfaces were provided")
+		}
+
 		packageName := ""
 		if len(opts.interfaces) == len(opts.packageNames) {
 			packageName = opts.packageNames[i]
