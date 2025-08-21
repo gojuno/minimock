@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"go/ast"
 	"go/token"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -20,6 +18,7 @@ import (
 	"github.com/hexdigest/gowrap/generator"
 	"github.com/hexdigest/gowrap/pkg"
 	"github.com/pkg/errors"
+	"golang.org/x/text/cases"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -34,7 +33,7 @@ var (
 )
 
 var helpers = template.FuncMap{
-	"title": strings.Title,
+	"title": cases.Title,
 	"in": func(s string, in ...string) bool {
 		s = strings.Trim(s, " ")
 		for _, i := range in {
@@ -132,7 +131,7 @@ func main() {
 func run(opts *options) (err error) {
 	var (
 		sourcePackage *packages.Package
-		astPackage    *ast.Package
+		astPackage    *pkg.Package
 		fs            *token.FileSet
 	)
 
@@ -302,7 +301,7 @@ func generate(o generator.Options) (err error) {
 		return errors.Wrap(err, "failed to generate mock")
 	}
 
-	return ioutil.WriteFile(o.OutputFile, buf.Bytes(), 0644)
+	return os.WriteFile(o.OutputFile, buf.Bytes(), 0644)
 }
 
 func match(s, pattern string) bool {

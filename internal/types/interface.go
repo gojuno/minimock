@@ -25,7 +25,7 @@ type InterfaceSpecificationParam struct {
 	ParamType  string
 }
 
-func FindAllInterfaces(p *ast.Package, pattern string) []InterfaceSpecification {
+func FindAllInterfaces(p *pkg.Package, pattern string) []InterfaceSpecification {
 	// Filter interfaces from all the declarations
 	interfaces := []*ast.TypeSpec{}
 	for _, file := range p.Files {
@@ -99,7 +99,7 @@ func isExportedInterfaceAlias(typeSpec *ast.TypeSpec, fileImports []*ast.ImportS
 
 	name := selector.Sel.Name
 	srcPkgPath := findSourcePackage(ident, fileImports)
-	srcPackageAst, err := getPackageAst(srcPkgPath)
+	srcPackageAst, err := getPackage(srcPkgPath)
 	if err != nil {
 		return false
 	}
@@ -120,19 +120,14 @@ func isExportedInterfaceAlias(typeSpec *ast.TypeSpec, fileImports []*ast.ImportS
 	return false
 }
 
-func getPackageAst(packagePath string) (*ast.Package, error) {
+func getPackage(packagePath string) (*pkg.Package, error) {
 	srcPkg, err := pkg.Load(packagePath)
 	if err != nil {
 		return nil, err
 	}
 
 	fs := token.NewFileSet()
-	srcAst, err := pkg.AST(fs, srcPkg)
-	if err != nil {
-		return nil, err
-	}
-
-	return srcAst, nil
+	return pkg.AST(fs, srcPkg)
 }
 
 func findTypeByName(types []*ast.TypeSpec, name string) (*ast.TypeSpec, bool) {
