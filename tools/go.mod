@@ -1,7 +1,8 @@
 module github.com/gojuno/minimock/tools
 
-go 1.21
-toolchain go1.24.1
+go 1.23.0
+
+toolchain go1.24.6
 
 require (
 	github.com/golangci/golangci-lint v1.51.1
