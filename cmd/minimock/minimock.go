@@ -36,7 +36,7 @@ var helpers = template.FuncMap{
 	"title": func(s string) string {
 		runes := []rune(s)
 		for i, r := range runes {
-			if unicode.IsLetter(r) { // нашли первую букву
+			if unicode.IsLetter(r) {
 				runes[i] = unicode.ToUpper(r)
 				break
 			}
