@@ -12,13 +12,13 @@ import (
 	"strings"
 	"text/template"
 	"time"
+	"unicode"
 
 	"github.com/gojuno/minimock/v3"
 	"github.com/gojuno/minimock/v3/internal/types"
 	"github.com/hexdigest/gowrap/generator"
 	"github.com/hexdigest/gowrap/pkg"
 	"github.com/pkg/errors"
-	"golang.org/x/text/cases"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -33,7 +33,16 @@ var (
 )
 
 var helpers = template.FuncMap{
-	"title": cases.Title,
+	"title": func(s string) string {
+		runes := []rune(s)
+		for i, r := range runes {
+			if unicode.IsLetter(r) { // нашли первую букву
+				runes[i] = unicode.ToUpper(r)
+				break
+			}
+		}
+		return string(runes)
+	},
 	"in": func(s string, in ...string) bool {
 		s = strings.Trim(s, " ")
 		for _, i := range in {
