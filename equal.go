@@ -40,11 +40,19 @@ func Equal(a, b interface{}) bool {
 				continue
 			}
 
+			if checkFunctions(aFieldValue, bFieldValue) {
+				continue
+			}
+
 			if !reflect.DeepEqual(aFieldValue, bFieldValue) {
 				return false
 			}
 		}
 
+		return true
+	}
+
+	if checkFunctions(a, b) {
 		return true
 	}
 
@@ -102,4 +110,16 @@ func unexported(field reflect.Value) interface{} {
 
 func unexportedVal(field reflect.Value) reflect.Value {
 	return reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem()
+}
+
+// checkFunctions returns true
+func checkFunctions(a, b interface{}) (differs bool) {
+	if a == nil || b == nil {
+		return false
+	}
+	if reflect.TypeOf(a).Kind() != reflect.Func || reflect.TypeOf(b).Kind() != reflect.Func {
+		return false
+	}
+
+	return reflect.ValueOf(a).UnsafePointer() == reflect.ValueOf(b).UnsafePointer()
 }
