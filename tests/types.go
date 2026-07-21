@@ -93,4 +93,8 @@ type (
 	actor interface {
 		Action(firstParam string, secondParam int) (int, error)
 	}
+
+	funcCaller interface {
+		CallFunc(f func()) int
+	}
 )
