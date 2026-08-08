@@ -165,6 +165,7 @@ func run(opts *options) (err error) {
 
 		gopts := generator.Options{
 			SourcePackage:      sourcePackage.PkgPath,
+			SourcePackageInstance: sourcePackage,
 			SourcePackageAlias: "mm_" + sourcePackage.Name,
 			HeaderTemplate:     minimock.HeaderTemplate,
 			BodyTemplate:       minimock.BodyTemplate,
